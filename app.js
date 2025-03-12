@@ -8,11 +8,11 @@ const User = require("./models/user.model");
 
 const API_VERSION = process.env.API_VERSION || "/v1";
 const MONGODB_URI = process.env.MONGODB_URI;
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 5000;
 
 const app = express();
 
-const allowlist = ["https://keshvacredit.com", "http://localhost:3000"];
+const allowlist = ["https://keshvacredit.com/", "http://localhost:3001"];
 
 app.use(
   cors({
@@ -52,10 +52,9 @@ async function main() {
   try {
     console.log("🛜 Welcome to Credmantra! Server is up and running 🛜");
     if (!MONGODB_URI) throw new Error("MONGODB_URI is missing in .env");
-    await mongoose.connect(MONGODB_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
+
+    await mongoose.connect(MONGODB_URI);
+    
     console.log("🎉 Database Connected Successfully 🎉");
   } catch (error) {
     console.error("❌ Database Connection Error:", error.message);
@@ -64,6 +63,7 @@ async function main() {
 }
 
 main();
+
 
 app.listen(PORT, () =>
   console.log(`🚀 Server running on http://localhost:${PORT}`),
