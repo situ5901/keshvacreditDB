@@ -12,7 +12,7 @@ const PORT = process.env.PORT || 5000;
 
 const app = express();
 
-const allowlist = ["https://keshvacredit.com/", "http://localhost:3001"];
+const allowlist = ["https://keshvacredit.com/", "http://localhost:5000"];
 
 app.use(
   cors({
@@ -23,7 +23,7 @@ app.use(
         callback(new Error("Not allowed by CORS"));
       }
     },
-    credentials: true, // ✅ Allow credentials (cookies, auth headers)
+    credentials: true, 
   }),
 );
 
@@ -32,7 +32,6 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// ✅ Define Routes
 const auth = require("./routes/auth.js");
 const leads = require("./routes/leads.js");
 const loop = require("./PartnerAPI/LendingPlate.js");
@@ -41,12 +40,10 @@ app.use(`/api${API_VERSION}/auth`, auth);
 app.use(`/api${API_VERSION}/leads`, leads);
 app.use(`/api${API_VERSION}/loop`, loop);
 
-// ✅ Error Handler
 app.use((err, req, res, _next) => {
   res.status(err.status || 500).json({ error: err.message });
 });
 
-// ✅ Database Connection
 mongoose.set("strictQuery", false);
 async function main() {
   try {
