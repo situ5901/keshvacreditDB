@@ -45,13 +45,13 @@ app.use((err, req, res, _next) => {
 });
 
 mongoose.set("strictQuery", false);
+
 async function main() {
   try {
-    console.log("🛜 Welcome to Credmantra! Server is up and running 🛜");
-    if (!MONGODB_URI) throw new Error("MONGODB_URI is missing in .env");
+    console.log("🛜 Connecting to MongoDB...");
 
-    await mongoose.connect(MONGODB_URI);
-    
+    await mongoose.connect(MONGODB_URI); // ✅ No need for extra options
+
     console.log("🎉 Database Connected Successfully 🎉");
   } catch (error) {
     console.error("❌ Database Connection Error:", error.message);

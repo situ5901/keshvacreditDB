@@ -10,27 +10,31 @@ mongoose
   .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
 
 const UserDB = mongoose.model(
-  "userdb",
+  "loops",
   new mongoose.Schema({}, { strict: false }),
 );
 
 const BATCH_SIZE = 1;
-const newAPI = "http://localhost:3000/api/v1/loop/post-data"; // New API endpoint
-const MAX_LEADS = 10;
-const Partner_id = "RS";
+const newAPI =
+  "https://preprod.ramfincorp.co.in/loanapply/ramfincorp_api/lead_gen/api/v1/create_lead"; // New API endpoint
+const MAX_LEADS = 2;
+const Partner_id = "Keshvacredit";
 
 let processedCount = 0;
 
 async function sendToNewAPI(lead) {
   let response = {};
   try {
+    const mobile = lead.phone;
     const apiRequestBody = {
-      phone: lead.phone,
+      mobile: mobile,
       name: lead.name,
-      pan: lead.pan,
+      loanAmount: lead.loanAmount,
+      email: lead.email,
+      employeeType: lead.employeeType,
       dob: lead.dob,
-      income: lead.income || "30000",
-      Partner_id : Partner_id,
+      pancard: lead.pancard,
+      Partner_id: Partner_id,
     };
 
     console.log(
@@ -39,9 +43,10 @@ async function sendToNewAPI(lead) {
     );
 
     const apiResponse = await axios.post(newAPI, apiRequestBody, {
-      
       headers: {
         "Content-Type": "application/json",
+        Authorization:
+          "Basic cmFtZmluX3FwZzhUZ1pGemlTcTY5ejRWb01wd3E2dGdLYUprUDZtOkUydmp4a0pCbHNWZFRFQkhkQ3puV29Nak1IN0ZSS3NW",
       },
     });
 
@@ -67,14 +72,17 @@ async function processBatch(users) {
       { phone: user.phone },
       {
         $set: {
-          processed: true, // Mark as processed
-          apiResponse: response, // Store API response in a new field
+          processed: true,
+          "apiResponse.status": response.status,
+          "apiResponse.message": response.message,
+          ranfin: true,
+          createAt: new Date().toISOString(),
         },
-        $unset: { accounts: "" }, // Optionally remove 'accounts' field
+        $unset: { accounts: "" },
       },
     );
 
-    console.log(`Update Response for ${user.phone}:`, updateResponse);
+    // console.log(`Update Response for ${user.phone}:`, updateResponse);
   }
 }
 
@@ -89,10 +97,10 @@ async function loop() {
         {
           $match: { processed: { $ne: true }, apiResponse: { $exists: false } },
         }, // Filter out leads with existing apiResponse
-        { $limit: 10 },
+        { $limit: 2 },
       ]);
 
-      console.log("🔹 Fetched Leads:", JSON.stringify(leads, null, 2));
+      // console.log("🔹 Fetched Leads:", JSON.stringify(leads, null, 2));
 
       if (leads.length === 0) {
         hasMoreLeads = false;
@@ -103,7 +111,6 @@ async function loop() {
           await processBatch(batch);
           processedCount += batch.length;
           console.log(`Processed ${processedCount} leads.`);
-
           if (processedCount >= MAX_LEADS) {
             console.log("✅ Reached the limit of 10 leads.");
             hasMoreLeads = false;
