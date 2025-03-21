@@ -23,7 +23,7 @@ app.use(
         callback(new Error("Not allowed by CORS"));
       }
     },
-    credentials: true, 
+    credentials: true,
   }),
 );
 
@@ -35,11 +35,12 @@ app.use(cookieParser());
 const auth = require("./routes/auth.js");
 const leads = require("./routes/leads.js");
 const loop = require("./PartnerAPI/LendingPlate.js");
+const api = require("./routes/api.js");
 
 app.use(`/api${API_VERSION}/auth`, auth);
 app.use(`/api${API_VERSION}/leads`, leads);
 app.use(`/api${API_VERSION}/loop`, loop);
-
+app.use(`/api${API_VERSION}/api`, api);
 app.use((err, req, res, _next) => {
   res.status(err.status || 500).json({ error: err.message });
 });
@@ -60,7 +61,6 @@ async function main() {
 }
 
 main();
-
 
 app.listen(PORT, () =>
   console.log(`🚀 Server running on http://localhost:${PORT}`),

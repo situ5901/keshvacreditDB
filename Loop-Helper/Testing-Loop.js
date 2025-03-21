@@ -10,13 +10,13 @@ mongoose
   .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
 
 const UserDB = mongoose.model(
-  "loops",
+  "userdb",
   new mongoose.Schema({}, { strict: false }),
 );
 
 const BATCH_SIZE = 1;
 const newAPI =
-  "https://preprod.ramfincorp.co.in/loanapply/ramfincorp_api/lead_gen/api/v1/create_lead"; // New API endpoint
+  "https://preprod.ramfincorp.co.in/loanapply/ramfincorp_api/lead_gen/api/v1/create_lead";
 const MAX_LEADS = 2;
 const Partner_id = "Keshvacredit";
 
@@ -26,14 +26,21 @@ async function sendToNewAPI(lead) {
   let response = {};
   try {
     const mobile = lead.phone;
+    const name = lead.Name;
+    const loanAmount = lead.loanAmount;
+    const email = lead.email;
+    const employeeType = lead.employeeType;
+    const dob = lead.dob;
+    const pancard = lead.pan;
+
     const apiRequestBody = {
       mobile: mobile,
-      name: lead.name,
-      loanAmount: lead.loanAmount,
-      email: lead.email,
-      employeeType: lead.employeeType,
-      dob: lead.dob,
-      pancard: lead.pancard,
+      name: name,
+      loanAmount: loanAmount,
+      email: email,
+      employeeType: employeeType,
+      dob: dob,
+      pancard: pancard,
       Partner_id: Partner_id,
     };
 
@@ -50,10 +57,13 @@ async function sendToNewAPI(lead) {
       },
     });
 
-    response.status = apiResponse.data?.status;
-    response.message = apiResponse.data?.message;
+    response.status = apiResponse.data?.status || "success";
+    response.message =
+      apiResponse.data?.message || "Lead processed successfully";
   } catch (error) {
-    response.error = error.response?.data?.message || error.message;
+    response.status = "failed";
+    response.message =
+      error.response?.data?.message || error.message || "Unknown error";
   }
   return response;
 }
@@ -82,7 +92,7 @@ async function processBatch(users) {
       },
     );
 
-    // console.log(`Update Response for ${user.phone}:`, updateResponse);
+    console.log(`Update Response for ${user.phone}:`, updateResponse);
   }
 }
 
@@ -96,11 +106,9 @@ async function loop() {
       const leads = await UserDB.aggregate([
         {
           $match: { processed: { $ne: true }, apiResponse: { $exists: false } },
-        }, // Filter out leads with existing apiResponse
+        },
         { $limit: 2 },
       ]);
-
-      // console.log("🔹 Fetched Leads:", JSON.stringify(leads, null, 2));
 
       if (leads.length === 0) {
         hasMoreLeads = false;
