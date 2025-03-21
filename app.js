@@ -12,8 +12,11 @@ const PORT = process.env.PORT || 5000;
 
 const app = express();
 
-const allowlist = ["https://keshvacredit.com/", "http://localhost:5000"];
-
+const allowlist = [
+  "https://keshvacredit.com/",
+  "http://localhost:5000",
+  "http://localhost:3000",
+];
 app.use(
   cors({
     origin: (origin, callback) => {
@@ -23,8 +26,10 @@ app.use(
         callback(new Error("Not allowed by CORS"));
       }
     },
-    credentials: true,
-  }),
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],  
+    allowedHeaders: ['Content-Type', 'Authorization'],     
+    credentials: true,                                     
+  })
 );
 
 app.use(logger("dev"));
