@@ -2,44 +2,148 @@ const express = require("express");
 const router = express.Router();
 const axios = require("axios");
 const jwt = require("jsonwebtoken");
+const User = require("../models/user.model"); // Ensure correct path
+
+
+
 require("dotenv").config();
 
-const otpStorage = new Map(); 
-
+const otpStorage = new Map();
 
 router.post("/send-otp", async (req, res) => {
   try {
     const { phone } = req.body;
-    if (!phone) return res.status(400).json({status: "false" ,message: "Phone number required" });
+    if (!phone)
+      return res
+        .status(400)
+        .json({ status: "false", message: "Phone number required" });
 
     const otp = Math.floor(100000 + Math.random() * 900000);
-    otpStorage.set(phone, { otp, expiresAt: Date.now() + 60000 }); 
+    otpStorage.set(phone, { otp, expiresAt: Date.now() + 60000 });
 
     await axios.post(
       "https://www.fast2sms.com/dev/bulkV2",
-      { route: "q", message: `Your OTP is ${otp}`, language: "english", numbers: phone },
-      { headers: { Authorization: process.env.FAST2SMS_API_KEY } }
+      {
+        route: "otp",
+        message: `Your OTP is ${otp}`,
+        language: "english",
+        numbers: phone,
+      },
+      { headers: { authorization: process.env.FAST2SMS_API_KEY } },
     );
 
-    res.status(200).json({status:"Success", message: "OTP Sent Successfully", otp }); // 🔥 Remove `otp` in production
+    res
+      .status(200)
+      .json({ status: "Success", message: "OTP Sent Successfully", otp }); // 🔥 Remove `otp` in production
   } catch (error) {
-    res.status(500).json({ message: "Error sending OTP", error: error.message });
+    res
+      .status(500)
+      .json({ message: "Error sending OTP", error: error.message });
   }
 });
-
 
 router.post("/verify-otp", (req, res) => {
   const { phone, otp } = req.body;
   const otpData = otpStorage.get(phone);
 
-  if (!otpData || otpData.otp !== parseInt(otp) || Date.now() > otpData.expiresAt) {
+  if (
+    !otpData ||
+    otpData.otp !== parseInt(otp) ||
+    Date.now() > otpData.expiresAt
+  ) {
     return res.status(400).json({ message: "Invalid or expired OTP" });
   }
 
   otpStorage.delete(phone);
-  const token = jwt.sign({ phone }, process.env.JWT_SECRET, { expiresIn: "7d" });
+  const token = jwt.sign({ phone }, process.env.JWT_SECRET, {
+    expiresIn: "7d",
+  });
 
   res.status(200).json({ message: "OTP verified", token });
+});
+
+
+
+router.post("/userinfo", async (req, res) => {
+  try {
+    const { name, phone, email, employeeType, pan, pincode, loanAmount, income, dob } = req.body;
+
+    // Check for missing fields
+    let missingFields = [];
+    if (!name) missingFields.push("name");
+    if (!phone) missingFields.push("phone");
+    if (!email) missingFields.push("email");
+    if (!employeeType) missingFields.push("employeeType");
+    if (!pan) missingFields.push("pan");
+    if (!pincode) missingFields.push("pincode");
+    if (!loanAmount) missingFields.push("loanAmount");
+    if (!income) missingFields.push("income");
+    if (!dob) missingFields.push("dob");
+
+    if (missingFields.length > 0) {
+      return res.status(400).json({ 
+        status: 400, 
+        error: "Missing required fields", 
+        missingFields 
+      });
+    }
+
+    // Validate phone number (10 digits)
+    if (!/^\d{10}$/.test(phone)) {
+      return res.status(400).json({ status: 400, error: "Invalid phone number format" });
+    }
+
+    // Validate email format
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.status(400).json({ status: 400, error: "Invalid email format" });
+    }
+
+    // Validate PAN card (Alphanumeric, 10 characters)
+    if (!/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(pan)) {
+      return res.status(400).json({ status: 400, error: "Invalid PAN card format" });
+    }
+
+    // Validate Pincode (6 digits)
+    if (!/^\d{6}$/.test(pincode)) {
+      return res.status(400).json({ status: 400, error: "Invalid pincode format" });
+    }
+
+    // Validate loan amount and income (should be numeric)
+    if (isNaN(loanAmount) || isNaN(income)) {
+      return res.status(400).json({ status: 400, error: "Loan amount and income should be numeric" });
+    }
+
+    // Validate DOB format (YYYY-MM-DD)
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dob)) {
+      return res.status(400).json({ status: 400, error: "Invalid date of birth format (YYYY-MM-DD expected)" });
+    }
+
+    // ✅ Check for duplicate phone or email before saving
+    const existingUser = await User.findOne({ $or: [{ phone }, { email }] });
+    if (existingUser) {
+      return res.status(409).json({ status: 409, error: "User with this phone or email already exists" });
+    }
+
+    // Save user data with default partner "Keshvacredit"
+    const newUser = new User({
+      name,
+      phone,
+      email,
+      employeeType,
+      pan,
+      pincode,
+      loanAmount,
+      income,
+      dob,
+      partner: "Keshvacredit" // Default partner
+    });
+
+    await newUser.save();
+    res.status(201).json({ status: 201, message: "User information saved successfully", user: newUser });
+
+  } catch (error) {
+    res.status(500).json({ status: 500, error: "Internal Server Error", message: error.message });
+  }
 });
 
 module.exports = router;

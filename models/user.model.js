@@ -10,6 +10,7 @@ const userSchema = new Schema(
     dob: { type: String, trim: true },
     email: { type: String, trim: true },
     addr: { type: String, trim: true },
+    pan: { type: String, trim: true },
     city: { type: String, trim: true },
     state: { type: String, trim: true },
     gender: { type: String, enum: ["MALE", "FEMALE"], default: "MALE" },
