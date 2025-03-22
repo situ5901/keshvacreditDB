@@ -13,7 +13,7 @@ const PORT = process.env.PORT || 5000;
 const app = express();
 
 const allowlist = [
-  "https://keshvacredit.com/",
+  "https://keshvacredit.com",
   "http://localhost:5000",
   "http://localhost:3000",
 ];
