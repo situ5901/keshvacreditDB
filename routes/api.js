@@ -3,8 +3,7 @@ const router = express.Router();
 const axios = require("axios");
 const jwt = require("jsonwebtoken");
 const User = require("../models/user.model"); // Ensure correct path
-
-
+const mongoose = require("mongoose");
 
 require("dotenv").config();
 
@@ -62,11 +61,19 @@ router.post("/verify-otp", (req, res) => {
   res.status(200).json({ message: "OTP verified", token });
 });
 
-
-
 router.post("/userinfo", async (req, res) => {
   try {
-    const { name, phone, email, employeeType, pan, pincode, loanAmount, income, dob } = req.body;
+    const {
+      name,
+      phone,
+      email,
+      employeeType,
+      pan,
+      pincode,
+      loanAmount,
+      income,
+      dob,
+    } = req.body;
 
     // Check for missing fields
     let missingFields = [];
@@ -81,47 +88,68 @@ router.post("/userinfo", async (req, res) => {
     if (!dob) missingFields.push("dob");
 
     if (missingFields.length > 0) {
-      return res.status(400).json({ 
-        status: 400, 
-        error: "Missing required fields", 
-        missingFields 
+      return res.status(400).json({
+        status: 400,
+        error: "Missing required fields",
+        missingFields,
       });
     }
 
     // Validate phone number (10 digits)
     if (!/^\d{10}$/.test(phone)) {
-      return res.status(400).json({ status: 400, error: "Invalid phone number format" });
+      return res
+        .status(400)
+        .json({ status: 400, error: "Invalid phone number format" });
     }
 
     // Validate email format
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      return res.status(400).json({ status: 400, error: "Invalid email format" });
+      return res
+        .status(400)
+        .json({ status: 400, error: "Invalid email format" });
     }
 
     // Validate PAN card (Alphanumeric, 10 characters)
     if (!/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(pan)) {
-      return res.status(400).json({ status: 400, error: "Invalid PAN card format" });
+      return res
+        .status(400)
+        .json({ status: 400, error: "Invalid PAN card format" });
     }
 
     // Validate Pincode (6 digits)
     if (!/^\d{6}$/.test(pincode)) {
-      return res.status(400).json({ status: 400, error: "Invalid pincode format" });
+      return res
+        .status(400)
+        .json({ status: 400, error: "Invalid pincode format" });
     }
 
     // Validate loan amount and income (should be numeric)
     if (isNaN(loanAmount) || isNaN(income)) {
-      return res.status(400).json({ status: 400, error: "Loan amount and income should be numeric" });
+      return res
+        .status(400)
+        .json({
+          status: 400,
+          error: "Loan amount and income should be numeric",
+        });
     }
 
-    // Validate DOB format (YYYY-MM-DD)
     if (!/^\d{4}-\d{2}-\d{2}$/.test(dob)) {
-      return res.status(400).json({ status: 400, error: "Invalid date of birth format (YYYY-MM-DD expected)" });
+      return res
+        .status(400)
+        .json({
+          status: 400,
+          error: "Invalid date of birth format (YYYY-MM-DD expected)",
+        });
     }
 
-    // ✅ Check for duplicate phone or email before saving
     const existingUser = await User.findOne({ $or: [{ phone }, { email }] });
     if (existingUser) {
-      return res.status(409).json({ status: 409, error: "User with this phone or email already exists" });
+      return res
+        .status(409)
+        .json({
+          status: 409,
+          error: "User with this phone or email already exists",
+        });
     }
 
     // Save user data with default partner "Keshvacredit"
@@ -135,15 +163,50 @@ router.post("/userinfo", async (req, res) => {
       loanAmount,
       income,
       dob,
-      partner: "Keshvacredit" // Default partner
+      partner: "Keshvacredit", // Default partner
     });
 
     await newUser.save();
-    res.status(201).json({ status: 201, message: "User information saved successfully", user: newUser });
-
+    res
+      .status(201)
+      .json({
+        status: 201,
+        message: "User information saved successfully",
+        user: newUser,
+      });
   } catch (error) {
-    res.status(500).json({ status: 500, error: "Internal Server Error", message: error.message });
+    res
+      .status(500)
+      .json({
+        status: 500,
+        error: "Internal Server Error",
+        message: error.message,
+      });
   }
+});
+
+const testingdb = mongoose.models.testingdb || mongoose.model("testingdb", new mongoose.Schema({}, { strict: false }));
+
+// ✅ API to Get User Data by Phone Number
+router.post("/getUserInfo", async (req, res) => {   
+    try {
+        const { phone } = req.body;  // ✅ POST request me `body` use hoti hai
+
+        if (!phone) {
+            return res.status(400).json({ message: "Phone number is required" });
+        }
+
+        const userData = await testingdb.findOne({ phone });
+
+        if (!userData) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        return res.status(200).json({ message: "User found", user: userData });
+
+    } catch (error) {
+        return res.status(500).json({ message: "Internal Server Error", error: error.message });
+    }
 });
 
 module.exports = router;
