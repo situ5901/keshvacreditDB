@@ -18,7 +18,7 @@ const UserDB = mongoose.model(
   "userdb",
   new mongoose.Schema({}, { collection: "userdb", strict: false }),
 );
-const BATCH_SIZE = 10;
+const BATCH_SIZE = 56;
 const newAPI = "https://ramfin.onrender.com/products";
 const MAX_LEADS = 200000;
 const Partner_id = "Keshvacredit";
