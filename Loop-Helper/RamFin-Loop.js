@@ -17,12 +17,12 @@ const UserDB = mongoose.model(
   "userdb",
   new mongoose.Schema({}, { collection: "userdb", strict: false }),
 );
-const BATCH_SIZE = 5;
+const BATCH_SIZE = 2;
 const newAPI =
   "https://www.ramfincorp.com/loanapply/ramfincorp_api/lead_gen/api/v1/create_lead";
 
 
-const MAX_LEADS = 15000;
+const MAX_LEADS = 5000;
 const Partner_id = "Keshvacredit";
 const loanAmount = 20000;
 let processedCount = 0;
@@ -112,7 +112,7 @@ async function loop() {
         {
           $match: { processed: { $ne: true }, apiResponse: { $exists: false } },
         },
-        { $limit: 15000 },
+        { $limit: 5000 },
       ]);
 
       if (leads.length === 0) {
@@ -130,7 +130,7 @@ async function loop() {
             break;
           }
         }
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+        await new Promise((resolve) => setTimeout(resolve, 5000));
       }
     }
   } catch (error) {
