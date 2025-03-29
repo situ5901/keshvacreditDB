@@ -1,50 +1,29 @@
 const axios = require("axios");
 const mongoose = require("mongoose");
 require("dotenv").config();
+const UserDB = require("../models/user.model.js");
 const MONGODB_URI = process.env.MONGODB_URI;
 
-mongoose
-  .connect(MONGODB_URI)
-  .then(() => console.log("✅ MongoDB Connected Successfully"))
-  .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
+mongoose.set("strictQuery", false);
+mongoose.connect(MONGODB_URI);
 
-// const UserDB = mongoose.model(
-//   "userdb",
-//   new mongoose.Schema({}, { strict: false }),
-// );
-
-const UserDB = mongoose.model(
-  "userdb",
-  new mongoose.Schema({}, { collection: "userdb", strict: false }),
-);
-const BATCH_SIZE = 1;
-const newAPI =
-  "https://www.ramfincorp.com/loanapply/ramfincorp_api/lead_gen/api/v1/create_lead";
-
-
-const MAX_LEADS = 10;
+const BATCH_SIZE = 30;
+const newAPI = "https://pocket-test-api.onrender.com/products";
+const MAX_LEADS = 1000;
 const Partner_id = "Keshvacredit";
-const loanAmount = 10000;
+
 let processedCount = 0;
 
 async function sendToNewAPI(lead) {
   let response = {};
   try {
-    const mobile = lead.phone;
-    const name = lead.name;
-    const email = lead.email;
-    const employeeType = lead.employment;
-    const dob = lead.dob;
-    const pancard = lead.pan;
-
     const apiRequestBody = {
-      mobile: mobile,
-      name: name,
-      email: email,
-      employeeType: employeeType,
-      dob: dob,
-      pancard: pancard,
-      loanAmount: loanAmount,
+      mobile: lead.phone,
+      name: lead.name,
+      email: lead.email,
+      employeeType: lead.employment,
+      dob: lead.dob,
+      pancard: lead.pan,
       Partner_id: Partner_id,
       // loanAmount: loanAmount,
     };
@@ -57,8 +36,8 @@ async function sendToNewAPI(lead) {
     const apiResponse = await axios.post(newAPI, apiRequestBody, {
       headers: {
         "Content-Type": "application/json",
-        Authorization:
-          "Basic cmFtZmluX2U2NmIxNmE5ZjZiNzQ5YTAzOTBmZWRjM2U4ZjNkZjZmOmI3YjJlZDU1MjM5NjA5NzM5NmQwOWE2N2RkZTI4NjUyMDNjZDMxYjA=",
+        "X-Auth-Key":
+          "695f988aaa820aa0ff2d101141e7de1adead449a5de2b796ca8e38fdd33a3bba",
       },
     });
 
@@ -85,16 +64,21 @@ async function processBatch(users) {
 
     const updateResponse = await UserDB.updateOne(
       { phone: user.phone },
+
       {
-        $set: {
-          processed: true,
-          "apiResponse.status": response.status,
-          "apiResponse.message": response.message,
-          "apiResponse.Ramfin": true,
-          createAt: new Date().toISOString(),
+        $push: {
+          accounts: {
+            name: "R112",
+            ...response,
+            resp_date: new Date(),
+          },
+          refArr: {
+            name: "R112_20000",
+            date: new Date(),
+          },
         },
-        $unset: { accounts: "" },
       },
+      { upsert: true },
     );
 
     console.log(`Update Response for ${user.phone}:`, updateResponse);
@@ -109,10 +93,8 @@ async function loop() {
       console.log("🔄 Fetching users...");
 
       const leads = await UserDB.aggregate([
-        {
-          $match: { processed: { $ne: true }, apiResponse: { $exists: false } },
-        },
-        { $limit: 10 },
+        { $match: { Mpokket: { $ne: "Mpokket" } } },
+        { $limit: 1000 },
       ]);
 
       if (leads.length === 0) {

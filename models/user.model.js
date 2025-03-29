@@ -52,4 +52,4 @@ const userSchema = new Schema(
   { timestamps: true },
 );
 
-module.exports = model("userdbs", userSchema);
+module.exports = model("userdb", userSchema);
