@@ -4,7 +4,20 @@ const userSchema = new Schema(
   {
     name: { type: String, trim: true },
     phone: { type: String, required: true, trim: true },
-    accounts: [{ type: Schema.Types.Mixed }],
+    accounts: [
+      {
+        name: String,
+        status: String,
+        message: String,
+        resp_date: Date,
+      },
+    ],
+    refArr: [
+      {
+        name: String,
+        date: Date,
+      },
+    ],
     pan: { type: String, trim: true },
     aadhar: { type: String, trim: true },
     dob: { type: String, trim: true },
@@ -21,7 +34,6 @@ const userSchema = new Schema(
     },
     company_name: { type: String, trim: true },
     income: { type: String, trim: true },
-    ref: { type: String, trim: true },
     partner: { type: String, default: "None" },
     partnerHistory: [
       {
@@ -52,4 +64,4 @@ const userSchema = new Schema(
   { timestamps: true },
 );
 
-module.exports = model("userdb", userSchema);
+module.exports = model("UserDB", userSchema);
