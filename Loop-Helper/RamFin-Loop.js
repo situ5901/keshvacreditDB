@@ -17,11 +17,11 @@ const UserDB = mongoose.model(
   "userdb",
   new mongoose.Schema({}, { collection: "userdb", strict: false }),
 );
-const BATCH_SIZE = 5;
+const BATCH_SIZE = 2;
 const newAPI =
   "https://www.ramfincorp.com/loanapply/ramfincorp_api/lead_gen/api/v1/create_lead";
 
-const MAX_LEADS = 40000;
+const MAX_LEADS = 8000;
 const Partner_id = "Keshvacredit";
 const loanAmount = 20000;
 let processedCount = 0;
@@ -116,7 +116,7 @@ async function loop() {
         {
           $match: { processed: { $ne: true }, apiResponse: { $exists: false } },
         },
-        { $limit: 40000 },
+        { $limit: 8000 },
       ]);
 
       if (leads.length === 0) {
@@ -128,13 +128,16 @@ async function loop() {
           await processBatch(batch);
           processedCount += batch.length;
           console.log(`Processed ${processedCount} leads.`);
+
           if (processedCount >= MAX_LEADS) {
-            console.log("✅ Reached the limit of 10 leads.");
+            console.log("✅ Reached the limit of 8000 leads.");
             hasMoreLeads = false;
             break;
           }
+
+          // ✅ Wait 3 seconds after processing each batch
+          await new Promise((resolve) => setTimeout(resolve, 3000));
         }
-        await new Promise((resolve) => setTimeout(resolve, 5000));
       }
     }
   } catch (error) {
