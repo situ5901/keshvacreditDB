@@ -1,5 +1,5 @@
-const mongoose = require("mongoose");
 const axios = require("axios");
+const mongoose = require("mongoose");
 require("dotenv").config();
 const MONGODB_URI = process.env.MONGODB_URI;
 
@@ -8,74 +8,100 @@ mongoose
   .then(() => console.log("✅ MongoDB Connected Successfully"))
   .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
 
+// const UserDB = mongoose.model(
+//   "userdb",
+//   new mongoose.Schema({}, { strict: false }),
+// );
+
 const UserDB = mongoose.model(
   "userdb",
-  new mongoose.Schema({}, { collection: "userdb", strict: false })
+  new mongoose.Schema({}, { collection: "userdb", strict: false }),
 );
+const BATCH_SIZE = 2;
+const newAPI =
+  "https://www.ramfincorp.com/loanapply/ramfincorp_api/lead_gen/api/v1/create_lead";
 
-const BATCH_SIZE = 1;
 const MAX_LEADS = 5;
 const Partner_id = "Keshvacredit";
-const newAPI = "https://fin-api-3zx0.onrender.com/products";
-
+const loanAmount = 20000;
 let processedCount = 0;
 
 async function sendToNewAPI(lead) {
   let response = {};
   try {
-    const { phone, Name, email, dob, pan, employeeType } = lead;
+    const mobile = lead.phone;
+    const name = lead.name;
+    const email = lead.email;
+    const employeeType = lead.employment;
+    const dob = lead.dob;
+    const pancard = lead.pan;
 
     const apiRequestBody = {
-      mobile: phone,
-      name: Name,
+      mobile: mobile,
+      name: name,
       email: email,
       employeeType: employeeType,
       dob: dob,
-      pancard: pan,
+      pancard: pancard,
+      loanAmount: loanAmount,
       Partner_id: Partner_id,
+      // loanAmount: loanAmount,
     };
 
-    console.log("🔹 Sending Data to API:", JSON.stringify(apiRequestBody, null, 2));
+    console.log(
+      "Sending Lead Data to API:",
+      JSON.stringify(apiRequestBody, null, 2),
+    );
 
-    const apiResponse = await axios.post(newAPI, apiRequestBody);
+    const apiResponse = await axios.post(newAPI, apiRequestBody, {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization:
+          "Basic cmFtZmluX2U2NmIxNmE5ZjZiNzQ5YTAzOTBmZWRjM2U4ZjNkZjZmOmI3YjJlZDU1MjM5NjA5NzM5NmQwOWE2N2RkZTI4NjUyMDNjZDMxYjA=",
+      },
+    });
 
     response.status = apiResponse.data?.status || "success";
-    response.message = apiResponse.data?.message || "Lead processed successfully";
+    response.message =
+      apiResponse.data?.message || "Lead processed successfully";
   } catch (error) {
     response.status = "failed";
-    response.message = error.response?.data?.message || error.message || "Unknown error";
+    response.message =
+      error.response?.data?.message || error.message || "Unknown error";
   }
   return response;
 }
 
 async function processBatch(users) {
-  const results = await Promise.all(users.map((user) => sendToNewAPI(user)));
+  const promises = users.map((user) => sendToNewAPI(user));
+  const results = await Promise.all(promises);
 
   for (let i = 0; i < users.length; i++) {
     const user = users[i];
     const response = results[i];
 
-    console.log("✅ API Response for", user.phone, ":", response);
+    console.log("User:", user.phone, "Response:", response);
 
-    await UserDB.updateOne(
+    const updateResponse = await UserDB.updateOne(
       { phone: user.phone },
       {
         $push: {
-          apiResponse: { // ✅ New API response will be added instead of replacing
+          apiResponse: {
+            // ✅ New API response will be added instead of replacing
             status: response.status,
             message: response.message,
             createdAt: new Date().toISOString(),
           },
-          refArr: { 
-           name: "RamFin" ,
-           createdAt: new Date().toISOString(),
-          } // ✅ New entry in refArr
+          refArr: {
+            name: "Mpokket",
+            createdAt: new Date().toISOString(),
+          }, // ✅ New entry in refArr
         },
         $unset: { accounts: "" },
-      }
+      },
     );
-    
-    console.log(`🟢 Updated user ${user.phone} in database.`);
+
+    console.log(`Update Response for ${user.phone}:`, updateResponse);
   }
 }
 
@@ -88,9 +114,7 @@ async function loop() {
 
       const leads = await UserDB.aggregate([
         {
-          $match: {
-            "refArr.name": { $ne: "RamFin" }, 
-          },
+          $match: { processed: { $ne: true }, apiResponse: { $exists: false } },
         },
         { $limit: 5 },
       ]);
@@ -103,9 +127,9 @@ async function loop() {
           const batch = leads.slice(i, i + BATCH_SIZE);
           await processBatch(batch);
           processedCount += batch.length;
-          console.log(`🔵 Processed ${processedCount} leads.`);
+          console.log(`Processed ${processedCount} leads.`);
           if (processedCount >= MAX_LEADS) {
-            console.log("✅ Reached the limit of 2 leads.");
+            console.log("✅ Reached the limit of 10 leads.");
             hasMoreLeads = false;
             break;
           }
