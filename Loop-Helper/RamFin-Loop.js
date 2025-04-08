@@ -17,11 +17,11 @@ const UserDB = mongoose.model(
   "userdb",
   new mongoose.Schema({}, { collection: "userdb", strict: false }),
 );
-const BATCH_SIZE = 2;
+const BATCH_SIZE = 20;
 const newAPI =
   "https://www.ramfincorp.com/loanapply/ramfincorp_api/lead_gen/api/v1/create_lead";
 
-const MAX_LEADS = 5;
+const MAX_LEADS = 20000;
 const Partner_id = "Keshvacredit";
 const loanAmount = 20000;
 let processedCount = 0;
@@ -93,7 +93,7 @@ async function processBatch(users) {
             createdAt: new Date().toISOString(),
           },
           refArr: {
-            name: "Mpokket",
+            name: "RamFin",
             createdAt: new Date().toISOString(),
           }, // ✅ New entry in refArr
         },
@@ -116,7 +116,7 @@ async function loop() {
         {
           $match: { processed: { $ne: true }, apiResponse: { $exists: false } },
         },
-        { $limit: 5 },
+        { $limit: 20000 },
       ]);
 
       if (leads.length === 0) {
