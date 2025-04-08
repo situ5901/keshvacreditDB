@@ -21,7 +21,7 @@ const BATCH_SIZE = 5;
 const newAPI =
   "https://www.ramfincorp.com/loanapply/ramfincorp_api/lead_gen/api/v1/create_lead";
 
-const MAX_LEADS = 20000;
+const MAX_LEADS = 40000;
 const Partner_id = "Keshvacredit";
 const loanAmount = 20000;
 let processedCount = 0;
@@ -116,7 +116,7 @@ async function loop() {
         {
           $match: { processed: { $ne: true }, apiResponse: { $exists: false } },
         },
-        { $limit: 20000 },
+        { $limit: 40000 },
       ]);
 
       if (leads.length === 0) {
