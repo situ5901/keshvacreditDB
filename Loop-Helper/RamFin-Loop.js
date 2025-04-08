@@ -17,7 +17,7 @@ const TestDB = mongoose.model(
   "Test",
   new mongoose.Schema({}, { collection: "Test", strict: false }),
 );
-const BATCH_SIZE = 5;
+const BATCH_SIZE = 50;
 const newAPI =
   "https://www.ramfincorp.com/loanapply/ramfincorp_api/lead_gen/api/v1/create_lead";
 
