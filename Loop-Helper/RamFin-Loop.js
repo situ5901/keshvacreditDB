@@ -147,10 +147,14 @@ async function loop() {
 
       const leads = await TestDB.aggregate([
         {
-          $match: { processed: { $ne: true }, apiResponse: { $exists: false } },
+          $match: {
+            processed: { $ne: true },
+            "refArr.name": { $ne: "RamFin" }, // ✅ Exclude if refArr contains RamFin
+          },
         },
         { $limit: 50000 },
       ]);
+      
 
       if (leads.length === 0) {
         hasMoreLeads = false;

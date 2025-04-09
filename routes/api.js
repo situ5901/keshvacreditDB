@@ -12,32 +12,54 @@ const otpStorage = new Map();
 router.post("/send-otp", async (req, res) => {
   try {
     const { phone } = req.body;
-    if (!phone)
-      return res
-        .status(400)
-        .json({ status: "false", message: "Phone number required" });
 
+    if (!phone) {
+      return res.status(400).json({
+        status: "false",
+        message: "Phone number required",
+      });
+    }
+
+    // Generate OTP
     const otp = Math.floor(100000 + Math.random() * 900000);
-    otpStorage.set(phone, { otp, expiresAt: Date.now() + 60000 });
+    otpStorage.set(phone, {
+      otp,
+      expiresAt: Date.now() + 10 * 60 * 1000,
+    });
 
-    await axios.post(
+    // Prepare SMS payload
+    const payload = {
+      route: "dlt",
+      sender_id: "KVcred",
+      message: "183062", // ✅ Your approved template ID
+      variables_values: `${otp}|10`,
+      flash: 0,
+      numbers: phone,
+    };
+
+    // Send POST request
+    const response = await axios.post(
       "https://www.fast2sms.com/dev/bulkV2",
+      payload,
       {
-        route: "otp",
-        message: `Your OTP is ${otp}`,
-        language: "english",
-        numbers: phone,
-      },
-      { headers: { authorization: process.env.FAST2SMS_API_KEY } },
+        headers: {
+          Authorization: process.env.FAST2SMS_API_KEY,
+          "Content-Type": "application/json",
+        },
+      }
     );
 
-    res
-      .status(200)
-      .json({ status: "Success", message: "OTP Sent Successfully", otp }); // 🔥 Remove `otp` in production
+    res.status(200).json({
+      status: "Success",
+      message: "OTP sent successfully",
+      // otp, 
+    });
   } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Error sending OTP", error: error.message });
+    console.error("SMS Error:", error.response?.data || error.message);
+    res.status(500).json({
+      message: "Error sending OTP",
+      error: error.response?.data || error.message,
+    });
   }
 });
 
@@ -58,7 +80,7 @@ router.post("/verify-otp", (req, res) => {
     expiresIn: "7d",
   });
 
-  res.status(200).json({ message: "OTP verified", token });
+  res.status(200).json({ status:"True", message: "OTP verified", token });
 });
 
 router.post("/userinfo", async (req, res) => {
@@ -125,31 +147,25 @@ router.post("/userinfo", async (req, res) => {
 
     // Validate loan amount and income (should be numeric)
     if (isNaN(loanAmount) || isNaN(income)) {
-      return res
-        .status(400)
-        .json({
-          status: 400,
-          error: "Loan amount and income should be numeric",
-        });
+      return res.status(400).json({
+        status: 400,
+        error: "Loan amount and income should be numeric",
+      });
     }
 
     if (!/^\d{4}-\d{2}-\d{2}$/.test(dob)) {
-      return res
-        .status(400)
-        .json({
-          status: 400,
-          error: "Invalid date of birth format (YYYY-MM-DD expected)",
-        });
+      return res.status(400).json({
+        status: 400,
+        error: "Invalid date of birth format (YYYY-MM-DD expected)",
+      });
     }
 
     const existingUser = await User.findOne({ $or: [{ phone }, { email }] });
     if (existingUser) {
-      return res
-        .status(409)
-        .json({
-          status: 409,
-          error: "User with this phone or email already exists",
-        });
+      return res.status(409).json({
+        status: 409,
+        error: "User with this phone or email already exists",
+      });
     }
 
     // Save user data with default partner "Keshvacredit"
@@ -167,46 +183,45 @@ router.post("/userinfo", async (req, res) => {
     });
 
     await newUser.save();
-    res
-      .status(201)
-      .json({
-        status: 201,
-        message: "User information saved successfully",
-        user: newUser,
-      });
+    res.status(201).json({
+      status: 201,
+      message: "User information saved successfully",
+      user: newUser,
+    });
   } catch (error) {
-    res
-      .status(500)
-      .json({
-        status: 500,
-        error: "Internal Server Error",
-        message: error.message,
-      });
+    res.status(500).json({
+      status: 500,
+      error: "Internal Server Error",
+      message: error.message,
+    });
   }
 });
 
-const testingdb = mongoose.models.testingdb || mongoose.model("testingdb", new mongoose.Schema({}, { strict: false }));
+const testingdb =
+  mongoose.models.testingdb ||
+  mongoose.model("testingdb", new mongoose.Schema({}, { strict: false }));
 
 // ✅ API to Get User Data by Phone Number
-router.post("/getUserInfo", async (req, res) => {   
-    try {
-        const { phone } = req.body;  // ✅ POST request me `body` use hoti hai
+router.post("/getUserInfo", async (req, res) => {
+  try {
+    const { phone } = req.body; // ✅ POST request me `body` use hoti hai
 
-        if (!phone) {
-            return res.status(400).json({ message: "Phone number is required" });
-        }
-
-        const userData = await testingdb.findOne({ phone });
-
-        if (!userData) {
-            return res.status(404).json({ message: "User not found" });
-        }
-
-        return res.status(200).json({ message: "User found", user: userData });
-
-    } catch (error) {
-        return res.status(500).json({ message: "Internal Server Error", error: error.message });
+    if (!phone) {
+      return res.status(400).json({ message: "Phone number is required" });
     }
+
+    const userData = await testingdb.findOne({ phone });
+
+    if (!userData) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    return res.status(200).json({ message: "User found", user: userData });
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ message: "Internal Server Error", error: error.message });
+  }
 });
 
 module.exports = router;

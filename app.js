@@ -14,6 +14,7 @@ const app = express();
 
 const allowlist = [
   "https://keshvacredit.com",
+  "https://13.200.229.187",
   "http://localhost:5000",
   "http://localhost:3000",
 ];
