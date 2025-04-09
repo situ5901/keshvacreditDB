@@ -148,8 +148,7 @@ async function loop() {
       const leads = await TestDB.aggregate([
         {
           $match: {
-            processed: { $ne: true },
-            "refArr.name": { $ne: "RamFin" }, // ✅ Exclude if refArr contains RamFin
+            "refArr.name": { $ne: "RamFin" }, 
           },
         },
         { $limit: 50000 },
