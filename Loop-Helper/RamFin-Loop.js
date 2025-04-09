@@ -12,7 +12,7 @@ const UserDB = mongoose.model(
   "userdb",
   new mongoose.Schema({}, { collection: "userdb", strict: false }),
 );
-const BATCH_SIZE = 1;
+const BATCH_SIZE = 5;
 const newAPI =
   "https://www.ramfincorp.com/loanapply/ramfincorp_api/lead_gen/api/v1/create_lead";
 
@@ -125,19 +125,25 @@ async function loop() {
           const batch = leads.slice(i, i + BATCH_SIZE);
           await processBatch(batch);
           processedCount += batch.length;
-          console.log(`Processed ${processedCount} leads.`);
+          console.log(`✅ Processed ${processedCount} leads.`);
+
           if (processedCount >= MAX_LEADS) {
-            console.log("✅ Reached the limit of 10 leads.");
+            console.log("🎯 Reached the limit of leads.");
             hasMoreLeads = false;
             break;
           }
         }
-        await new Promise((resolve) => setTimeout(resolve, 5000));
+
+        // ✅ Delay log added here
+        console.log("⏳ Waiting 5 seconds before next fetch...");
+        await new Promise((resolve) => setTimeout(resolve, 3000));
+        console.log("✅ Done waiting. Continuing...");
       }
     }
   } catch (error) {
     console.error("🚫 Error:", error);
   } finally {
+    console.log("🔌 Closing DB connection...");
     mongoose.connection.close();
   }
 }
