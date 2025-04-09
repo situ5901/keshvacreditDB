@@ -132,6 +132,14 @@ async function loop() {
             hasMoreLeads = false;
             break;
           }
+
+          // ⏳ Wait after every 5 batches
+          const batchNumber = i / BATCH_SIZE + 1;
+          if (batchNumber % 10 === 0) {
+            console.log(`⏳ Waiting 3 seconds after batch ${batchNumber}...`);
+            await new Promise((resolve) => setTimeout(resolve, 3000));
+            console.log("✅ Done waiting.");
+          }
         }
 
         // ✅ Delay log added here
