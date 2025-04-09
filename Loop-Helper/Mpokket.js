@@ -61,7 +61,7 @@ async function processBatch(users) {
     const response = results[i];
 
     console.log("✅ API Response for", user.phone, ":", response);
-    await UserDB.updateOne(
+    await Test.updateOne(
         { phone: user.phone },
         {
           $push: {

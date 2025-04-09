@@ -8,17 +8,20 @@ mongoose
   .then(() => console.log("✅ MongoDB Connected Successfully"))
   .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
 
+// const UserDB = mongoose.model(
+//   "userdb",
+//   new mongoose.Schema({}, { strict: false }),
+// );
 
-
-const TestDB = mongoose.model(
-  "Test",
-  new mongoose.Schema({}, { collection: "Test", strict: false }),
+const UserDB = mongoose.model(
+  "userdb",
+  new mongoose.Schema({}, { collection: "userdb", strict: false }),
 );
-const BATCH_SIZE =500;
+const BATCH_SIZE = 1;
 const newAPI =
   "https://www.ramfincorp.com/loanapply/ramfincorp_api/lead_gen/api/v1/create_lead";
 
-const MAX_LEADS = 3000;
+const MAX_LEADS = 2;
 const Partner_id = "Keshvacredit";
 const loanAmount = 20000;
 let processedCount = 0;
@@ -26,60 +29,29 @@ let processedCount = 0;
 async function sendToNewAPI(lead) {
   let response = {};
   try {
-    const formatDOB = (dob) => {
-      if (!dob) return "";
-
-      // Try parsing MM/DD/YYYY or DD/MM/YYYY
-      const parts = dob.split(/[\/\-]/); // supports '/' or '-' as separator
-      if (parts.length === 3) {
-        let day, month, year;
-
-        // Guessing based on value
-        if (parseInt(parts[0]) > 12) {
-          // probably DD/MM/YYYY
-          [day, month, year] = parts;
-        } else {
-          // probably MM/DD/YYYY
-          [month, day, year] = parts;
-        }
-
-        // Ensure all parts are 2-digit except year
-        if (year.length === 2) {
-          year = parseInt(year) > 30 ? `19${year}` : `20${year}`;
-        }
-
-        // Pad single digit month/day
-        if (month.length === 1) month = `0${month}`;
-        if (day.length === 1) day = `0${day}`;
-
-        return `${year}-${month}-${day}`;
-      }
-
-      return dob; // fallback
-    };
-
-    // ✅ Lead Data Formatting
     const mobile = lead.phone;
-    const name = lead.Name?.trim();
-    const email = lead.email?.toLowerCase();
-    const employeeType = lead.employeeType;
-    const dobRaw = lead.dob;
-    const pancard = lead.pan?.toUpperCase();
-
-    const dob = formatDOB(dobRaw); // 👈 Convert to YYYY-MM-DD
+    const name = lead.name;
+    const email = lead.email;
+    const employeeType = lead.employment;
+    const dob = lead.dob;
+    const pancard = lead.pan;
 
     const apiRequestBody = {
-      mobile: String(mobile),
+      mobile: mobile,
       name: name,
       email: email,
       employeeType: employeeType,
-      dob: dob, // ✅ Proper format
+      dob: dob,
       pancard: pancard,
       loanAmount: loanAmount,
-      partnerId: Partner_id,
+      Partner_id: Partner_id,
+      // loanAmount: loanAmount,
     };
 
-    console.log("Sending Lead Data to API:", apiRequestBody);
+    console.log(
+      "Sending Lead Data to API:",
+      JSON.stringify(apiRequestBody, null, 2),
+    );
 
     const apiResponse = await axios.post(newAPI, apiRequestBody, {
       headers: {
@@ -110,7 +82,7 @@ async function processBatch(users) {
 
     console.log("User:", user.phone, "Response:", response);
 
-    const updateResponse = await TestDB.updateOne(
+    const updateResponse = await UserDB.updateOne(
       { phone: user.phone },
       {
         $push: {
@@ -120,7 +92,7 @@ async function processBatch(users) {
             message: response.message,
             createdAt: new Date().toISOString(),
           },
-          refArr: {
+          RefArr: {
             name: "RamFin",
             createdAt: new Date().toISOString(),
           }, // ✅ New entry in refArr
@@ -129,7 +101,7 @@ async function processBatch(users) {
       },
     );
 
-    console.log(`Update Response for ${user.phone}:`, updateResponse);
+    console.log(`UpdateResponse for ${user.phone}:`, updateResponse);
   }
 }
 
@@ -140,15 +112,15 @@ async function loop() {
     while (hasMoreLeads && processedCount < MAX_LEADS) {
       console.log("🔄 Fetching users...");
 
-      const leads = await TestDB.aggregate([
+      const leads = await UserDB.aggregate([
         {
           $match: {
-            "refArr.name": { $ne: "RamFin" }, 
+            processed: { $ne: true },
+            "RefArr.name": { $ne: "Mpokket" },
           },
         },
-        { $limit: 3000 },
+        { $limit: 2 },
       ]);
-      
 
       if (leads.length === 0) {
         hasMoreLeads = false;
@@ -159,16 +131,13 @@ async function loop() {
           await processBatch(batch);
           processedCount += batch.length;
           console.log(`Processed ${processedCount} leads.`);
-
           if (processedCount >= MAX_LEADS) {
-            console.log("✅ Reached the limit of 8000 leads.");
+            console.log("✅ Reached the limit of 10 leads.");
             hasMoreLeads = false;
             break;
           }
-
-          // ✅ Wait 3 seconds after processing each batch
-          await new Promise((resolve) => setTimeout(resolve, 2000));
         }
+        await new Promise((resolve) => setTimeout(resolve, 5000));
       }
     }
   } catch (error) {
@@ -179,3 +148,4 @@ async function loop() {
 }
 
 loop();
+
