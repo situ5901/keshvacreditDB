@@ -116,7 +116,7 @@ async function loop() {
         {
           $match: {
             processed: { $ne: true },
-            "RefArr.name": { $ne: "Mpokket" },
+            "RefArr.name": { $ne: "RamFin" },
           },
         },
         { $limit: 500000 },
