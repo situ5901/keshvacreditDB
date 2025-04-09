@@ -90,7 +90,7 @@ async function processBatch(users) {
           RefArr: {
             name: "RamFin",
             createdAt: new Date().toISOString(),
-          }, // ✅ New entry in refArr
+          },
         },
         $unset: { accounts: "" },
       },
