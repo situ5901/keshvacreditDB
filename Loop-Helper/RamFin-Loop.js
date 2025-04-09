@@ -8,11 +8,6 @@ mongoose
   .then(() => console.log("✅ MongoDB Connected Successfully"))
   .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
 
-// const UserDB = mongoose.model(
-//   "userdb",
-//   new mongoose.Schema({}, { strict: false }),
-// );
-
 const UserDB = mongoose.model(
   "userdb",
   new mongoose.Schema({}, { collection: "userdb", strict: false }),
