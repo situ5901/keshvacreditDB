@@ -17,11 +17,11 @@ const TestDB = mongoose.model(
   "Test",
   new mongoose.Schema({}, { collection: "Test", strict: false }),
 );
-const BATCH_SIZE = 50;
+const BATCH_SIZE =500;
 const newAPI =
   "https://www.ramfincorp.com/loanapply/ramfincorp_api/lead_gen/api/v1/create_lead";
 
-const MAX_LEADS = 50000;
+const MAX_LEADS = 3000;
 const Partner_id = "Keshvacredit";
 const loanAmount = 20000;
 let processedCount = 0;
@@ -29,8 +29,6 @@ let processedCount = 0;
 async function sendToNewAPI(lead) {
   let response = {};
   try {
-    // ✅ DOB Formatter Function
-    // ✅ Date formatter to convert MM/DD/YYYY or DD/MM/YYYY → YYYY-MM-DD
     const formatDOB = (dob) => {
       if (!dob) return "";
 
@@ -151,7 +149,7 @@ async function loop() {
             "refArr.name": { $ne: "RamFin" }, 
           },
         },
-        { $limit: 50000 },
+        { $limit: 3000 },
       ]);
       
 
