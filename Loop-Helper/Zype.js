@@ -15,9 +15,8 @@ const UserDB = mongoose.model(
   new mongoose.Schema({}, { collection: "userdb", strict: false }),
 );
 
-// Constants
 const BATCH_SIZE = 1;
-const MAX_LEADS = 2;
+const MAX_LEADS = 10;
 const PartnerID = "a8ce06a0-4fbd-489f-8d75-345548fb98a8";
 
 const ELIGIBILITY_API =
@@ -41,17 +40,21 @@ async function sendToNewAPI(user) {
     });
 
     console.log("📩 Eligibility Response:", response.data);
-    return response.data;
+    return {
+      status: response.data.status || "UNKNOWN",
+      message: response.data.message || "No message",
+    };
   } catch (err) {
+    const errorMsg =
+      err.response?.data?.message || err.message || "Unknown Error";
     console.error(
       "❌ Eligibility API Error:",
       err.response?.data || err.message,
     );
-    return { status: "FAILED", message: err.message };
+    return { status: "FAILED", message: errorMsg };
   }
 }
 
-// Function to get pre-approval offer
 async function getPreApproval(user) {
   try {
     const payload = {
@@ -60,7 +63,7 @@ async function getPreApproval(user) {
       panNumber: user.pan,
       name: user.name,
       dob: user.dob,
-      income: user.income || 100000,
+      income: user.income,
       employmentType: user.employment,
       orgName: "TCS Ltd",
       partnerId: PartnerID,
@@ -88,6 +91,27 @@ async function getPreApproval(user) {
 // Process batch of users
 async function processBatch(users) {
   for (let user of users) {
+    console.log(`📞 Processing user: ${user.phone}`);
+
+    // ⚠️ Ensure `apiResponse` and `preApproval` are arrays
+    const userDoc = await UserDB.findOne({ phone: user.phone });
+
+    const updatesToFixArrayFields = {};
+    if (userDoc.apiResponse && !Array.isArray(userDoc.apiResponse)) {
+      updatesToFixArrayFields.apiResponse = [];
+    }
+    if (userDoc.preApproval && !Array.isArray(userDoc.preApproval)) {
+      updatesToFixArrayFields.preApproval = [];
+    }
+
+    if (Object.keys(updatesToFixArrayFields).length > 0) {
+      await UserDB.updateOne(
+        { phone: user.phone },
+        { $set: updatesToFixArrayFields },
+      );
+    }
+
+    // 🔥 Now it's safe to send payload
     const response = await sendToNewAPI(user);
 
     const updateDoc = {
@@ -105,7 +129,6 @@ async function processBatch(users) {
       $unset: { accounts: "" },
     };
 
-    // Only send to PreApproval API if eligible
     if (response.status === "ACCEPTED") {
       const preApproval = await getPreApproval(user);
       updateDoc.$push.preApproval = {
@@ -121,11 +144,6 @@ async function processBatch(users) {
     const updateResponse = await UserDB.updateOne(
       { phone: user.phone },
       updateDoc,
-    );
-
-    console.log(
-      `✅ Updated ${user.phone} ->`,
-      updateResponse.modifiedCount > 0 ? "Success" : "No Change",
     );
   }
 }
