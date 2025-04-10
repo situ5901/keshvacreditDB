@@ -90,9 +90,13 @@ async function getPreApproval(user) {
 
 async function processBatch(users) {
   for (let user of users) {
-    console.log(`📞 Processing user: ${user.phone}`);
-
     const userDoc = await UserDB.findOne({ phone: user.phone });
+
+    // ✅ Skip if already processed with Zype
+    if (userDoc?.RefArr?.some((ref) => ref.name === "Zype")) {
+      console.log(`⏭️ Skipping ${user.phone} as Zype is already present`);
+      continue;
+    }
 
     const updates = {};
     let needUpdate = false;
@@ -111,6 +115,7 @@ async function processBatch(users) {
       await UserDB.updateOne({ phone: user.phone }, { $set: updates });
     }
 
+    // ✅ Step 1: Hit Eligibility API
     const response = await sendToNewAPI(user);
 
     const updateDoc = {
@@ -130,13 +135,18 @@ async function processBatch(users) {
       $unset: { accounts: "" },
     };
 
+    // ✅ Step 2: If accepted, hit PreApproval API
     if (response.status === "ACCEPTED") {
       const preApproval = await getPreApproval(user);
+
       updateDoc.$push.preApproval = {
+        fullResponse: preApproval,
         status: preApproval.status,
         message: preApproval.message,
+        amount: preApproval.amount,
         createdAt: new Date().toISOString(),
       };
+
       console.log("🎯 PreApproval Offer:", preApproval);
     } else {
       console.log(`⛔ Skipping PreApproval for ${user.phone}`);
@@ -145,7 +155,6 @@ async function processBatch(users) {
     await UserDB.updateOne({ phone: user.phone }, updateDoc);
   }
 }
-
 // Loop to process all leads in batches
 async function Loop() {
   let processedCount = 0;
