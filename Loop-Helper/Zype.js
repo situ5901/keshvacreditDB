@@ -118,6 +118,7 @@ async function processBatch(users) {
         apiResponse: {
           Zype: true,
           status: response.status,
+          amount: response.amount,
           message: response.message,
           createdAt: new Date().toISOString(),
         },
