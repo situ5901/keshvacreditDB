@@ -15,8 +15,8 @@ const UserDB = mongoose.model(
   new mongoose.Schema({}, { collection: "userdb", strict: false }),
 );
 
-const BATCH_SIZE = 1;
-const MAX_LEADS = 10;
+const BATCH_SIZE = 10;
+const MAX_LEADS = 10000;
 const PartnerID = "a8ce06a0-4fbd-489f-8d75-345548fb98a8";
 
 const ELIGIBILITY_API =
@@ -88,35 +88,35 @@ async function getPreApproval(user) {
   }
 }
 
-// Process batch of users
 async function processBatch(users) {
   for (let user of users) {
     console.log(`📞 Processing user: ${user.phone}`);
 
-    // ⚠️ Ensure `apiResponse` and `preApproval` are arrays
     const userDoc = await UserDB.findOne({ phone: user.phone });
 
-    const updatesToFixArrayFields = {};
+    const updates = {};
+    let needUpdate = false;
+
     if (userDoc.apiResponse && !Array.isArray(userDoc.apiResponse)) {
-      updatesToFixArrayFields.apiResponse = [];
+      updates.apiResponse = [userDoc.apiResponse];
+      needUpdate = true;
     }
+
     if (userDoc.preApproval && !Array.isArray(userDoc.preApproval)) {
-      updatesToFixArrayFields.preApproval = [];
+      updates.preApproval = [userDoc.preApproval];
+      needUpdate = true;
     }
 
-    if (Object.keys(updatesToFixArrayFields).length > 0) {
-      await UserDB.updateOne(
-        { phone: user.phone },
-        { $set: updatesToFixArrayFields },
-      );
+    if (needUpdate) {
+      await UserDB.updateOne({ phone: user.phone }, { $set: updates });
     }
 
-    // 🔥 Now it's safe to send payload
     const response = await sendToNewAPI(user);
 
     const updateDoc = {
       $push: {
         apiResponse: {
+          Zype: true,
           status: response.status,
           message: response.message,
           createdAt: new Date().toISOString(),
@@ -141,10 +141,7 @@ async function processBatch(users) {
       console.log(`⛔ Skipping PreApproval for ${user.phone}`);
     }
 
-    const updateResponse = await UserDB.updateOne(
-      { phone: user.phone },
-      updateDoc,
-    );
+    await UserDB.updateOne({ phone: user.phone }, updateDoc);
   }
 }
 
@@ -176,7 +173,7 @@ async function Loop() {
           hasMoreLeads = false;
         } else {
           console.log("⏳ Waiting 5 seconds before next batch...");
-          await new Promise((resolve) => setTimeout(resolve, 5000));
+          await new Promise((resolve) => setTimeout(resolve, 2000));
         }
       }
     }
