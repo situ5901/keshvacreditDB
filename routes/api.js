@@ -197,11 +197,11 @@ router.post("/userinfo", async (req, res) => {
   }
 });
 
-const userSchema = new mongoose.Schema({}, { strict: false });
-const User = mongoose.model("User", userSchema, "webuserdbs");
-
 router.post("/getUsers", async (req, res) => {
   const { phone } = req.body;
+  if (!phone) {
+    return res.status(400).json({ error: "Phone number is required" });
+  }
   try {
     const user = await User.findOne({ phone });
     if (user) {
@@ -210,9 +210,8 @@ router.post("/getUsers", async (req, res) => {
       res.status(404).json({ error: "User not found" });
     }
   } catch (error) {
-    console.error("Error fetching user:", error);
+    console.error("Error fetching user:", error.message);
     res.status(500).json({ error: "Server error" });
   }
 });
-
 module.exports = router;
