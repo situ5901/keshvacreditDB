@@ -200,7 +200,7 @@ router.post("/userinfo", async (req, res) => {
 const userSchema = new mongoose.Schema({}, { strict: false });
 const User = mongoose.model("User", userSchema, "webuserdbs");
 
-router.post("/api/users", async (req, res) => {
+router.post("/getUsers", async (req, res) => {
   const { phone } = req.body;
   try {
     const user = await User.findOne({ phone });
