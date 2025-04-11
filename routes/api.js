@@ -197,30 +197,21 @@ router.post("/userinfo", async (req, res) => {
   }
 });
 
-const userdb =
-  mongoose.models.testingdb ||
-  mongoose.model("userdb", new mongoose.Schema({}, { strict: false }));
+const userSchema = new mongoose.Schema({}, { strict: false });
+const User = mongoose.model("User", userSchema, "webuserdbs");
 
-// ✅ API to Get User Data by Phone Number
-router.post("/getUserInfo", async (req, res) => {
+router.post("/api/users", async (req, res) => {
+  const { phone } = req.body;
   try {
-    const { phone } = req.body; // ✅ POST request me `body` use hoti hai
-
-    if (!phone) {
-      return res.status(400).json({ message: "Phone number is required" });
+    const user = await User.findOne({ phone });
+    if (user) {
+      res.json(user);
+    } else {
+      res.status(404).json({ error: "User not found" });
     }
-
-    const userData = await userdb.findOne({ phone });
-
-    if (!userData) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    return res.status(200).json({ message: "User found", user: userData });
   } catch (error) {
-    return res
-      .status(500)
-      .json({ message: "Internal Server Error", error: error.message });
+    console.error("Error fetching user:", error);
+    res.status(500).json({ error: "Server error" });
   }
 });
 
