@@ -27,6 +27,7 @@ const userSchema = new Schema(
     city: { type: String, trim: true },
     state: { type: String, trim: true },
     gender: { type: String, trim: true },
+    loanAmount: { type: String, trim: true },
     employment: {
       type: String,
       enum: ["Salaried", "Self-employed", "No-employment"],
