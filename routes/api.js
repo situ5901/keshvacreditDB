@@ -46,13 +46,13 @@ router.post("/send-otp", async (req, res) => {
           Authorization: process.env.FAST2SMS_API_KEY,
           "Content-Type": "application/json",
         },
-      }
+      },
     );
 
     res.status(200).json({
       status: "Success",
       message: "OTP sent successfully",
-      // otp, 
+      // otp,
     });
   } catch (error) {
     console.error("SMS Error:", error.response?.data || error.message);
@@ -80,7 +80,7 @@ router.post("/verify-otp", (req, res) => {
     expiresIn: "7d",
   });
 
-  res.status(200).json({ status:"True", message: "OTP verified", token });
+  res.status(200).json({ status: "True", message: "OTP verified", token });
 });
 
 router.post("/userinfo", async (req, res) => {
@@ -197,9 +197,9 @@ router.post("/userinfo", async (req, res) => {
   }
 });
 
-const testingdb =
+const userdb =
   mongoose.models.testingdb ||
-  mongoose.model("testingdb", new mongoose.Schema({}, { strict: false }));
+  mongoose.model("userdb", new mongoose.Schema({}, { strict: false }));
 
 // ✅ API to Get User Data by Phone Number
 router.post("/getUserInfo", async (req, res) => {
@@ -210,7 +210,7 @@ router.post("/getUserInfo", async (req, res) => {
       return res.status(400).json({ message: "Phone number is required" });
     }
 
-    const userData = await testingdb.findOne({ phone });
+    const userData = await userdb.findOne({ phone });
 
     if (!userData) {
       return res.status(404).json({ message: "User not found" });

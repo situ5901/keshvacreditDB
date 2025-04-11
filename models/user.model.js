@@ -26,7 +26,7 @@ const userSchema = new Schema(
     pan: { type: String, trim: true },
     city: { type: String, trim: true },
     state: { type: String, trim: true },
-    gender: { type: String, enum: ["MALE", "FEMALE"], default: "MALE" },
+    gender: { type: String, trim: true },
     employment: {
       type: String,
       enum: ["Salaried", "Self-employed", "No-employment"],
