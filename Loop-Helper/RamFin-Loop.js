@@ -12,11 +12,11 @@ const UserDB = mongoose.model(
   "userdb",
   new mongoose.Schema({}, { collection: "userdb", strict: false }),
 );
-const BATCH_SIZE = 10;
+const BATCH_SIZE = 5;
 const newAPI =
   "https://www.ramfincorp.com/loanapply/ramfincorp_api/lead_gen/api/v1/create_lead";
 
-const MAX_LEADS = 90000;
+const MAX_LEADS = 10000;
 const Partner_id = "Keshvacredit";
 const loanAmount = 20000;
 let processedCount = 0;
@@ -114,7 +114,7 @@ async function loop() {
             "RefArr.name": { $ne: "RamFin" },
           },
         },
-        { $limit: 90000 },
+        { $limit: 50000 },
       ]);
 
       if (leads.length === 0) {
@@ -143,9 +143,9 @@ async function loop() {
         }
 
         // ✅ Delay log added here
-        console.log("⏳ Waiting 5 seconds before next fetch...");
-        await new Promise((resolve) => setTimeout(resolve, 3000));
-        console.log("✅ Done waiting. Continuing...");
+        // console.log("⏳ Waiting 5 seconds before next fetch...");
+        // await new Promise((resolve) => setTimeout(resolve, 3000));
+        // console.log("✅ Done waiting. Continuing...");
       }
     }
   } catch (error) {

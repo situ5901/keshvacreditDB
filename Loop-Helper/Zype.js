@@ -15,7 +15,7 @@ const UserDB = mongoose.model(
   new mongoose.Schema({}, { collection: "userdb", strict: false }),
 );
 
-const BATCH_SIZE = 10;
+const BATCH_SIZE = 5;
 const MAX_LEADS = 10000;
 const PartnerID = "a8ce06a0-4fbd-489f-8d75-345548fb98a8";
 
