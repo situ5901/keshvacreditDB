@@ -136,7 +136,7 @@ async function processBatch(users) {
     };
 
     // ✅ Step 2: If accepted, hit PreApproval API
-    if (response.status === "ACCEPTED") {
+    if (response.status === "Accept") {
       const preApproval = await getPreApproval(user);
 
       updateDoc.$push.preApproval = {
@@ -149,7 +149,6 @@ async function processBatch(users) {
 
       console.log("🎯 PreApproval Offer:", preApproval);
     } else {
-      console.log(`⛔ Skipping PreApproval for ${user.phone}`);
     }
 
     await UserDB.updateOne({ phone: user.phone }, updateDoc);
