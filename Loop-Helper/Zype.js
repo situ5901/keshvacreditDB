@@ -24,7 +24,6 @@ const ELIGIBILITY_API =
 const PRE_APPROVAL_API =
   "https://prod.zype.co.in/attribution-service/api/v1/underwriting/preApprovalOffer";
 
-// Function to check eligibility
 async function sendToNewAPI(user) {
   try {
     const payload = {
@@ -92,7 +91,6 @@ async function processBatch(users) {
   for (let user of users) {
     const userDoc = await UserDB.findOne({ phone: user.phone });
 
-    // ✅ Skip if already processed with Zype
     if (userDoc?.RefArr?.some((ref) => ref.name === "Zype")) {
       console.log(`⏭️ Skipping ${user.phone} as Zype is already present`);
       continue;
@@ -115,7 +113,6 @@ async function processBatch(users) {
       await UserDB.updateOne({ phone: user.phone }, { $set: updates });
     }
 
-    // ✅ Step 1: Hit Eligibility API
     const response = await sendToNewAPI(user);
 
     const updateDoc = {
