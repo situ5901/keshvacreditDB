@@ -15,7 +15,7 @@ const UserDB = mongoose.model(
   new mongoose.Schema({}, { collection: "userdb", strict: false }),
 );
 
-const BATCH_SIZE = 5;
+const BATCH_SIZE = 1;
 const MAX_LEADS = 10000;
 const PartnerID = "a8ce06a0-4fbd-489f-8d75-345548fb98a8";
 
@@ -32,13 +32,13 @@ async function sendToNewAPI(user) {
       partnerId: PartnerID,
     };
 
-    console.log("📤 Sending Eligibility Payload:", payload);
+    console.log("Sending Eligibility Payload:", payload);
 
     const response = await axios.post(ELIGIBILITY_API, payload, {
       headers: { "Content-Type": "application/json" },
     });
 
-    console.log("📩 Eligibility Response:", response.data);
+    console.log("Eligibility Response:", response.data);
     return {
       status: response.data.status,
       message: response.data.message,
@@ -47,7 +47,7 @@ async function sendToNewAPI(user) {
     const errorMsg =
       err.response?.data?.message || err.message || "Unknown Error";
     console.error(
-      "❌ Eligibility API Error:",
+      "Eligibility API Error:",
       err.response?.data || err.message,
     );
     return { status: "FAILED", message: errorMsg };
@@ -71,7 +71,7 @@ async function getPreApproval(user) {
       bureauData: JSON.stringify({ score: 765, reportDate: "2024-03-20" }),
     };
 
-    console.log("📤 Sending PreApproval Payload:", payload);
+    console.log("Sending PreApproval Payload:", payload);
 
     const response = await axios.post(PRE_APPROVAL_API, payload, {
       headers: { "Content-Type": "application/json" },
@@ -80,7 +80,7 @@ async function getPreApproval(user) {
     return response.data;
   } catch (err) {
     console.error(
-      "❌ PreApproval API Error:",
+      "PreApproval API Error:",
       err.response?.data || err.message,
     );
     return { status: "FAILED", message: err.message };
@@ -92,7 +92,7 @@ async function processBatch(users) {
     const userDoc = await UserDB.findOne({ phone: user.phone });
 
     if (userDoc?.RefArr?.some((ref) => ref.name === "Zype")) {
-      console.log(`⏭️ Skipping ${user.phone} as Zype is already present`);
+      console.log(`Skipping ${user.phone} as Zype is already present`);
       continue;
     }
 
@@ -144,7 +144,7 @@ async function processBatch(users) {
         createdAt: new Date().toISOString(),
       };
 
-      console.log("🎯 PreApproval Offer:", preApproval);
+      console.log("PreApproval Offer:", preApproval);
     } else {
     }
 
@@ -158,7 +158,7 @@ async function Loop() {
 
   try {
     while (hasMoreLeads && processedCount < MAX_LEADS) {
-      console.log("🔄 Fetching leads...");
+      console.log("Fetching leads...");
 
       const leads = await UserDB.aggregate([
         { $match: { "RefArr.name": { $ne: "Zype" } } },
@@ -167,24 +167,24 @@ async function Loop() {
 
       if (leads.length === 0) {
         hasMoreLeads = false;
-        console.log("🚫 No more leads to process.");
+        console.log("No more leads to process.");
       } else {
         await processBatch(leads);
         processedCount += leads.length;
 
-        console.log(`📊 Total Processed: ${processedCount}`);
+        console.log(`Total Processed: ${processedCount}`);
 
         if (processedCount >= MAX_LEADS) {
-          console.log("✅ Limit reached. Ending process.");
+          console.log("Limit reached. Ending process.");
           hasMoreLeads = false;
         } else {
           console.log("⏳ Waiting 5 seconds before next batch...");
-          await new Promise((resolve) => setTimeout(resolve, 2000));
+          await new Promise((resolve) => setTimeout(resolve, 1000));
         }
       }
     }
   } catch (error) {
-    console.error("❌ Error occurred:", error.message);
+    console.error("Error occurred:", error.message);
   } finally {
     console.log("🔌 Closing DB connection...");
     mongoose.connection.close();
