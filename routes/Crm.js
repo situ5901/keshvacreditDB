@@ -25,7 +25,7 @@ router.get("/get-all-leads", async (req, res) => {
       .collection("userdb")
       .find(
         {
-          "apiResponse.status": "ACCEPT",
+          "apiResponse.fullResponse.status": "ACCEPT",
         },
         { projection: { phone: 1, _id: 0 } },
       )
