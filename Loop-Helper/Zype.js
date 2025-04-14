@@ -13,23 +13,23 @@ const UserDB = mongoose.model(
   "userdb",
   new mongoose.Schema({}, { collection: "userdb", strict: false }),
 );
-//testing messgae for Git Only
-const BATCH_SIZE = 10;
-const MAX_LEADS = 90000;
+
+const BATCH_SIZE = 5; 
+const MAX_LEADS = 90000; 
+const PartnerID = "a8ce06a0-4fbd-489f-8d75-345548fb98a8";
 
 const ELIGIBILITY_API =
   "https://prod.zype.co.in/attribution-service/api/v1/underwriting/customerEligibility";
 const PRE_APPROVAL_API =
   "https://prod.zype.co.in/attribution-service/api/v1/underwriting/preApprovalOffer";
 
-// Eligibility API
 async function processIncome(user) {
   if (typeof user.income === "string") {
     const parsedIncome = parseFloat(user.income);
     if (!isNaN(parsedIncome)) {
-      user.income = parsedIncome;
+      user.income = parsedIncome; 
     } else {
-      throw new Error("INCOME_SHOULD_BE_NUMBER");
+      throw new Error("INCOME_SHOULD_BE_NUMBER"); 
     }
   }
 }
@@ -106,11 +106,6 @@ async function processBatch(users) {
   for (let user of users) {
     const userDoc = await UserDB.findOne({ phone: user.phone });
 
-    if (userDoc?.RefArr?.some((ref) => ref.name === "Zype")) {
-      console.log(`⚠️ Skipping ${user.phone} — already processed`);
-      continue;
-    }
-
     const updates = {};
     let needUpdate = false;
 
@@ -177,7 +172,11 @@ async function Loop() {
       console.log("📦 Fetching leads...");
 
       const leads = await UserDB.aggregate([
-        { $match: { "RefArr.name": { $ne: "Zype" } } },
+        { $match: { 
+	  processed: { $ne: true },
+	  "RefArr.name": { $ne: "Zype" } 
+	    } 
+	},
         { $limit: BATCH_SIZE },
       ]);
 
