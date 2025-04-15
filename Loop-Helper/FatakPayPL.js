@@ -10,22 +10,22 @@ mongoose
   .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
 
 const UserDB = mongoose.model(
-  "loops",
-  new mongoose.Schema({}, { collection: "loops", strict: false }),
+  "userdb",
+  new mongoose.Schema({}, { collection: "userdb", strict: false }),
 );
 
-const BATCH_SIZE = 1;
-const MAX_LEADS = 5;
+const BATCH_SIZE = 5;
+const MAX_LEADS = 5000;
 const CREATE_USER_TOKEN_API =
-  "https://uatonboardingapi.fatakpay.com/external-api/v1/create-user-token";
+  "https://onboardingapi.fatakpay.com/external-api/v1/create-user-token";
 const ELIGIBILITY_API =
-  "https://uatonboardingapi.fatakpay.com/external-api/v1/emi-insurance-eligibility";
+  "https://onboardingapi.fatakpay.com/external-api/v1/emi-insurance-eligibility";
 
 async function createUserToken() {
   try {
     const payloads = {
       username: "KeshvaCredit",
-      password: "38fccc61f934bc49343c",
+      password: "df9786e1ee29910713cc",
     };
 
     const response = await axios.post(CREATE_USER_TOKEN_API, payloads, {
@@ -54,10 +54,10 @@ async function sendEligibilityCheck(user, token) {
       first_name: user.name,
       last_name: user.last_name || "kumar",
       employment_type_id: user.employment,
-      pan: user.pan,
-      dob: user.dob,
-      email: user.user_email,
-      pincode: user.pincode,
+      pan: user.pan || null,
+      dob: user.dob || null,
+      email: user.email || null,
+      pincode: user.pincode || null,
       home_address: user.home_address || "123 MG Road, Mumbai",
       office_address:
         user.office_address || "ABC Pvt Ltd, Andheri East, Mumbai",
@@ -152,7 +152,7 @@ async function Loop() {
           hasMoreLeads = false;
         } else {
           console.log("⏳ Waiting 5 seconds before next batch...");
-          await new Promise((resolve) => setTimeout(resolve, 5000));
+          await new Promise((resolve) => setTimeout(resolve, 1000));
         }
       }
     }
