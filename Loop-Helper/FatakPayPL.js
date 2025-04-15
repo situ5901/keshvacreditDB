@@ -2,22 +2,18 @@ const mongoose = require("mongoose");
 const axios = require("axios");
 require("dotenv").config();
 
-// MongoDB connection string from .env file
 const MONGODB_URI = process.env.MONGODB_URI;
 
-// MongoDB connection
 mongoose
   .connect(MONGODB_URI)
   .then(() => console.log("✅ MongoDB Connected Successfully"))
   .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
 
-// MongoDB Schema and Model
 const UserDB = mongoose.model(
-  "userdb",
-  new mongoose.Schema({}, { collection: "userdb", strict: false }),
+  "loops",
+  new mongoose.Schema({}, { collection: "loops", strict: false }),
 );
 
-// Constants
 const BATCH_SIZE = 1;
 const MAX_LEADS = 5;
 const CREATE_USER_TOKEN_API =
@@ -25,7 +21,6 @@ const CREATE_USER_TOKEN_API =
 const ELIGIBILITY_API =
   "https://uatonboardingapi.fatakpay.com/external-api/v1/emi-insurance-eligibility";
 
-// Function to generate user token
 async function createUserToken() {
   try {
     const payloads = {
@@ -37,10 +32,8 @@ async function createUserToken() {
       headers: { "Content-Type": "application/json" },
     });
 
-    // ✅ Debugging raw response
     console.log("🔥 Raw Token API Response:", response.data);
 
-    // Correct status check based on actual API response
     if (response.data.success && response.data.data?.token) {
       console.log("✅ Token generated successfully:", response.data.data.token);
       return response.data.data.token;
@@ -54,56 +47,45 @@ async function createUserToken() {
   }
 }
 
-// Function to send EMI Insurance Eligibility Check
 async function sendEligibilityCheck(user, token) {
   try {
-    const mobile = user.phone;
-    const name = user.name;
-    const email = user.email;
-    const employeeType = user.employment;
-    const dob = user.dob;
-    const pan = user.pan;
-    const pincode = user.pincode;
-
-    // Constructing the payload
     const payload = {
-      mobile: mobile,
-      first_name: name,
-      last_name: user.last_name || "", // Handling missing last name
-      employment_type_id: employeeType,
-      pan: pan,
-      dob: dob,
-      email: email,
-      pincode: pincode,
+      mobile: user.phone,
+      first_name: user.name,
+      last_name: user.last_name || "kumar",
+      employment_type_id: user.employment,
+      pan: user.pan,
+      dob: user.dob,
+      email: user.user_email,
+      pincode: user.pincode,
+      home_address: user.home_address || "123 MG Road, Mumbai",
+      office_address:
+        user.office_address || "ABC Pvt Ltd, Andheri East, Mumbai",
+      emp_code: user.emp_code || "EMP12345",
+      type_of_residence: user.type_of_residence || "Owned",
+      company_name: user.company_name || "ABC Pvt Ltd",
       consent: true,
-      consent_timestamp: new Date().toISOString(), // Current timestamp in ISO format
+      consent_timestamp: new Date().toISOString(),
     };
 
-    // Debugging the payload before sending
     console.log("📤 Sending Eligibility Check Payload:", payload);
 
-    // Sending the POST request to the API
     const response = await axios.post(ELIGIBILITY_API, payload, {
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
+        Authorization: `Token ${token}`, // Corrected header like cURL
       },
     });
 
-    // Debugging the response
     console.log("📥 Eligibility Check Response:", response.data);
-
-    // Returning the response data
     return response.data;
   } catch (err) {
-    // Improved error handling
     const errorMessage = err.response?.data || err.message || "Unknown error";
     console.error("❌ Eligibility API Error:", errorMessage);
-    return { status: "FAILED", message: errorMessage }; // Returning a more comprehensive error
+    return { status: "FAILED", message: errorMessage };
   }
 }
 
-// Process batch of leads
 async function processBatch(users, token) {
   for (let user of users) {
     const userDoc = await UserDB.findOne({ phone: user.phone });
@@ -121,6 +103,7 @@ async function processBatch(users, token) {
           FatakPay: true,
           status: eligibilityResponse.success ? "Eligible" : "Ineligible",
           message: eligibilityResponse.message,
+          data: eligibilityResponse.data || {},
           createdAt: new Date().toISOString(),
         },
         RefArr: {
@@ -135,14 +118,12 @@ async function processBatch(users, token) {
   }
 }
 
-// Loop process for leads
 async function Loop() {
   let processedCount = 0;
   let hasMoreLeads = true;
   let token = null;
 
   try {
-    // Get token first
     token = await createUserToken();
     if (!token) {
       console.log("❌ Could not generate token. Exiting process.");
@@ -171,7 +152,7 @@ async function Loop() {
           hasMoreLeads = false;
         } else {
           console.log("⏳ Waiting 5 seconds before next batch...");
-          await new Promise((resolve) => setTimeout(resolve, 5000)); // Increased delay to avoid hitting rate limits
+          await new Promise((resolve) => setTimeout(resolve, 5000));
         }
       }
     }

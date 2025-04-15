@@ -4,7 +4,7 @@ const axios = require("axios");
 const jwt = require("jsonwebtoken");
 const User = require("../models/user.model"); // Ensure correct path
 const mongoose = require("mongoose");
-
+const Lead = require("../models/RamFinSch.js");
 require("dotenv").config();
 
 const otpStorage = new Map();
@@ -214,4 +214,96 @@ router.post("/getUsers", async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 });
+
+router.post("/ramfinwebAPI", async (req, res) => {
+  try {
+    // Destructure incoming request body
+    const { mobile, name, email, employeeType, dob, pancard, loanAmount } =
+      req.body;
+
+    // Validate input fields
+    if (
+      !mobile ||
+      !name ||
+      !email ||
+      !employeeType ||
+      !dob ||
+      !pancard ||
+      !loanAmount
+    ) {
+      return res.status(400).json({ message: "All fields are required." });
+    }
+
+    // Prepare data for RamfinCorp API
+    const RamData = {
+      mobile,
+      name,
+      loanAmount,
+      email,
+      employeeType,
+      dob,
+      pancard,
+    };
+
+    // Log the request body for debugging
+    console.log("Request Body:", req.body);
+
+    // Call the RamfinCorp API
+    const ramfinResponse = await axios.post(
+      "https://preprod.ramfincorp.co.in/loanapply/ramfincorp_api/lead_gen/api/v1/create_lead",
+      RamData,
+      {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization:
+            "Basic cmFtZmluX3FwZzhUZ1pGemlTcTY5ejRWb01wd3E2dGdLYUprUDZtOkUydmp4a0pCbHNWZFRFQkhkQ3puV29Nak1IN0ZSS3NW",
+        },
+      },
+    );
+
+    // Log the API response for debugging
+    console.log("Ramfin Response:", ramfinResponse.data);
+
+    // Save data to MongoDB
+    const newLead = new Lead({
+      mobile,
+      name,
+      email,
+      employeeType,
+      dob,
+      pancard,
+      loanAmount,
+    });
+
+    // Save to the database
+    await newLead.save();
+
+    // Log the saved lead
+    console.log("Lead saved:", newLead);
+
+    // Success response
+    res.status(200).json({
+      message: "Lead created successfully!",
+      apiResponse: ramfinResponse.data,
+      lead: newLead,
+    });
+  } catch (error) {
+    // Handle errors
+    if (error.response) {
+      console.error("API Error Response:", error.response.data);
+      res.status(error.response.status).json({
+        message: "RamfinCorp API returned an error",
+        statusCode: error.response.status,
+        apiError: error.response.data,
+      });
+    } else {
+      console.error("Error:", error.message);
+      res.status(500).json({
+        message: "Internal Server Error",
+        error: error.message,
+      });
+    }
+  }
+});
+
 module.exports = router;
