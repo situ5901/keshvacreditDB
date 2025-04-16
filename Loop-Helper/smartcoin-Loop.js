@@ -15,18 +15,18 @@ const UserDB = mongoose.model(
   new mongoose.Schema({}, { collection: "userdb", strict: false }),
 );
 
-const BATCH_SIZE = 5;
-const MAX_LEADS = 1000;
+const BATCH_SIZE = 1;
+const MAX_LEADS = 5;
 const Partner_id = "Keshvacredit";
 
-const ELIGIBILITY_API = "https://lead-admin-stage.rebase.in/lead/dedup";
-const PRE_APPROVAL_API = "https://lead-admin-stage.rebase.in/lead/create";
+const ELIGIBILITY_API = "https://leads.smartcoin.co.in/partner/keshvacredit/lead/dedup";
+const PRE_APPROVAL_API = "https://leads.smartcoin.co.in/partner/keshvacredit/lead/create";
 
 function getHeaders() {
   return {
     "Content-Type": "application/x-www-form-urlencoded",
-    "admin-api-client-id": "SC_KVCD_8Rf5w7g9ahwcm3GE_np",
-    "admin-api-client-key": "6ON4ywugoHzvLADa_np",
+    "admin-api-client-id": "SC_KVCD_oruwm5w5fXy4JNoi",
+    "admin-api-client-key": "esy7kphMG6G9hu90",
   };
 }
 
