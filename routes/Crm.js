@@ -17,22 +17,29 @@ router.get("/get-all-leads", async (req, res) => {
       .collection("userdb")
       .find(
         { "apiResponse.message": "Lead created successfully." },
-        { projection: { phone: 1, _id: 0 } },
+        { projection: { phone: 1, _id: 0 } }
       )
       .toArray();
 
     const zypeLeads = await db
       .collection("userdb")
       .find(
-        {
-          "apiResponse.fullResponse.status": "ACCEPT",
-        },
-        { projection: { phone: 1, _id: 0 } },
+        { "apiResponse.fullResponse.status": "ACCEPT" },
+        { projection: { phone: 1, _id: 0 } }
+      )
+      .toArray();
+
+    const fatakPayLeads = await db
+      .collection("userdb")
+      .find(
+        { "apiResponse.message": "You are eligible." },
+        { projection: { phone: 1, _id: 0 } }
       )
       .toArray();
 
     const ramfinPhones = ramfinLeads.map((lead) => lead.phone);
     const zypePhones = zypeLeads.map((lead) => lead.phone);
+    const fatakPayPhones = fatakPayLeads.map((lead) => lead.phone);
 
     res.status(200).json({
       success: true,
@@ -41,10 +48,13 @@ router.get("/get-all-leads", async (req, res) => {
         data: ramfinPhones,
         total: ramfinPhones.length,
       },
-
       Zype: {
         data: zypePhones,
         total: zypePhones.length,
+      },
+      FatakPayPL: {
+        data: fatakPayPhones,
+        total: fatakPayPhones.length,
       },
     });
   } catch (error) {

@@ -214,14 +214,11 @@ router.post("/getUsers", async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 });
-
+//eligibil Lender API//
 router.post("/ramfinwebAPI", async (req, res) => {
   try {
-    // Destructure incoming request body
     const { mobile, name, email, employeeType, dob, pancard, loanAmount } =
       req.body;
-
-    // Validate input fields
     if (
       !mobile ||
       !name ||
@@ -243,6 +240,7 @@ router.post("/ramfinwebAPI", async (req, res) => {
       employeeType,
       dob,
       pancard,
+      PartnerName: "Keshvacredit",
     };
 
     // Log the request body for debugging

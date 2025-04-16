@@ -10,6 +10,6 @@ const leadSchema = new mongoose.Schema({
   loanAmount: Number,
 });
 
-const Lead = mongoose.model("Lead", leadSchema); // Ensure correct model name
+const Lead = mongoose.model("webRamFin", leadSchema); // Ensure correct model name
 
 module.exports = Lead;
