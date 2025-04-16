@@ -15,8 +15,8 @@ const UserDB = mongoose.model(
   new mongoose.Schema({}, { collection: "loops", strict: false }),
 );
 
-const BATCH_SIZE = 1;
-const MAX_LEADS = 5;
+const BATCH_SIZE = 5;
+const MAX_LEADS = 1000;
 const CREATE_USER_TOKEN_API =
   "https://onboardingapi.fatakpay.com/external-api/v1/create-user-token";
 const ELIGIBILITY_API =
