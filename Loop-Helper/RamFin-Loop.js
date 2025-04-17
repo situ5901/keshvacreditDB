@@ -13,30 +13,23 @@ const UserDB = mongoose.model(
   new mongoose.Schema({}, { collection: "userdb", strict: false }),
 );
 
-const BATCH_SIZE = 10;
 const newAPI =
-  "https://www.ramfincorp.com/loanapply/ramfincorp_api/lead_gen/api/v1/create_lead";
-
+  "https://preprod.ramfincorp.co.in/loanapply/ramfincorp_api/lead_gen/api/v1/create_lead";
+const MAX_LEADS = 10;
 const Partner_id = "Keshvacredit";
 const loanAmount = 20000;
+let processedCount = 0;
 
 async function sendToNewAPI(lead) {
   let response = {};
   try {
-    const mobile = lead.phone;
-    const name = lead.name;
-    const email = lead.email;
-    const employeeType = lead.employment;
-    const dob = lead.dob;
-    const pancard = lead.pan;
-
     const apiRequestBody = {
-      mobile: mobile,
-      name: name,
-      email: email,
-      employeeType: employeeType,
-      dob: dob,
-      pancard: pancard,
+      mobile: lead.phone,
+      name: lead.name,
+      email: lead.email,
+      employeeType: lead.employment,
+      dob: lead.dob,
+      pancard: lead.pan,
       loanAmount: loanAmount,
       Partner_id: Partner_id,
     };
@@ -50,17 +43,26 @@ async function sendToNewAPI(lead) {
       headers: {
         "Content-Type": "application/json",
         Authorization:
-          "Basic cmFtZmluX2U2NmIxNmE5ZjZiNzQ5YTAzOTBmZWRjM2U4ZjNkZjZmOmI3YjJlZDU1MjM5NjA5NzM5NmQwOWE2N2RkZTI4NjUyMDNjZDMxYjA=",
+          "Basic cmFtZmluX3FwZzhUZ1pGemlTcTY5ejRWb01wd3E2dGdLYUprUDZtOkUydmp4a0pCbHNWZFRFQkhkQ3puV29Nak1IN0ZSS3NW",
       },
     });
 
-    response.status = apiResponse.data?.status || "success";
-    response.message =
-      apiResponse.data?.message || "Lead processed successfully";
+    if (
+      apiResponse.data &&
+      apiResponse.data.status &&
+      apiResponse.data.message
+    ) {
+      response.status = apiResponse.data.status;
+      response.message = apiResponse.data.message;
+    } else {
+      response.status = "Unknown status";
+      response.message = "No message returned";
+    }
   } catch (error) {
     response.status = "failed";
     response.message =
       error.response?.data?.message || error.message || "Unknown error";
+    console.error("Error occurred:", error);
   }
   return response;
 }
@@ -89,7 +91,7 @@ async function processBatch(users) {
             createdAt: new Date().toISOString(),
           },
         },
-        $set: { processed: true }, // Mark as processed to avoid reprocessing
+        $unset: { accounts: "" },
       },
     );
 
@@ -108,36 +110,26 @@ async function loop() {
         {
           $match: {
             processed: { $ne: true },
-            "RefArr.name": { $ne: "RamFin" }, // Exclude leads already processed for RamFin
+            "RefArr.name": { $ne: "RamFin" },
           },
         },
-        { $limit: 1000 }, // Fetch a batch of 1000 leads
+        { $limit: MAX_LEADS },
       ]);
 
       if (leads.length === 0) {
-        console.log("🚫 No more leads to process.");
         hasMoreLeads = false;
+        console.log("🚫 No more leads to process.");
       } else {
-        for (let i = 0; i < leads.length; i += BATCH_SIZE) {
-          const batch = leads.slice(i, i + BATCH_SIZE);
-          await processBatch(batch);
-          console.log(
-            `✅ Processed batch ${i / BATCH_SIZE + 1} of ${leads.length}`,
-          );
-
-          const batchNumber = i / BATCH_SIZE + 1;
-          if (batchNumber % 1 === 0) {
-            console.log(`Waiting 3 seconds after batch ${batchNumber}...`);
-            await new Promise((resolve) => setTimeout(resolve, 3000)); // Delay after each batch
-            console.log("Done waiting.");
-          }
-        }
+        await processBatch(leads);
+        processedCount += leads.length;
+        console.log(`Processed ${processedCount} leads.`);
       }
+
+      await new Promise((resolve) => setTimeout(resolve, 2000));
     }
   } catch (error) {
     console.error("🚫 Error:", error);
   } finally {
-    console.log("🔌 Closing DB connection...");
     mongoose.connection.close();
   }
 }
