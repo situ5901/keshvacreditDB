@@ -130,7 +130,7 @@ async function processBatch(leads, successCounter) {
     const updateDoc = {
       $push: {
         apiResponse: {
-          fullResponse: {
+          SmartCoinResponse: {
             ...response,
             SmartCoin: true,
           },
@@ -150,7 +150,7 @@ async function processBatch(leads, successCounter) {
       const preApproval = await getPreApproval(lead);
 
       updateDoc.$push.apiResponse = {
-        fullResponse: preApproval,
+        SmartCoinResponse: preApproval,
         status: preApproval.status,
         message: preApproval.message,
         createdAt: new Date().toISOString(),
