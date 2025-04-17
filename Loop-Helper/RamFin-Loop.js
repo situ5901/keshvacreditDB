@@ -107,7 +107,7 @@ async function loop() {
       const leads = await UserDB.aggregate([
         {
           $match: {
-            processed: { $ne: true }, // Only unprocessed users
+            processed: { $ne: true },
             "RefArr.name": { $ne: "RamFin" }, // Exclude leads already processed for RamFin
           },
         },

@@ -15,12 +15,14 @@ const UserDB = mongoose.model(
   new mongoose.Schema({}, { collection: "userdb", strict: false }),
 );
 
-const BATCH_SIZE = 1;
-const MAX_LEADS = 5;
+const BATCH_SIZE = 10;
+const MAX_LEADS = 1000;
 const Partner_id = "Keshvacredit";
 
-const ELIGIBILITY_API = "https://leads.smartcoin.co.in/partner/keshvacredit/lead/dedup";
-const PRE_APPROVAL_API = "https://leads.smartcoin.co.in/partner/keshvacredit/lead/create";
+const ELIGIBILITY_API =
+  "https://leads.smartcoin.co.in/partner/keshvacredit/lead/dedup";
+const PRE_APPROVAL_API =
+  "https://leads.smartcoin.co.in/partner/keshvacredit/lead/create";
 
 function getHeaders() {
   return {
