@@ -16,7 +16,7 @@ const UserDB = mongoose.model(
 );
 
 const BATCH_SIZE = 10;
-const MAX_LEADS = 1000;
+const MAX_LEADS = 50;
 const Partner_id = "Keshvacredit";
 
 const ELIGIBILITY_API =
@@ -119,6 +119,13 @@ async function processBatch(leads) {
 
     const response = await sendToNewAPI(lead);
 
+    if (
+      response.message ===
+      "no duplicate found and partner can proceed with the lead"
+    ) {
+      successCounter.count++;
+    }
+
     const updateDoc = {
       $push: {
         apiResponse: {
@@ -163,6 +170,8 @@ async function processBatch(leads) {
 async function Loop() {
   let processedCount = 0;
   let hasMoreLeads = true;
+
+  const successCounter = { count: 0 }; // 👈 counter object
 
   try {
     while (hasMoreLeads && processedCount < MAX_LEADS) {
