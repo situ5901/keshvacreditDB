@@ -16,7 +16,7 @@ const UserDB = mongoose.model(
 );
 
 const BATCH_SIZE = 10;
-const MAX_LEADS = 50;
+const MAX_LEADS = 10000;
 const Partner_id = "Keshvacredit";
 
 const ELIGIBILITY_API =
@@ -131,8 +131,8 @@ async function processBatch(leads, successCounter) {
       $push: {
         apiResponse: {
           SmartCoinResponse: {
-            ...response,
             SmartCoin: true,
+            ...response,
           },
           status: response.status,
           message: response.message,

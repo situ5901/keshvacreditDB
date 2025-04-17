@@ -1,4 +1,3 @@
-
 const mongoose = require("mongoose");
 const axios = require("axios");
 require("dotenv").config();
@@ -16,7 +15,7 @@ const UserDB = mongoose.model(
 );
 
 const BATCH_SIZE = 5;
-const MAX_LEADS = 1000;
+const MAX_LEADS = 10000;
 const CREATE_USER_TOKEN_API =
   "https://onboardingapi.fatakpay.com/external-api/v1/create-user-token";
 const ELIGIBILITY_API =
