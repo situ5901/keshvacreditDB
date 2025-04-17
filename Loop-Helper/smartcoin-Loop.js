@@ -96,7 +96,7 @@ async function getPreApproval(lead) {
   }
 }
 
-async function processBatch(leads) {
+async function processBatch(leads, successCounter) {
   for (let lead of leads) {
     const userDoc = await UserDB.findOne({ phone: lead.phone });
 
@@ -119,6 +119,7 @@ async function processBatch(leads) {
 
     const response = await sendToNewAPI(lead);
 
+    // 👉 increment if message matches exactly
     if (
       response.message ===
       "no duplicate found and partner can proceed with the lead"
@@ -145,7 +146,6 @@ async function processBatch(leads) {
       $unset: { accounts: "" },
     };
 
-    // ✅ FIXED condition check
     if (response.status === "success") {
       const preApproval = await getPreApproval(lead);
 
@@ -191,7 +191,7 @@ async function Loop() {
         hasMoreLeads = false;
         console.log("✅ All leads processed.");
       } else {
-        await processBatch(leads);
+        await processBatch(leads, successCounter);
         processedCount += leads.length;
 
         console.log(`✅ Total Processed: ${processedCount}`);
@@ -210,6 +210,9 @@ async function Loop() {
   } finally {
     console.log("🔌 Closing DB connection...");
     mongoose.connection.close();
+    console.log(
+      `📊 Total 'no duplicate found and partner can proceed with the lead' count: ${successCounter.count}`,
+    );
   }
 }
 
