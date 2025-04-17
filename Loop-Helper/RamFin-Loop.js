@@ -1,6 +1,7 @@
 const axios = require("axios");
 const mongoose = require("mongoose");
 require("dotenv").config();
+
 const MONGODB_URI = process.env.MONGODB_URI;
 
 mongoose
@@ -15,7 +16,7 @@ const UserDB = mongoose.model(
 
 const newAPI =
   "https://preprod.ramfincorp.co.in/loanapply/ramfincorp_api/lead_gen/api/v1/create_lead";
-const MAX_LEADS = 10;
+const MAX_LEADS = 5;
 const Partner_id = "Keshvacredit";
 const loanAmount = 20000;
 let processedCount = 0;
@@ -47,22 +48,16 @@ async function sendToNewAPI(lead) {
       },
     });
 
-    if (
-      apiResponse.data &&
-      apiResponse.data.status &&
-      apiResponse.data.message
-    ) {
-      response.status = apiResponse.data.status;
-      response.message = apiResponse.data.message;
-    } else {
-      response.status = "Unknown status";
-      response.message = "No message returned";
-    }
+    response.status = apiResponse.data.status;
+    response.message = apiResponse.data.message;
   } catch (error) {
     response.status = "failed";
     response.message =
-      error.response?.data?.message || error.message || "Unknown error";
-    console.error("Error occurred:", error);
+      error.response?.data?.message || "API did not return a valid response";
+
+    if (error.response) {
+      console.error("API Error Response:", error.response.data);
+    }
   }
   return response;
 }
@@ -122,13 +117,13 @@ async function loop() {
       } else {
         await processBatch(leads);
         processedCount += leads.length;
-        console.log(`Processed ${processedCount} leads.`);
+        console.log(`✅ Processed ${processedCount} leads.`);
       }
 
       await new Promise((resolve) => setTimeout(resolve, 2000));
     }
   } catch (error) {
-    console.error("🚫 Error:", error);
+    console.error("🚫 Error in loop:", error.message);
   } finally {
     mongoose.connection.close();
   }
