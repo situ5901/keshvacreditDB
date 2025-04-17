@@ -10,12 +10,12 @@ mongoose
   .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
 
 const UserDB = mongoose.model(
-  "userdb",
-  new mongoose.Schema({}, { collection: "userdb", strict: false }),
+  "Test",
+  new mongoose.Schema({}, { collection: "Test", strict: false }),
 );
 
-const BATCH_SIZE = 10; 
-const MAX_LEADS = 90000; 
+const BATCH_SIZE = 1;
+const MAX_LEADS = 5;
 const PartnerID = "a8ce06a0-4fbd-489f-8d75-345548fb98a8";
 
 const ELIGIBILITY_API =
@@ -27,9 +27,9 @@ async function processIncome(user) {
   if (typeof user.income === "string") {
     const parsedIncome = parseFloat(user.income);
     if (!isNaN(parsedIncome)) {
-      user.income = parsedIncome; 
+      user.income = parsedIncome;
     } else {
-      throw new Error("INCOME_SHOULD_BE_NUMBER"); 
+      throw new Error("INCOME_SHOULD_BE_NUMBER");
     }
   }
 }
@@ -172,11 +172,12 @@ async function Loop() {
       console.log("📦 Fetching leads...");
 
       const leads = await UserDB.aggregate([
-        { $match: { 
-	  processed: { $ne: true },
-	  "RefArr.name": { $ne: "Zype" } 
-	    } 
-	},
+        {
+          $match: {
+            processed: { $ne: true },
+            "RefArr.name": { $ne: "Zype" },
+          },
+        },
         { $limit: BATCH_SIZE },
       ]);
 

@@ -12,14 +12,13 @@ const UserDB = mongoose.model(
   "userdb",
   new mongoose.Schema({}, { collection: "userdb", strict: false }),
 );
+
 const BATCH_SIZE = 10;
 const newAPI =
   "https://www.ramfincorp.com/loanapply/ramfincorp_api/lead_gen/api/v1/create_lead";
 
-const MAX_LEADS = 50000;
 const Partner_id = "Keshvacredit";
 const loanAmount = 20000;
-let processedCount = 0;
 
 async function sendToNewAPI(lead) {
   let response = {};
@@ -40,7 +39,6 @@ async function sendToNewAPI(lead) {
       pancard: pancard,
       loanAmount: loanAmount,
       Partner_id: Partner_id,
-      // loanAmount: loanAmount,
     };
 
     console.log(
@@ -82,7 +80,6 @@ async function processBatch(users) {
       {
         $push: {
           apiResponse: {
-            // ✅ New API response will be added instead of replacing
             status: response.status,
             message: response.message,
             createdAt: new Date().toISOString(),
@@ -92,7 +89,7 @@ async function processBatch(users) {
             createdAt: new Date().toISOString(),
           },
         },
-        $unset: { accounts: "" },
+        $set: { processed: true }, // Mark as processed to avoid reprocessing
       },
     );
 
@@ -104,48 +101,37 @@ async function loop() {
   try {
     let hasMoreLeads = true;
 
-    while (hasMoreLeads && processedCount < MAX_LEADS) {
+    while (hasMoreLeads) {
       console.log("🔄 Fetching users...");
 
       const leads = await UserDB.aggregate([
         {
           $match: {
-            processed: { $ne: true },
-            "RefArr.name": { $ne: "RamFin" },
+            processed: { $ne: true }, // Only unprocessed users
+            "RefArr.name": { $ne: "RamFin" }, // Exclude leads already processed for RamFin
           },
         },
-        { $limit: 50000 },
+        { $limit: 1000 }, // Fetch a batch of 1000 leads
       ]);
 
       if (leads.length === 0) {
-        hasMoreLeads = false;
         console.log("🚫 No more leads to process.");
+        hasMoreLeads = false;
       } else {
         for (let i = 0; i < leads.length; i += BATCH_SIZE) {
           const batch = leads.slice(i, i + BATCH_SIZE);
           await processBatch(batch);
-          processedCount += batch.length;
-          console.log(`✅ Processed ${processedCount} leads.`);
+          console.log(
+            `✅ Processed batch ${i / BATCH_SIZE + 1} of ${leads.length}`,
+          );
 
-          if (processedCount >= MAX_LEADS) {
-            console.log("Reached the limit of leads.");
-            hasMoreLeads = false;
-            break;
-          }
-
-          // ⏳ Wait after every 5 batches
           const batchNumber = i / BATCH_SIZE + 1;
           if (batchNumber % 1 === 0) {
             console.log(`Waiting 3 seconds after batch ${batchNumber}...`);
-            await new Promise((resolve) => setTimeout(resolve, 1000));
+            await new Promise((resolve) => setTimeout(resolve, 3000)); // Delay after each batch
             console.log("Done waiting.");
           }
         }
-
-        // ✅ Delay log added here
-        // console.log("⏳ Waiting 5 seconds before next fetch...");
-        // await new Promise((resolve) => setTimeout(resolve, 3000));
-        // console.log("✅ Done waiting. Continuing...");
       }
     }
   } catch (error) {
