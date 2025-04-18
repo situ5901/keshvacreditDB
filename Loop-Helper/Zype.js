@@ -14,8 +14,8 @@ const UserDB = mongoose.model(
   new mongoose.Schema({}, { collection: "Test", strict: false }),
 );
 
-const BATCH_SIZE = 1;
-const MAX_LEADS = 5;
+const BATCH_SIZE = 10;
+const MAX_LEADS = 50000;
 const PartnerID = "a8ce06a0-4fbd-489f-8d75-345548fb98a8";
 
 const ELIGIBILITY_API =
@@ -195,7 +195,7 @@ async function Loop() {
           hasMoreLeads = false;
         } else {
           console.log("⏳ Waiting 5 seconds before next batch...");
-          await new Promise((resolve) => setTimeout(resolve, 2000));
+          await new Promise((resolve) => setTimeout(resolve, 1000));
         }
       }
     }
