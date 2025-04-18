@@ -39,7 +39,7 @@ async function sendToNewAPI(user) {
     await processIncome(user);
 
     const payload = {
-      mobileNumber: user.phone,
+      mobileNumber: String(user.phone),
       panNumber: user.pan,
       partnerId: PartnerID,
     };
@@ -68,7 +68,7 @@ async function sendToNewAPI(user) {
 async function getPreApproval(user) {
   try {
     const payload = {
-      mobileNumber: user.phone,
+      mobileNumber: String(user.phone),
       email: user.email,
       panNumber: user.pan,
       name: user.name,
@@ -164,11 +164,9 @@ async function processBatch(users) {
 }
 
 async function Loop() {
-  let processedCount = 0;
-  let hasMoreLeads = true;
-
   try {
-    while (hasMoreLeads && processedCount < MAX_LEADS) {
+    while (true) {
+      // Infinite loop — jab tak manually band na karo ya DB empty na ho
       console.log("📦 Fetching leads...");
 
       const leads = await UserDB.aggregate([
@@ -182,22 +180,17 @@ async function Loop() {
       ]);
 
       if (leads.length === 0) {
-        hasMoreLeads = false;
-        console.log("✅ All leads processed.");
-      } else {
-        await processBatch(leads);
-        processedCount += leads.length;
-
-        console.log(`✅ Total Processed: ${processedCount}`);
-
-        if (processedCount >= MAX_LEADS) {
-          console.log("✅ MAX limit reached.");
-          hasMoreLeads = false;
-        } else {
-          console.log("⏳ Waiting 5 seconds before next batch...");
-          await new Promise((resolve) => setTimeout(resolve, 1000));
-        }
+        console.log("✅ No more leads left. Waiting for new data...");
+        // 5 second ka wait, fir dobara try karega
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        continue;
       }
+
+      await processBatch(leads);
+      console.log(`✅ Processed batch of: ${leads.length}`);
+
+      // 1 sec ka delay har batch ke baad
+      await new Promise((resolve) => setTimeout(resolve, 1000));
     }
   } catch (error) {
     console.error("❌ Error occurred:", error.message);
