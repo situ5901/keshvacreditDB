@@ -20,10 +20,8 @@ const UserDB = mongoose.model(
 // Config
 const BATCH_SIZE = 5;
 const PartnerID = "Keshvacredit";
-const dedupeAPI =
-  "https://stg-api.mpkt.in/acquisition-affiliate/v1/dedupe/check";
-const CreateUserAPI = "https://stg-api.mpkt.in/acquisition-affiliate/v1/user";
-// const API_KEY = "B6AB0D38B1B44BFC9F38789037D8D";
+const dedupeAPI = "https://api.mpkt.in/acquisition-affiliate/v1/dedupe/check";
+const CreateUserAPI = "https://api.mpkt.in/acquisition-affiliate/v1/user";
 
 const API_KEY = "2A331F81163D447C9B5941910D2BD";
 // Eligibility API
