@@ -13,8 +13,8 @@ mongoose
 
 // MongoDB Collection
 const UserDB = mongoose.model(
-  "Test",
-  new mongoose.Schema({}, { collection: "Test", strict: false }),
+  "userdb",
+  new mongoose.Schema({}, { collection: "userdb", strict: false }),
 );
 
 // Config
@@ -23,8 +23,9 @@ const PartnerID = "Keshvacredit";
 const dedupeAPI =
   "https://stg-api.mpkt.in/acquisition-affiliate/v1/dedupe/check";
 const CreateUserAPI = "https://stg-api.mpkt.in/acquisition-affiliate/v1/user";
-const API_KEY = "B6AB0D38B1B44BFC9F38789037D8D";
+// const API_KEY = "B6AB0D38B1B44BFC9F38789037D8D";
 
+const API_KEY = "2A331F81163D447C9B5941910D2BD";
 // Eligibility API
 async function sendToNewAPI(user) {
   try {
@@ -42,7 +43,7 @@ async function sendToNewAPI(user) {
     const response = await axios.post(dedupeAPI, payload, {
       headers: {
         "Content-Type": "application/json",
-        "api-key": API_KEY, // Ensure the correct header format
+        "api-key": API_KEY,
       },
     });
 
@@ -63,16 +64,14 @@ async function sendToNewAPI(user) {
 // Pre-Approval API
 async function getPreApproval(user) {
   try {
-    // Ensure name and employmentType are set, using empty strings or defaults if undefined
-    const firstName = user.name || "Unknown";
-    const employmentType = user.employment || "Unknown";
+    const Full_name = user.name || "Unknown";
 
     const payload = {
-      mobile_number: user.phone,
-      email: user.email,
-      first_name: firstName,
+      mobile_no: String(user.phone),
+      email_id: user.email,
+      Full_name: Full_name,
       date_of_birth: user.dob,
-      employmentType: employmentType,
+      profession: user.employment,
       partnerId: PartnerID,
     };
 
@@ -81,7 +80,7 @@ async function getPreApproval(user) {
     const response = await axios.post(CreateUserAPI, payload, {
       headers: {
         "Content-Type": "application/json",
-        "x-api-key": API_KEY, // Ensure correct header name
+        "api-key": API_KEY,
       },
     });
 
@@ -104,63 +103,81 @@ async function processBatch(users) {
   for (let user of users) {
     const userDoc = await UserDB.findOne({ phone: user.phone });
 
-    const updates = {};
-    let needUpdate = false;
+    // If document exists
+    if (userDoc) {
+      // Prepare updates
+      const updates = {};
+      let needUpdate = false;
 
-    if (userDoc.apiResponse && !Array.isArray(userDoc.apiResponse)) {
-      updates.apiResponse = [userDoc.apiResponse];
-      needUpdate = true;
-    }
+      if (userDoc.apiResponse && !Array.isArray(userDoc.apiResponse)) {
+        updates.apiResponse = [userDoc.apiResponse];
+        needUpdate = true;
+      }
 
-    if (userDoc.preApproval && !Array.isArray(userDoc.preApproval)) {
-      updates.preApproval = [userDoc.preApproval];
-      needUpdate = true;
-    }
+      if (userDoc.preApproval && !Array.isArray(userDoc.preApproval)) {
+        updates.preApproval = [userDoc.preApproval];
+        needUpdate = true;
+      }
 
-    if (needUpdate) {
-      await UserDB.updateOne({ phone: user.phone }, { $set: updates });
-    }
+      // Update structure if needed
+      if (needUpdate) {
+        await UserDB.updateOne({ phone: user.phone }, { $set: updates });
+      }
 
-    const response = await sendToNewAPI(user);
+      // Send Eligibility API
+      const response = await sendToNewAPI(user);
 
-    const updateDoc = {
-      $push: {
-        apiResponse: {
+      // Prepare update document
+      const updateDoc = {
+        $push: {
+          apiResponse: {
+            MpokketResponse: {
+              ...response,
+              Mpokket: true,
+            },
+            status_code: response.status_code,
+            message: response.message,
+            createdAt: new Date().toISOString(),
+          },
+          RefArr: {
+            name: "Mpokket",
+            createdAt: new Date().toISOString(),
+          },
+        },
+        $unset: { accounts: "" },
+      };
+
+      // If status is 1205, call PreApproval
+      if (response.status_code === "1205") {
+        const preApproval = await getPreApproval(user);
+        updateDoc.$push.apiResponse = {
           MpokketResponse: {
             ...response,
             Mpokket: true,
           },
-          status_code: response.status_code,
-          message: response.message,
+          status: preApproval.status,
+          message: preApproval.message,
           createdAt: new Date().toISOString(),
-        },
-        RefArr: {
-          name: "Mpokket",
-          createdAt: new Date().toISOString(),
-        },
-      },
-      $unset: { accounts: "" },
-    };
+        };
+      } else {
+        console.log(`⛔ No PreApproval — Status Code: ${response.status_code}`);
+      }
 
-    if (response.status_code === "1205") {
-      // User is new, proceed with Pre-Approval API
-      const preApproval = await getPreApproval(user);
+      // Update document in MongoDB
+      await UserDB.updateOne({ phone: user.phone }, updateDoc);
 
-      updateDoc.$push.apiResponse = {
-        fullResponse: preApproval,
-        status: preApproval.status,
-        message: preApproval.message,
-        createdAt: new Date().toISOString(),
-      };
-    } else {
-      console.log(`⛔ No PreApproval — Status Code: ${response.status_code}`);
+      // Mark lead as processed
+      await UserDB.updateOne(
+        { phone: user.phone },
+        { $set: { processed: true } },
+      );
+
+      console.log("✅ Lead processed successfully:", user.phone);
     }
-
-    await UserDB.updateOne({ phone: user.phone }, updateDoc);
   }
 }
 
-// Main Execution Loop (limited to 5)
+// Main Execution Loop (5 records only)
 async function startProcessing() {
   try {
     console.log("📦 Fetching leads...");
@@ -183,7 +200,7 @@ async function startProcessing() {
 
     console.log(`✅ Found ${leads.length} leads. Processing...`);
     await processBatch(leads);
-    console.log("🎉 All 5 leads processed successfully!");
+    console.log(`🎉 Processed ${leads.length} leads successfully!`);
   } catch (error) {
     console.error("❌ Error occurred:", error.message);
   } finally {

@@ -182,7 +182,7 @@ async function Loop() {
       if (leads.length === 0) {
         console.log("✅ No more leads left. Waiting for new data...");
         // 5 second ka wait, fir dobara try karega
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+        await new Promise((resolve) => setTimeout(resolve, 5000));
         continue;
       }
 
