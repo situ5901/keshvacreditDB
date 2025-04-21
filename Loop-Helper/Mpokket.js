@@ -18,7 +18,7 @@ const UserDB = mongoose.model(
 );
 
 // Config
-const BATCH_SIZE = 5;
+const BATCH_SIZE = 10000;
 const PartnerID = "Keshvacredit";
 const dedupeAPI = "https://api.mpkt.in/acquisition-affiliate/v1/dedupe/check";
 const CreateUserAPI = "https://api.mpkt.in/acquisition-affiliate/v1/user";
