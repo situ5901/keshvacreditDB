@@ -2,22 +2,18 @@ const mongoose = require("mongoose");
 const axios = require("axios");
 require("dotenv").config();
 
-// MongoDB URI
 const MONGODB_URI = process.env.MONGODB_URI;
 
-// Connect to MongoDB
 mongoose
   .connect(MONGODB_URI)
   .then(() => console.log("✅ MongoDB Connected Successfully"))
   .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
 
-// MongoDB Collection
 const UserDB = mongoose.model(
   "loops",
   new mongoose.Schema({}, { collection: "loops", strict: false }),
 );
 
-// Config
 const BATCH_SIZE = 10;
 const PartnerID = "Keshvacredit";
 const dedupeAPI = "https://api.mpkt.in/acquisition-affiliate/v1/dedupe/check";
@@ -25,7 +21,6 @@ const CreateUserAPI = "https://api.mpkt.in/acquisition-affiliate/v1/user";
 
 const API_KEY = "2A331F81163D447C9B5941910D2BD";
 
-// Eligibility API
 async function sendToNewAPI(user) {
   try {
     const email = user?.Email ? user.Email.toString() : "";
@@ -68,7 +63,6 @@ async function sendToNewAPI(user) {
   }
 }
 
-// Pre-Approval API
 async function getPreApproval(user) {
   try {
     const Full_name = user.Name || "Unknown";
@@ -106,14 +100,11 @@ async function getPreApproval(user) {
   }
 }
 
-// Process Each Lead
 async function processBatch(users) {
   for (let user of users) {
     const userDoc = await UserDB.findOne({ Phone: user.Phone });
 
-    // If document exists
     if (userDoc) {
-      // Prepare updates
       const updates = {};
       let needUpdate = false;
 
@@ -127,15 +118,12 @@ async function processBatch(users) {
         needUpdate = true;
       }
 
-      // Update structure if needed
       if (needUpdate) {
         await UserDB.updateOne({ Phone: user.Phone }, { $set: updates });
       }
 
-      // Send Eligibility API
       const response = await sendToNewAPI(user);
 
-      // Prepare update document
       const updateDoc = {
         $push: {
           apiResponse: {
@@ -155,7 +143,6 @@ async function processBatch(users) {
         $unset: { accounts: "" },
       };
 
-      // If status is 1205, call PreApproval
       if (response.status_code === "1205") {
         const preApproval = await getPreApproval(user);
         updateDoc.$push.apiResponse = {
@@ -171,10 +158,8 @@ async function processBatch(users) {
         console.log(`⛔ No PreApproval — Status Code: ${response.status_code}`);
       }
 
-      // Update document in MongoDB
       await UserDB.updateOne({ Phone: user.Phone }, updateDoc);
 
-      // Mark lead as processed
       await UserDB.updateOne(
         { Phone: user.Phone },
         { $set: { processed: true } },
@@ -185,30 +170,31 @@ async function processBatch(users) {
   }
 }
 
-// Main Execution Loop (5 records only)
 async function startProcessing() {
   try {
-    console.log("📦 Fetching leads...");
+    while (true) {
+      console.log("📦 Fetching leads...");
 
-    const leads = await UserDB.aggregate([
-      {
-        $match: {
-          processed: { $ne: true },
-          "RefArr.name": { $ne: "Mpokket" },
+      const leads = await UserDB.aggregate([
+        {
+          $match: {
+            processed: { $ne: true },
+            "RefArr.name": { $ne: "Mpokket" },
+          },
         },
-      },
-      { $limit: BATCH_SIZE },
-    ]);
+        { $limit: BATCH_SIZE },
+      ]);
 
-    if (leads.length === 0) {
-      console.log("✅ No leads found.");
-      mongoose.connection.close();
-      return;
+      if (leads.length === 0) {
+        console.log("✅ No leads found. Exiting...");
+        break;
+      }
+
+      console.log(`✅ Found ${leads.length} leads. Processing...`);
+      await processBatch(leads);
+      console.log(`🎉 Processed ${leads.length} leads successfully!`);
+      await new Promise((resolve) => setTimeout(resolve, 2000));
     }
-
-    console.log(`✅ Found ${leads.length} leads. Processing...`);
-    await processBatch(leads);
-    console.log(`🎉 Processed ${leads.length} leads successfully!`);
   } catch (error) {
     console.error("❌ Error occurred:", error.message);
   } finally {
