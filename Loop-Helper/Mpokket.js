@@ -16,15 +16,15 @@ const UserDB = mongoose.model(
 
 const BATCH_SIZE = 10;
 const PartnerID = "Keshvacredit";
-const dedupeAPI = "https://api.mpkt.in/acquisition-affiliate/v1/dedupe/check";
-const CreateUserAPI = "https://api.mpkt.in/acquisition-affiliate/v1/user";
-const API_KEY = "2A331F81163D447C9B5941910D2BD";
+// const dedupeAPI = "https://api.mpkt.in/acquisition-affiliate/v1/dedupe/check";
+// const CreateUserAPI = "https://api.mpkt.in/acquisition-affiliate/v1/user";
+// const API_KEY = "2A331F81163D447C9B5941910D2BD";
 
-// const dedupeAPI =
-//   "https://stg-api.mpkt.in/acquisition-affiliate/v1/dedupe/check";
-// const CreateUserAPI = "https://stg-api.mpkt.in/acquisition-affiliate/v1/user";
-//
-// const API_KEY = "B6AB0D38B1B44BFC9F38789037D8D";
+const dedupeAPI =
+  "https://stg-api.mpkt.in/acquisition-affiliate/v1/dedupe/check";
+const CreateUserAPI = "https://stg-api.mpkt.in/acquisition-affiliate/v1/user";
+
+const API_KEY = "B6AB0D38B1B44BFC9F38789037D8D";
 async function sendToNewAPI(user) {
   try {
     const email = user?.email ? user.email.toString() : "";

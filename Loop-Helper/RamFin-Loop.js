@@ -14,8 +14,7 @@ const UserDB = mongoose.model(
   new mongoose.Schema({}, { collection: "userdb", strict: false }),
 );
 
-const newAPI =
-  "https://preprod.ramfincorp.co.in/loanapply/ramfincorp_api/lead_gen/api/v1/create_lead";
+const newAPI = "https://ramfinloan.page.link/rf_keshvacredit";
 const MAX_LEADS = 5;
 const Partner_id = "Keshvacredit";
 const loanAmount = 20000;
