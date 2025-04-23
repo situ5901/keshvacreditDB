@@ -1,17 +1,8 @@
 const axios = require("axios");
 const mongoose = require("mongoose");
-const pLimit = require("p-limit");
 require("dotenv").config();
 
 const MONGODB_URI = process.env.MONGODB_URI;
-const MAX_LEADS = 5;
-const CONCURRENCY_LIMIT = 10; // Adjust as needed
-const Partner_id = "Keshvacredit";
-const loanAmount = 20000;
-
-const newAPI =
-  "https://preprod.ramfincorp.co.in/loanapply/ramfincorp_api/lead_gen/api/v1/create_lead";
-const limit = pLimit(CONCURRENCY_LIMIT);
 
 mongoose
   .connect(MONGODB_URI)
@@ -22,6 +13,13 @@ const UserDB = mongoose.model(
   "userdb",
   new mongoose.Schema({}, { collection: "userdb", strict: false }),
 );
+
+const newAPI =
+  "https://preprod.ramfincorp.co.in/loanapply/ramfincorp_api/lead_gen/api/v1/create_lead";
+const MAX_LEADS = 5;
+const Partner_id = "Keshvacredit";
+const loanAmount = 20000;
+let processedCount = 0;
 
 async function sendToNewAPI(lead) {
   let response = {};
@@ -36,6 +34,11 @@ async function sendToNewAPI(lead) {
       loanAmount: loanAmount,
       Partner_id: Partner_id,
     };
+
+    console.log(
+      "Sending Lead Data to API:",
+      JSON.stringify(apiRequestBody, null, 2),
+    );
 
     const apiResponse = await axios.post(newAPI, apiRequestBody, {
       headers: {
@@ -60,17 +63,22 @@ async function sendToNewAPI(lead) {
 }
 
 async function processBatch(users) {
-  const tasks = users.map((user) => limit(() => sendToNewAPI(user)));
-  const results = await Promise.all(tasks);
+  const promises = users.map((user) => sendToNewAPI(user));
+  const results = await Promise.all(promises);
 
-  const bulkOps = users.map((user, i) => ({
-    updateOne: {
-      filter: { phone: user.phone },
-      update: {
+  for (let i = 0; i < users.length; i++) {
+    const user = users[i];
+    const response = results[i];
+
+    console.log("User:", user.phone, "Response:", response);
+
+    const updateResponse = await UserDB.updateOne(
+      { phone: user.phone },
+      {
         $push: {
           apiResponse: {
-            status: results[i].status,
-            message: results[i].message,
+            status: response.status,
+            message: response.message,
             createdAt: new Date().toISOString(),
           },
           RefArr: {
@@ -80,17 +88,17 @@ async function processBatch(users) {
         },
         $unset: { accounts: "" },
       },
-    },
-  }));
+    );
 
-  const bulkResult = await UserDB.bulkWrite(bulkOps);
-  console.log("🔄 Bulk update result:", bulkResult);
+    console.log(`UpdateResponse for ${user.phone}:`, updateResponse);
+  }
 }
 
 async function loop() {
-  let processedCount = 0;
   try {
-    while (true) {
+    let hasMoreLeads = true;
+
+    while (hasMoreLeads) {
       console.log("🔄 Fetching users...");
 
       const leads = await UserDB.aggregate([
@@ -104,13 +112,15 @@ async function loop() {
       ]);
 
       if (leads.length === 0) {
+        hasMoreLeads = false;
         console.log("🚫 No more leads to process.");
-        break;
+      } else {
+        await processBatch(leads);
+        processedCount += leads.length;
+        console.log(`✅ Processed ${processedCount} leads.`);
       }
 
-      await processBatch(leads);
-      processedCount += leads.length;
-      console.log(`✅ Processed ${processedCount} leads.`);
+      await new Promise((resolve) => setTimeout(resolve, 2000));
     }
   } catch (error) {
     console.error("🚫 Error in loop:", error.message);
