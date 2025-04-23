@@ -9,7 +9,8 @@ const CONCURRENCY_LIMIT = 10; // Adjust as needed
 const Partner_id = "Keshvacredit";
 const loanAmount = 20000;
 
-const newAPI = "https://ramfinloan.page.link/rf_keshvacredit";
+const newAPI =
+  "https://preprod.ramfincorp.co.in/loanapply/ramfincorp_api/lead_gen/api/v1/create_lead";
 const limit = pLimit(CONCURRENCY_LIMIT);
 
 mongoose
