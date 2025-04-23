@@ -13,22 +13,30 @@ mongoose
 
 // MongoDB Collection
 const UserDB = mongoose.model(
-  "userdb",
-  new mongoose.Schema({}, { collection: "userdb", strict: false }),
+  "loops",
+  new mongoose.Schema({}, { collection: "loops", strict: false }),
 );
 
 // Config
-const BATCH_SIZE = 10000;
+const BATCH_SIZE = 10;
 const PartnerID = "Keshvacredit";
 const dedupeAPI = "https://api.mpkt.in/acquisition-affiliate/v1/dedupe/check";
 const CreateUserAPI = "https://api.mpkt.in/acquisition-affiliate/v1/user";
 
 const API_KEY = "2A331F81163D447C9B5941910D2BD";
+
 // Eligibility API
 async function sendToNewAPI(user) {
   try {
-    const encodedEmail = Buffer.from(user.email.toString()).toString("base64");
-    const encodedPhone = Buffer.from(user.phone.toString()).toString("base64");
+    const email = user?.Email ? user.Email.toString() : "";
+    const phone = user?.Phone ? user.Phone.toString() : "";
+
+    if (!email || !phone) {
+      throw new Error("Email or Phone is missing in user object");
+    }
+
+    const encodedEmail = Buffer.from(email).toString("base64");
+    const encodedPhone = Buffer.from(phone).toString("base64");
 
     const payload = {
       email_id: encodedEmail,
@@ -54,6 +62,7 @@ async function sendToNewAPI(user) {
     );
     return {
       status: "FAILED",
+      status_code: err.response?.status || "UNKNOWN",
       message: err.response?.data?.message || err.message || "Unknown Error",
     };
   }
@@ -62,14 +71,15 @@ async function sendToNewAPI(user) {
 // Pre-Approval API
 async function getPreApproval(user) {
   try {
-    const Full_name = user.name || "Unknown";
+    const Full_name = user.Name || "Unknown";
 
     const payload = {
-      mobile_no: String(user.phone),
-      email_id: user.email,
+      mobile_no: String(user.Phone),
+      email_id: user.Email,
       Full_name: Full_name,
-      date_of_birth: user.dob,
-      profession: user.employment,
+      pancard: user.PanCard,
+      date_of_birth: user.DOB,
+      profession: "salaried",
       partnerId: PartnerID,
     };
 
@@ -99,7 +109,7 @@ async function getPreApproval(user) {
 // Process Each Lead
 async function processBatch(users) {
   for (let user of users) {
-    const userDoc = await UserDB.findOne({ phone: user.phone });
+    const userDoc = await UserDB.findOne({ Phone: user.Phone });
 
     // If document exists
     if (userDoc) {
@@ -119,7 +129,7 @@ async function processBatch(users) {
 
       // Update structure if needed
       if (needUpdate) {
-        await UserDB.updateOne({ phone: user.phone }, { $set: updates });
+        await UserDB.updateOne({ Phone: user.Phone }, { $set: updates });
       }
 
       // Send Eligibility API
@@ -162,15 +172,15 @@ async function processBatch(users) {
       }
 
       // Update document in MongoDB
-      await UserDB.updateOne({ phone: user.phone }, updateDoc);
+      await UserDB.updateOne({ Phone: user.Phone }, updateDoc);
 
       // Mark lead as processed
       await UserDB.updateOne(
-        { phone: user.phone },
+        { Phone: user.Phone },
         { $set: { processed: true } },
       );
 
-      console.log("✅ Lead processed successfully:", user.phone);
+      console.log("✅ Lead processed successfully:", user.Phone);
     }
   }
 }
