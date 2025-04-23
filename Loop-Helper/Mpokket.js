@@ -10,21 +10,20 @@ mongoose
   .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
 
 const UserDB = mongoose.model(
-  "loops",
-  new mongoose.Schema({}, { collection: "loops", strict: false }),
+  "userdb",
+  new mongoose.Schema({}, { collection: "userdb", strict: false }),
 );
 
 const BATCH_SIZE = 10;
 const PartnerID = "Keshvacredit";
 const dedupeAPI = "https://api.mpkt.in/acquisition-affiliate/v1/dedupe/check";
 const CreateUserAPI = "https://api.mpkt.in/acquisition-affiliate/v1/user";
-
 const API_KEY = "2A331F81163D447C9B5941910D2BD";
 
 async function sendToNewAPI(user) {
   try {
-    const email = user?.Email ? user.Email.toString() : "";
-    const phone = user?.Phone ? user.Phone.toString() : "";
+    const email = user?.email ? user.email.toString() : "";
+    const phone = user?.phone ? user.phone.toString() : "";
 
     if (!email || !phone) {
       throw new Error("Email or Phone is missing in user object");
@@ -65,14 +64,13 @@ async function sendToNewAPI(user) {
 
 async function getPreApproval(user) {
   try {
-    const Full_name = user.Name || "Unknown";
-
+    const Full_name = user.name || "Unknown";
     const payload = {
-      mobile_no: String(user.Phone),
-      email_id: user.Email,
+      mobile_no: user.phone,
+      email_id: user.email,
       Full_name: Full_name,
-      pancard: user.PanCard,
-      date_of_birth: user.DOB,
+      pancard: user.pan,
+      date_of_birth: user.dob,
       profession: "salaried",
       partnerId: PartnerID,
     };
@@ -159,7 +157,6 @@ async function processBatch(users) {
       }
 
       await UserDB.updateOne({ Phone: user.Phone }, updateDoc);
-
       await UserDB.updateOne(
         { Phone: user.Phone },
         { $set: { processed: true } },
@@ -186,14 +183,15 @@ async function startProcessing() {
       ]);
 
       if (leads.length === 0) {
-        console.log("✅ No leads found. Exiting...");
-        break;
+        console.log("⏸️ No leads found. Waiting before retry...");
+        await new Promise((resolve) => setTimeout(resolve, 5000)); // Wait 5 seconds
+        continue;
       }
 
       console.log(`✅ Found ${leads.length} leads. Processing...`);
       await processBatch(leads);
       console.log(`🎉 Processed ${leads.length} leads successfully!`);
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      await new Promise((resolve) => setTimeout(resolve, 2000)); // Optional pause
     }
   } catch (error) {
     console.error("❌ Error occurred:", error.message);
