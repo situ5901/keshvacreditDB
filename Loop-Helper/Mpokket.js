@@ -69,11 +69,10 @@ async function sendToNewAPI(user) {
 
 async function getPreApproval(user) {
   try {
-    const Full_name = user.name || "Unknown";
     const payload = {
       mobile_no: user.phone,
       email_id: user.email,
-      Full_name: Full_name,
+      Full_name: user.name,
       date_of_birth: user.dob,
       profession: "salaried",
       partnerId: PartnerID,
