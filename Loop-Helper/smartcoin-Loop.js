@@ -174,7 +174,8 @@ async function Loop() {
   const successCounter = { count: 0 }; // 👈 counter object
 
   try {
-    while (hasMoreLeads && processedCount < MAX_LEADS) {
+    while (hasMoreLeads) {
+      // Infinite loop with no stopping condition
       console.log("📦 Fetching leads...");
 
       const leads = await UserDB.aggregate([
@@ -188,22 +189,16 @@ async function Loop() {
       ]);
 
       if (leads.length === 0) {
-        hasMoreLeads = false;
         console.log("✅ All leads processed.");
+        hasMoreLeads = false; // End the loop if no leads are found
       } else {
         await processBatch(leads, successCounter);
         processedCount += leads.length;
 
         console.log(`✅ Total Processed: ${processedCount}`);
-
-        if (processedCount >= MAX_LEADS) {
-          console.log("✅ MAX limit reached.");
-          hasMoreLeads = false;
-        } else {
-          console.log("⏳ Waiting 2 seconds before next batch...");
-          await new Promise((resolve) => setTimeout(resolve, 2000));
-        }
       }
+
+      // The loop will now run continuously without any delay
     }
   } catch (error) {
     console.error("❌ Error occurred:", error.message);
