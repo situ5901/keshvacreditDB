@@ -75,7 +75,7 @@ async function processBatch(users) {
       {
         $push: {
           apiResponse: {
-            status: response.status,
+            value: response.value,
             message: response.message,
             createdAt: new Date().toISOString(),
           },
