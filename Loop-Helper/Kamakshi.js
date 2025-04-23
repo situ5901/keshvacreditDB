@@ -18,8 +18,7 @@ const newAPI =
   "https://kamakshimoney.com/loanapply/kamakshimoney_api/lead_gen/api/v1/create_lead";
 const MAX_LEADS = 5;
 const Partner_id = "Keshvacredit";
-const loanAmount = 20000;
-let processedCount = 0;
+const loanAmount = "20000"; // ✅ as string
 
 async function sendToNewAPI(lead) {
   let response = {};
@@ -35,16 +34,13 @@ async function sendToNewAPI(lead) {
       Partner_id: Partner_id,
     };
 
-    console.log(
-      "Sending Lead Data to API:",
-      JSON.stringify(apiRequestBody, null, 2),
-    );
+    console.log("📤 Sending Lead:", JSON.stringify(apiRequestBody, null, 2));
 
     const apiResponse = await axios.post(newAPI, apiRequestBody, {
       headers: {
         "Content-Type": "application/json",
         Authorization:
-          "Basic cmFtZmluX3FwZzhUZ1pGemlTcTY5ejRWb01wd3E2dGdLYUprUDZtOkUydmp4a0pCbHNWZFRFQkhkQ3puV29Nak1IN0ZSS3NW",
+          "Basic cmFtZmluX2U2NmIxNmE5ZjZiNzQ5YTAzOTBmZWRjM2U4ZjNkZjZmOmI3YjJlZDU1MjM5NjA5NzM5NmQwOWE2N2RkZTI4NjUyMDNjZDMxYjA=",
       },
     });
 
@@ -56,7 +52,7 @@ async function sendToNewAPI(lead) {
       error.response?.data?.message || "API did not return a valid response";
 
     if (error.response) {
-      console.error("API Error Response:", error.response.data);
+      console.error("❌ API Error:", error.response.data);
     }
   }
   return response;
@@ -64,13 +60,13 @@ async function sendToNewAPI(lead) {
 
 async function processBatch(users) {
   const promises = users.map((user) => sendToNewAPI(user));
-  const results = await Promise.all(promises);
+  const results = await Promise.allSettled(promises);
 
   for (let i = 0; i < users.length; i++) {
     const user = users[i];
     const response = results[i];
 
-    console.log("User:", user.phone, "Response:", response);
+    console.log(`📞 ${user.phone} => 🧾`, response);
 
     const updateResponse = await UserDB.updateOne(
       { phone: user.phone },
@@ -82,7 +78,7 @@ async function processBatch(users) {
             createdAt: new Date().toISOString(),
           },
           RefArr: {
-            name: "RamFin",
+            name: "kamakshi",
             createdAt: new Date().toISOString(),
           },
         },
@@ -90,22 +86,23 @@ async function processBatch(users) {
       },
     );
 
-    console.log(`UpdateResponse for ${user.phone}:`, updateResponse);
+    console.log(`✅ Mongo Updated: ${user.phone}`, updateResponse);
   }
 }
 
 async function loop() {
+  let processedCount = 0;
   try {
     let hasMoreLeads = true;
 
     while (hasMoreLeads) {
-      console.log("🔄 Fetching users...");
+      console.log("🔄 Fetching new leads...");
 
       const leads = await UserDB.aggregate([
         {
           $match: {
             processed: { $ne: true },
-            "RefArr.name": { $ne: "RamFin" },
+            "RefArr.name": { $ne: "kamakshi" },
           },
         },
         { $limit: MAX_LEADS },
@@ -117,16 +114,13 @@ async function loop() {
       } else {
         await processBatch(leads);
         processedCount += leads.length;
-        console.log(`✅ Processed ${processedCount} leads.`);
+        console.log(`✅ Total Processed: ${processedCount}`);
       }
-
-      await new Promise((resolve) => setTimeout(resolve, 2000));
     }
-  } catch (error) {
-    console.error("🚫 Error in loop:", error.message);
+  } catch (err) {
+    console.error("🚨 Error in loop:", err.message);
   } finally {
     mongoose.connection.close();
   }
 }
-
 loop();
