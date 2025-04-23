@@ -66,8 +66,8 @@ async function processBatch(users) {
     const user = users[i];
     const response = results[i];
 
-//situ update...
-
+    //situ update...
+    //RS...
     console.log(`📞 ${user.phone} => 🧾`, response);
 
     const updateResponse = await UserDB.updateOne(
