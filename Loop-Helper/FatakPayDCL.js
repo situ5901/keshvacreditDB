@@ -15,7 +15,6 @@ const UserDB = mongoose.model(
 );
 
 const BATCH_SIZE = 5;
-const MAX_LEADS = 10000;
 const CREATE_USER_TOKEN_API =
   "https://onboardingapi.fatakpay.com/external-api/v1/create-user-token";
 const ELIGIBILITY_API =
@@ -73,7 +72,7 @@ async function sendEligibilityCheck(user, token) {
     const response = await axios.post(ELIGIBILITY_API, payload, {
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Token ${token}`, // Corrected header like cURL
+        Authorization: `Token ${token}`,
       },
     });
 
@@ -82,7 +81,7 @@ async function sendEligibilityCheck(user, token) {
   } catch (err) {
     const errorMessage = err.response?.data || err.message || "Unknown error";
     console.error("❌ Eligibility API Error:", errorMessage);
-    return { status: "FAILED", message: errorMessage };
+    return { success: false, message: errorMessage };
   }
 }
 
@@ -100,7 +99,7 @@ async function processBatch(users, token) {
     const updateDoc = {
       $push: {
         apiResponse: {
-          FatakPay: true,
+          FatakPayDCL: true,
           status: eligibilityResponse.success ? "Eligible" : "Ineligible",
           message: eligibilityResponse.message,
           data: eligibilityResponse.data || {},
@@ -119,48 +118,32 @@ async function processBatch(users, token) {
 }
 
 async function Loop() {
-  let processedCount = 0;
-  let hasMoreLeads = true;
-  let token = null;
+  const token = await createUserToken();
+  if (!token) {
+    console.log("❌ Could not generate token. Exiting process.");
+    return;
+  }
 
-  try {
-    token = await createUserToken();
-    if (!token) {
-      console.log("❌ Could not generate token. Exiting process.");
-      return;
-    }
-
-    while (hasMoreLeads && processedCount < MAX_LEADS) {
+  while (true) {
+    try {
       console.log("🔍 Fetching leads...");
 
       const leads = await UserDB.aggregate([
-        { $match: { "RefArr.name": { $ne: "FatakPay" } } },
+        { $match: { "RefArr.name": { $ne: "FatakPayDCL" } } },
         { $limit: BATCH_SIZE },
       ]);
 
       if (leads.length === 0) {
-        hasMoreLeads = false;
-        console.log("✅ No more leads to process.");
-      } else {
-        await processBatch(leads, token);
-        processedCount += leads.length;
-
-        console.log(`📝 Total Processed: ${processedCount}`);
-
-        if (processedCount >= MAX_LEADS) {
-          console.log("✅ Limit reached. Ending process.");
-          hasMoreLeads = false;
-        } else {
-          console.log("⏳ Waiting 5 seconds before next batch...");
-          await new Promise((resolve) => setTimeout(resolve, 1000));
-        }
+        console.log("⏸️ No leads found. Retrying immediately...");
+        continue;
       }
+
+      await processBatch(leads, token);
+      console.log(`✅ Batch processed: ${leads.length} leads`);
+    } catch (err) {
+      console.error("❌ Error during batch:", err.message);
+      // continue looping even on error
     }
-  } catch (error) {
-    console.error("❌ Error occurred:", error.message);
-  } finally {
-    console.log("🔌 Closing DB connection...");
-    mongoose.connection.close();
   }
 }
 

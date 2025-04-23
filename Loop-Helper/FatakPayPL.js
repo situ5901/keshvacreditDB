@@ -15,7 +15,6 @@ const UserDB = mongoose.model(
 );
 
 const BATCH_SIZE = 1;
-const MAX_LEADS = 10000;
 const CREATE_USER_TOKEN_API =
   "https://onboardingapi.fatakpay.com/external-api/v1/create-user-token";
 const ELIGIBILITY_API =
@@ -31,8 +30,6 @@ async function createUserToken() {
     const response = await axios.post(CREATE_USER_TOKEN_API, payloads, {
       headers: { "Content-Type": "application/json" },
     });
-
-    console.log("🔥 Raw Token API Response:", response.data);
 
     if (response.data.success && response.data.data?.token) {
       console.log("✅ Token generated successfully:", response.data.data.token);
@@ -68,16 +65,13 @@ async function sendEligibilityCheck(user, token) {
       consent_timestamp: new Date().toISOString(),
     };
 
-    console.log("📤 Sending Eligibility Check Payload:", payload);
-
     const response = await axios.post(ELIGIBILITY_API, payload, {
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Token ${token}`, // Corrected header like cURL
+        Authorization: `Token ${token}`,
       },
     });
 
-    console.log("📥 Eligibility Check Response:", response.data);
     return response.data;
   } catch (err) {
     const errorMessage = err.response?.data || err.message || "Unknown error";
@@ -100,14 +94,14 @@ async function processBatch(users, token) {
     const updateDoc = {
       $push: {
         apiResponse: {
-          FatakPay: true,
+          FatakPayPL: true,
           status: eligibilityResponse.success ? "Eligible" : "Ineligible",
           message: eligibilityResponse.message,
           data: eligibilityResponse.data || {},
           createdAt: new Date().toISOString(),
         },
         RefArr: {
-          name: "FatakPay",
+          name: "FatakPayPL",
           createdAt: new Date().toISOString(),
         },
       },
@@ -119,48 +113,30 @@ async function processBatch(users, token) {
 }
 
 async function Loop() {
-  let processedCount = 0;
-  let hasMoreLeads = true;
-  let token = null;
+  let token = await createUserToken();
 
-  try {
-    token = await createUserToken();
-    if (!token) {
-      console.log("❌ Could not generate token. Exiting process.");
-      return;
-    }
+  if (!token) {
+    console.log("❌ Could not generate token. Exiting process.");
+    return;
+  }
 
-    while (hasMoreLeads && processedCount < MAX_LEADS) {
-      console.log("🔍 Fetching leads...");
-
+  while (true) {
+    try {
       const leads = await UserDB.aggregate([
-        { $match: { "RefArr.name": { $ne: "FatakPay" } } },
+        { $match: { "RefArr.name": { $ne: "FatakPayPL" } } },
         { $limit: BATCH_SIZE },
       ]);
 
       if (leads.length === 0) {
-        hasMoreLeads = false;
-        console.log("✅ No more leads to process.");
-      } else {
-        await processBatch(leads, token);
-        processedCount += leads.length;
-
-        console.log(`📝 Total Processed: ${processedCount}`);
-
-        if (processedCount >= MAX_LEADS) {
-          console.log("✅ Limit reached. Ending process.");
-          hasMoreLeads = false;
-        } else {
-          console.log("⏳ Waiting 5 seconds before next batch...");
-          await new Promise((resolve) => setTimeout(resolve, 1000));
-        }
+        console.log("⛔ No leads found. Retrying in 2 seconds...");
+        await new Promise((res) => setTimeout(res, 2000)); // Optional delay when no leads found
+        continue;
       }
+
+      await processBatch(leads, token);
+    } catch (error) {
+      console.error("🔥 Error in processing loop:", error.message);
     }
-  } catch (error) {
-    console.error("❌ Error occurred:", error.message);
-  } finally {
-    console.log("🔌 Closing DB connection...");
-    mongoose.connection.close();
   }
 }
 
