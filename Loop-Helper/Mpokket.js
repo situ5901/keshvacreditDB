@@ -103,7 +103,7 @@ async function getPreApproval(user) {
 
 async function processBatch(users) {
   for (let user of users) {
-    const userDoc = await UserDB.findOne({ Phone: user.Phone });
+    const userDoc = await UserDB.findOne({ phone: user.phone });
 
     if (userDoc) {
       const updates = {};
@@ -120,7 +120,7 @@ async function processBatch(users) {
       }
 
       if (needUpdate) {
-        await UserDB.updateOne({ Phone: user.Phone }, { $set: updates });
+        await UserDB.updateOne({ phone: user.phone }, { $set: updates });
       }
 
       const response = await sendToNewAPI(user);
@@ -159,13 +159,13 @@ async function processBatch(users) {
         console.log(`⛔ No PreApproval — Status Code: ${response.status_code}`);
       }
 
-      await UserDB.updateOne({ Phone: user.Phone }, updateDoc);
+      await UserDB.updateOne({ phone: user.phone }, updateDoc);
       await UserDB.updateOne(
-        { Phone: user.Phone },
+        { phone: user.phone },
         { $set: { processed: true } },
       );
 
-      console.log("✅ Lead processed successfully:", user.Phone);
+      console.log("✅ Lead processed successfully:", user.phone);
     }
   }
 }
