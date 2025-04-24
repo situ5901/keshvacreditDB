@@ -12,11 +12,10 @@ mongoose
 
 const UserDB = mongoose.model(
   "userdb",
-  new mongoose.Schema({}, { collection: "userdb", strict: false }),
+  new mongoose.Schema({}, { collection: "userdb", strict: false })
 );
 
 const BATCH_SIZE = 10;
-const MAX_LEADS = 10000;
 const Partner_id = "Keshvacredit";
 
 const ELIGIBILITY_API =
@@ -53,10 +52,7 @@ async function sendToNewAPI(lead) {
     console.log("✅ Eligibility Response:", response.data);
     return response.data;
   } catch (err) {
-    console.error(
-      "❌ Eligibility API Error:",
-      err.response?.data || err.message,
-    );
+    console.error("❌ Eligibility API Error:", err.response?.data || err.message);
     return {
       status: "FAILED",
       message: err.response?.data?.message || err.message || "Unknown Error",
@@ -85,10 +81,7 @@ async function getPreApproval(lead) {
     console.log("✅ PreApproval Response:", response.data);
     return response.data;
   } catch (err) {
-    console.error(
-      "❌ PreApproval API Error:",
-      err.response?.data || err.message,
-    );
+    console.error("❌ PreApproval API Error:", err.response?.data || err.message);
     return {
       status: "FAILED",
       message: err.response?.data?.message || err.message || "Unknown Error",
@@ -119,7 +112,6 @@ async function processBatch(leads, successCounter) {
 
     const response = await sendToNewAPI(lead);
 
-    // 👉 increment if message matches exactly
     if (
       response.message ===
       "no duplicate found and partner can proceed with the lead"
@@ -158,25 +150,27 @@ async function processBatch(leads, successCounter) {
 
       console.log(`✅ PreApproval done for: ${lead.phone}`);
     } else {
-      console.log(
-        `⛔ No PreApproval for: ${lead.phone} — Status: ${response.status}`,
-      );
+      console.log(`⛔ No PreApproval for: ${lead.phone} — Status: ${response.status}`);
     }
 
-    await UserDB.updateOne({ phone: lead.phone }, updateDoc);
+    // Final update with response and mark as processed
+    await UserDB.updateOne(
+      { phone: lead.phone },
+      {
+        ...updateDoc,
+        $set: { processed: true }, // ✅ Important: mark as processed
+      }
+    );
   }
 }
 
 async function Loop() {
   let processedCount = 0;
-  let hasMoreLeads = true;
-
-  const successCounter = { count: 0 }; // 👈 counter object
+  const successCounter = { count: 0 };
 
   try {
-    while (hasMoreLeads) {
-      // Infinite loop with no stopping condition
-      console.log("📦 Fetching leads...");
+    while (true) {
+      console.log("📦 Fetching new leads...");
 
       const leads = await UserDB.aggregate([
         {
@@ -189,24 +183,22 @@ async function Loop() {
       ]);
 
       if (leads.length === 0) {
-        console.log("✅ All leads processed.");
-        hasMoreLeads = false; // End the loop if no leads are found
-      } else {
-        await processBatch(leads, successCounter);
-        processedCount += leads.length;
-
-        console.log(`✅ Total Processed: ${processedCount}`);
+        console.log("✅ All leads processed. No more new data.");
+        break;
       }
 
-      // The loop will now run continuously without any delay
+      await processBatch(leads, successCounter);
+      processedCount += leads.length;
+
+      console.log(`✅ Total Processed: ${processedCount}`);
     }
   } catch (error) {
-    console.error("❌ Error occurred:", error.message);
+    console.error("❌ Error occurred in loop:", error.message);
   } finally {
     console.log("🔌 Closing DB connection...");
     mongoose.connection.close();
     console.log(
-      `📊 Total 'no duplicate found and partner can proceed with the lead' count: ${successCounter.count}`,
+      `📊 Total 'no duplicate found and partner can proceed with the lead' count: ${successCounter.count}`
     );
   }
 }
