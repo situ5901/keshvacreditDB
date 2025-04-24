@@ -12,7 +12,7 @@ mongoose
 
 const UserDB = mongoose.model(
   "userdb",
-  new mongoose.Schema({}, { collection: "userdb", strict: false })
+  new mongoose.Schema({}, { collection: "userdb", strict: false }),
 );
 
 const BATCH_SIZE = 10;
@@ -52,7 +52,10 @@ async function sendToNewAPI(lead) {
     console.log("✅ Eligibility Response:", response.data);
     return response.data;
   } catch (err) {
-    console.error("❌ Eligibility API Error:", err.response?.data || err.message);
+    console.error(
+      "❌ Eligibility API Error:",
+      err.response?.data || err.message,
+    );
     return {
       status: "FAILED",
       message: err.response?.data?.message || err.message || "Unknown Error",
@@ -81,7 +84,10 @@ async function getPreApproval(lead) {
     console.log("✅ PreApproval Response:", response.data);
     return response.data;
   } catch (err) {
-    console.error("❌ PreApproval API Error:", err.response?.data || err.message);
+    console.error(
+      "❌ PreApproval API Error:",
+      err.response?.data || err.message,
+    );
     return {
       status: "FAILED",
       message: err.response?.data?.message || err.message || "Unknown Error",
@@ -150,7 +156,9 @@ async function processBatch(leads, successCounter) {
 
       console.log(`✅ PreApproval done for: ${lead.phone}`);
     } else {
-      console.log(`⛔ No PreApproval for: ${lead.phone} — Status: ${response.status}`);
+      console.log(
+        `⛔ No PreApproval for: ${lead.phone} — Status: ${response.status}`,
+      );
     }
 
     // Final update with response and mark as processed
@@ -159,7 +167,7 @@ async function processBatch(leads, successCounter) {
       {
         ...updateDoc,
         $set: { processed: true }, // ✅ Important: mark as processed
-      }
+      },
     );
   }
 }
@@ -198,7 +206,7 @@ async function Loop() {
     console.log("🔌 Closing DB connection...");
     mongoose.connection.close();
     console.log(
-      `📊 Total 'no duplicate found and partner can proceed with the lead' count: ${successCounter.count}`
+      `📊 Total 'no duplicate found and partner can proceed with the lead' count: ${successCounter.count}`,
     );
   }
 }
