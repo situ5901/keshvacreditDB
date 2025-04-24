@@ -128,9 +128,8 @@ async function Loop() {
       ]);
 
       if (leads.length === 0) {
-        console.log("⛔ No leads found. Retrying in 2 seconds...");
-        await new Promise((res) => setTimeout(res, 2000)); // Optional delay when no leads found
-        continue;
+        console.log("⛔ No leads found. Continuing loop...");
+        continue; // No delay, immediately continue
       }
 
       await processBatch(leads, token);
