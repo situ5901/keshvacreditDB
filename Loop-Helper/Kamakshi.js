@@ -16,12 +16,10 @@ const UserDB = mongoose.model(
 
 const newAPI =
   "https://kamakshimoney.com/loanapply/kamakshimoney_api/lead_gen/api/v1/create_lead";
-const MAX_LEADS = 5; // Limit of 5 leads per batch
-const MAX_CONCURRENT_REQUESTS = 5; // Limit the number of concurrent API requests
+const MAX_LEADS = 5;
 const Partner_id = "Keshvacredit";
-const loanAmount = "20000"; // Loan amount as a string
+const loanAmount = "20000"; // ✅ as string
 
-// Function to send a lead to the new API
 async function sendToNewAPI(lead) {
   let response = {};
   try {
@@ -60,45 +58,27 @@ async function sendToNewAPI(lead) {
   return response;
 }
 
-// Function to process users in batches with concurrency control
 async function processBatch(users) {
-  const promises = [];
-
-  // Create promises for each user to send to the API
-  for (let i = 0; i < users.length; i++) {
-    const user = users[i];
-
-    // Check if the lead has already been processed
+  const promises = users.map(async (user) => {
+    // Check karo agar lead already processed hai
     const existingUser = await UserDB.findOne({ phone: user.phone });
+
     if (existingUser && existingUser.isSentToAPI) {
       console.log(`📞 ${user.phone} already processed, skipping...`);
-      continue;
+      return { status: "skipped", message: "Already processed" };
     }
 
-    // Create request promise for each user
-    const requestPromise = sendToNewAPI(user).then((response) => {
-      console.log(`📞 ${user.phone} => 🧾`, response);
-      return { user, response };
-    });
+    // Agar nahi processed hai, to API call bhejo
+    return sendToNewAPI(user);
+  });
 
-    promises.push(requestPromise);
+  const results = await Promise.allSettled(promises);
 
-    // If the number of concurrent requests reaches the limit, wait for all of them to finish
-    if (promises.length >= MAX_CONCURRENT_REQUESTS) {
-      await Promise.all(promises); // Wait for all promises to resolve
-      promises.length = 0; // Reset the promise array
-    }
-  }
-
-  // Wait for any remaining promises after all users are processed
-  if (promises.length > 0) {
-    await Promise.all(promises);
-  }
-
-  // Update the database after processing the batch
   for (let i = 0; i < users.length; i++) {
     const user = users[i];
     const response = results[i];
+
+    console.log(`📞 ${user.phone} => 🧾`, response);
 
     const updateResponse = await UserDB.updateOne(
       { phone: user.phone },
@@ -114,7 +94,7 @@ async function processBatch(users) {
             createdAt: new Date().toISOString(),
           },
         },
-        $set: { processed: true, isSentToAPI: true }, // Mark as processed
+        $set: { isSentToAPI: true }, // Mark as processed after successful API call
         $unset: { accounts: "" },
       },
     );
@@ -123,7 +103,6 @@ async function processBatch(users) {
   }
 }
 
-// Main loop function to fetch leads and process them in batches
 async function loop() {
   let processedCount = 0;
   try {
@@ -132,13 +111,12 @@ async function loop() {
     while (hasMoreLeads) {
       console.log("🔄 Fetching new leads...");
 
-      // Fetch leads from MongoDB that have not been processed and not sent to the API
       const leads = await UserDB.aggregate([
         {
           $match: {
             processed: { $ne: true },
             "RefArr.name": { $ne: "kamakshi" },
-            isSentToAPI: { $ne: true },
+            isSentToAPI: { $ne: true }, // Ensure lead hasn't been sent to API
           },
         },
         { $limit: MAX_LEADS },
@@ -148,7 +126,7 @@ async function loop() {
         hasMoreLeads = false;
         console.log("🚫 No more leads to process.");
       } else {
-        await processBatch(leads); // Process the batch of leads
+        await processBatch(leads);
         processedCount += leads.length;
         console.log(`✅ Total Processed: ${processedCount}`);
       }
@@ -156,16 +134,8 @@ async function loop() {
   } catch (err) {
     console.error("🚨 Error in loop:", err.message);
   } finally {
-    mongoose.connection.close(); // Close the MongoDB connection
+    mongoose.connection.close();
   }
 }
 
-// Continuous loop to keep fetching and processing leads
-async function continuousLoop() {
-  while (true) {
-    await loop(); // Run the loop continuously
-    console.log("Processing next batch...");
-  }
-}
-
-continuousLoop(); // Start continuous execution
+loop(); // Run the process once
