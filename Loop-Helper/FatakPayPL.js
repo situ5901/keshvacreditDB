@@ -27,9 +27,13 @@ async function createUserToken() {
       password: "df9786e1ee29910713cc",
     };
 
+    console.log("\n🔑 Generating token...");
     const response = await axios.post(CREATE_USER_TOKEN_API, payloads, {
       headers: { "Content-Type": "application/json" },
     });
+
+    console.log("🎟️ Token API Response:");
+    console.dir(response.data, { depth: null });
 
     if (response.data.success && response.data.data?.token) {
       console.log("✅ Token generated successfully:", response.data.data.token);
@@ -39,7 +43,7 @@ async function createUserToken() {
       return null;
     }
   } catch (err) {
-    console.error("❌ Create User Token API Error:", err.message);
+    console.error("❌ Token API Error:", err.message);
     return null;
   }
 }
@@ -53,8 +57,8 @@ async function sendEligibilityCheck(user, token) {
       employment_type_id: user.employment,
       pan: user.pan || null,
       dob: user.dob || null,
-      email: user.email || null,
-      pincode: user.pincode || null,
+      email: user.email || "not@provided.com",
+      pincode: user.pincode || "400001",
       home_address: user.home_address || "123 MG Road, Mumbai",
       office_address:
         user.office_address || "ABC Pvt Ltd, Andheri East, Mumbai",
@@ -65,6 +69,9 @@ async function sendEligibilityCheck(user, token) {
       consent_timestamp: new Date().toISOString(),
     };
 
+    console.log(`\n📤 Sending Eligibility Check for: ${user.phone}`);
+    console.log("➡️ Payload:", payload);
+
     const response = await axios.post(ELIGIBILITY_API, payload, {
       headers: {
         "Content-Type": "application/json",
@@ -72,20 +79,25 @@ async function sendEligibilityCheck(user, token) {
       },
     });
 
+    console.log("📥 Eligibility API Response:");
+    console.dir(response.data, { depth: null });
+
     return response.data;
   } catch (err) {
     const errorMessage = err.response?.data || err.message || "Unknown error";
     console.error("❌ Eligibility API Error:", errorMessage);
-    return { status: "FAILED", message: errorMessage };
+    return { success: false, message: errorMessage };
   }
 }
 
 async function processBatch(users, token) {
   for (let user of users) {
+    console.log(`\n🔄 Processing user: ${user.phone}`);
+
     const userDoc = await UserDB.findOne({ phone: user.phone });
 
-    if (userDoc?.RefArr?.some((ref) => ref.name === "FatakPay")) {
-      console.log(`⚠️ Skipping ${user.phone} as FatakPay is already present`);
+    if (userDoc?.RefArr?.some((ref) => ref.name === "FatakPayPL")) {
+      console.log(`⚠️ Skipping ${user.phone} (already processed)`);
       continue;
     }
 
@@ -108,13 +120,12 @@ async function processBatch(users, token) {
     };
 
     await UserDB.updateOne({ phone: user.phone }, updateDoc);
-    console.log(`✅ Updated user: ${user.phone}`);
+    console.log(`✅ Updated user in DB: ${user.phone}`);
   }
 }
 
 async function Loop() {
-  let token = await createUserToken();
-
+  const token = await createUserToken();
   if (!token) {
     console.log("❌ Could not generate token. Exiting process.");
     return;
@@ -122,19 +133,22 @@ async function Loop() {
 
   while (true) {
     try {
+      console.log("\n🔍 Fetching new leads...");
+
       const leads = await UserDB.aggregate([
         { $match: { "RefArr.name": { $ne: "FatakPayPL" } } },
         { $limit: BATCH_SIZE },
       ]);
 
       if (leads.length === 0) {
-        console.log("⛔ No leads found. Continuing loop...");
-        continue; // No delay, immediately continue
+        console.log("⏸️ No new leads found. Continuing loop...");
+        continue; // No delay, continues checking
       }
 
       await processBatch(leads, token);
-    } catch (error) {
-      console.error("🔥 Error in processing loop:", error.message);
+      console.log(`✅ Batch processed: ${leads.length} user(s)`);
+    } catch (err) {
+      console.error("🔥 Error in processing loop:", err.message);
     }
   }
 }
