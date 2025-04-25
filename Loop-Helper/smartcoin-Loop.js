@@ -29,11 +29,16 @@ function getHeaders() {
   };
 }
 
+// ✅ PAN Validator
+function isValidPAN(pan) {
+  return /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(pan);
+}
+
 async function getPreApproval(lead) {
   try {
     const payload = {
       phone_number: String(lead.phone),
-      pan: lead.pan || "No PanCard",
+      pan: lead.pan,
       employment_type: lead.employment,
       net_monthly_income: lead.income,
       name_as_per_pan: lead.name,
@@ -88,7 +93,25 @@ async function processBatch(leads) {
             },
           }
         );
+        return;
+      }
 
+      // ✅ PAN validation
+      if (!isValidPAN(lead.pan)) {
+        console.error(`❌ Invalid PAN format for lead: ${lead.phone}. Skipping this lead.`);
+
+        await UserDB.updateOne(
+          { phone: lead.phone },
+          {
+            $push: {
+              RefArr: {
+                name: "SkippedSmartcoin",
+                reason: "Invalid PAN format",
+                createdAt: new Date().toISOString(),
+              },
+            },
+          }
+        );
         return;
       }
 
