@@ -49,7 +49,6 @@ async function sendToNewAPI(lead) {
       headers: getHeaders(),
     });
 
-    // Log the full response data from the Eligibility API
     console.log("✅ Eligibility API Response:", response.data);
 
     return response.data;
@@ -83,7 +82,6 @@ async function getPreApproval(lead) {
       headers: getHeaders(),
     });
 
-    // Log the full response data from the PreApproval API
     console.log("✅ PreApproval API Response:", response.data);
 
     return response.data;
@@ -100,28 +98,75 @@ async function getPreApproval(lead) {
 }
 
 async function processBatch(leads) {
-  // Parallel processing using Promise.all
   const promises = leads.map(async (lead) => {
     try {
+      const userDoc = await UserDB.findOne({ phone: lead.Phone });
+
+      const updates = {};
+      let needUpdate = false;
+
+      // Handle apiResponse field for the UserDB
+      if (userDoc.apiResponse && !Array.isArray(userDoc.apiResponse)) {
+        updates.apiResponse = [userDoc.apiResponse];
+        needUpdate = true;
+      }
+
+      // Handle preApproval field for the UserDB
+      if (userDoc.preApproval && !Array.isArray(userDoc.preApproval)) {
+        updates.preApproval = [userDoc.preApproval];
+        needUpdate = true;
+      }
+
+      if (needUpdate) {
+        await UserDB.updateOne({ phone: lead.Phone }, { $set: updates });
+      }
+
       // Eligibility API request
       const eligibilityResponse = await sendToNewAPI(lead);
       console.log("✅ Eligibility Response:", eligibilityResponse); // Log Eligibility Response
 
-      if (eligibilityResponse.message === "no duplicate found and partner can proceed with the lead") {
-        if (eligibilityResponse.status === "success") {
-          // PreApproval API request if eligibility is successful
-          const preApprovalResponse = await getPreApproval(lead);
-          console.log("✅ PreApproval Response:", preApprovalResponse); // Log PreApproval Response
-        } else {
-          console.log(`⛔ No PreApproval for: ${lead.phone} — Status: ${eligibilityResponse.status}`);
-        }
+      const updateDoc = {
+        $push: {
+          apiResponse: {
+            fullResponse: {
+              ...eligibilityResponse,
+              smartcoin: true,
+            },
+            status: eligibilityResponse.status,
+            amount: eligibilityResponse.amount,
+            message: eligibilityResponse.message,
+            createdAt: new Date().toISOString(),
+          },
+          RefArr: {
+            name: "smartcoin",
+            createdAt: new Date().toISOString(),
+          },
+        },
+        $unset: { accounts: "" },
+      };
+
+      if (eligibilityResponse.status === "ACCEPT") {
+        const preApprovalResponse = await getPreApproval(lead);
+        console.log("✅ PreApproval Response:", preApprovalResponse); // Log PreApproval Response
+
+        updateDoc.$push.apiResponse = {
+          smartcoinRespo: preApprovalResponse,
+          status: preApprovalResponse.status,
+          message: preApprovalResponse.message,
+          createdAt: new Date().toISOString(),
+        };
+      } else {
+        console.log(
+          `⛔ No PreApproval — Status: ${eligibilityResponse.status}`,
+        );
       }
+
+      await UserDB.updateOne({ phone: lead.Phone }, updateDoc);
     } catch (err) {
       console.error("❌ Error processing lead:", err.message);
     }
   });
 
-  // Wait for all promises to complete concurrently
   await Promise.all(promises);
 }
 
@@ -132,7 +177,6 @@ async function Loop() {
       const leads = await UserDB.aggregate([
         { $match: { "RefArr.name": { $ne: "SmartCoin" } } },
         { $limit: BATCH_SIZE },
-        { $sort: { _id: 1 } },
       ]);
 
       if (leads.length === 0) {
