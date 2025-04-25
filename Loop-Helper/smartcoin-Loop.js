@@ -33,7 +33,7 @@ async function getPreApproval(lead) {
   try {
     const payload = {
       phone_number: String(lead.phone),
-      pan: lead.pan,
+      pan: lead.pan || "No PanCard",
       employment_type: lead.employment,
       net_monthly_income: lead.income,
       name_as_per_pan: lead.name,
