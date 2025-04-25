@@ -167,7 +167,8 @@ async function processBatch(leads) {
         await UserDB.updateOne({ phone: lead.phone }, updateDoc);
       } else {
         console.log("⛔ Pre-Approval failed:", preApprovalResponse.message, "PAN:", preApprovalResponse.pan);
-
+        // Optionally, you can add logic here to specifically handle "mandatory field PAN is incorrect"
+        // and mark it as skipped if you prefer not to rely solely on the isValidPAN function.
         if (preApprovalResponse.message?.includes("mandatory field PAN is incorrect")) {
           console.log(`❌ API rejected PAN: ${preApprovalResponse.pan} for lead ${lead.phone}. Marking as skipped.`);
           await UserDB.updateOne(
@@ -213,8 +214,7 @@ async function Loop() {
       await processBatch(leads);
     }
   } catch (error) {
-    console.error("❌ Error occurred in loop:", error.message);:w
-
+    console.error("❌ Error occurred in loop:", error.message);
   } finally {
     console.log("🔌 Closing DB connection...");
     mongoose.connection.close();
