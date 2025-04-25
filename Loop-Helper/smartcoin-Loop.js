@@ -170,12 +170,20 @@ async function processBatch(leads) {
           const preApprovalResponse = await getPreApproval(lead);
           console.log("✅ PreApproval Response:", preApprovalResponse); // Log PreApproval Response
 
-          updateDoc.$push.apiResponse = {
-            smartcoinRespo: preApprovalResponse,
-            status: preApprovalResponse.status,
-            message: preApprovalResponse.message,
-            createdAt: new Date().toISOString(),
-          };
+          // Check if Pre-Approval response is successful
+          if (preApprovalResponse.status === "success") {
+            // If Pre-Approval was successful, update the database with the response
+            updateDoc.$push.apiResponse.push({
+              smartcoinRespo: preApprovalResponse,
+              status: preApprovalResponse.status,
+              message: preApprovalResponse.message, // Dynamic message from Pre-Approval response
+              createdAt: new Date().toISOString(),
+            });
+
+            console.log("✅ Lead created successfully in Pre-Approval API.");
+          } else {
+            console.log("⛔ Pre-Approval failed:", preApprovalResponse.message);
+          }
         } else {
           console.log(
             "⛔ No pre-approval, as eligibility message is not as expected.",
