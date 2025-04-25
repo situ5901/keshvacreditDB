@@ -18,8 +18,6 @@ const UserDB = mongoose.model(
 const BATCH_SIZE = 1;
 const Partner_id = "Keshvacredit";
 
-const ELIGIBILITY_API =
-  "https://leads.smartcoin.co.in/partner/keshvacredit/lead/dedup";
 const PRE_APPROVAL_API =
   "https://leads.smartcoin.co.in/partner/keshvacredit/lead/create";
 
@@ -29,39 +27,6 @@ function getHeaders() {
     "admin-api-client-id": "SC_KVCD_oruwm5w5fXy4JNoi",
     "admin-api-client-key": "esy7kphMG6G9hu90",
   };
-}
-
-async function sendToNewAPI(lead) {
-  try {
-    const payload = {
-      phone_number: String(lead.phone),
-      pan: lead.pan,
-      employment_type: lead.employment,
-      net_monthly_income: lead.income,
-      name_as_per_pan: lead.name,
-      date_of_birth: lead.dob,
-      Partner_id: Partner_id,
-    };
-
-    console.log("📤 Sending Eligibility Payload:", payload);
-
-    const response = await axios.post(ELIGIBILITY_API, qs.stringify(payload), {
-      headers: getHeaders(),
-    });
-
-    console.log("✅ Eligibility API Response:", response.data);
-
-    return response.data;
-  } catch (err) {
-    console.error(
-      "❌ Eligibility API Error:",
-      err.response?.data || err.message,
-    );
-    return {
-      status: "FAILED",
-      message: err.response?.data?.message || err.message || "Unknown Error",
-    };
-  }
 }
 
 async function getPreApproval(lead) {
@@ -84,7 +49,7 @@ async function getPreApproval(lead) {
 
     // Handle the successful API response
     console.log("✅ PreApproval API Response:", response.data);
-    
+
     if (response.data.status === "success") {
       console.log("🎉 Lead created successfully with Lead ID:", response.data.leadId);
       // You can now process the lead ID and response data as needed
@@ -105,7 +70,6 @@ async function getPreApproval(lead) {
     };
   }
 }
-
 
 async function processBatch(leads) {
   const promises = leads.map(async (lead) => {
@@ -137,65 +101,33 @@ async function processBatch(leads) {
         await UserDB.updateOne({ phone: lead.phone }, { $set: updates });
       }
 
-      const eligibilityResponse = await sendToNewAPI(lead);
-      console.log("✅ Eligibility Response:", eligibilityResponse); // Log Eligibility Response
+      const preApprovalResponse = await getPreApproval(lead);
+      console.log("✅ PreApproval Response:", preApprovalResponse); // Log PreApproval Response
 
-      const updateDoc = {
-        $push: {
-          apiResponse: {
-            smartcoin: {
-              ...eligibilityResponse,
-              Smartcoin: true,
-            },
-            status: eligibilityResponse.status,
-            message: eligibilityResponse.message,
-            createdAt: new Date().toISOString(),
-          },
-          RefArr: {
-            name: "Smartcoin",
-            createdAt: new Date().toISOString(),
-          },
-        },
-        $unset: { accounts: "" },
-      };
-
-      if (eligibilityResponse.status === "ACCEPT") {
-        // Check if the message is 'no duplicate found and partner can proceed with the lead'
-        if (
-          eligibilityResponse.message ===
-          "no duplicate found and partner can proceed with the lead"
-        ) {
-          // Only proceed to pre-approval if this message is received
-          console.log("✅ Eligibility successful! Proceeding with Pre-Approval.");
-          const preApprovalResponse = await getPreApproval(lead);
-          console.log("✅ PreApproval Response:", preApprovalResponse); // Log PreApproval Response
-
-          // Check if Pre-Approval response is successful
-          if (preApprovalResponse.status === "success") {
-            // If Pre-Approval was successful, update the database with the response
-            updateDoc.$push.apiResponse.push({
+      // Check if Pre-Approval response is successful
+      if (preApprovalResponse.status === "success") {
+        // If Pre-Approval was successful, update the database with the response
+        const updateDoc = {
+          $push: {
+            preApproval: {
               smartcoinRespo: preApprovalResponse,
               status: preApprovalResponse.status,
               message: preApprovalResponse.message, // Dynamic message from Pre-Approval response
               createdAt: new Date().toISOString(),
-            });
+            },
+            RefArr: {
+              name: "Smartcoin",
+              createdAt: new Date().toISOString(),
+            },
+          },
+          $unset: { accounts: "" },
+        };
 
-            console.log("✅ Lead created successfully in Pre-Approval API.");
-          } else {
-            console.log("⛔ Pre-Approval failed:", preApprovalResponse.message);
-          }
-        } else {
-          console.log(
-            "⛔ No pre-approval, as eligibility message is not as expected.",
-          );
-        }
+        console.log("✅ Lead created successfully in Pre-Approval API.");
+        await UserDB.updateOne({ phone: lead.phone }, updateDoc);
       } else {
-        console.log(
-          `⛔ No PreApproval — Status: ${eligibilityResponse.status}`,
-        );
+        console.log("⛔ Pre-Approval failed:", preApprovalResponse.message);
       }
-
-      await UserDB.updateOne({ phone: lead.phone }, updateDoc);
     } catch (err) {
       console.error("❌ Error processing lead:", err.message);
     }
