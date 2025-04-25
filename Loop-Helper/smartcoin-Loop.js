@@ -100,7 +100,7 @@ async function getPreApproval(lead) {
 async function processBatch(leads) {
   const promises = leads.map(async (lead) => {
     try {
-      const userDoc = await UserDB.findOne({ phone: lead.Phone });
+      const userDoc = await UserDB.findOne({ Phone: lead.Phone });
 
       const updates = {};
       let needUpdate = false;
@@ -118,7 +118,7 @@ async function processBatch(leads) {
       }
 
       if (needUpdate) {
-        await UserDB.updateOne({ phone: lead.Phone }, { $set: updates });
+        await UserDB.updateOne({ Phone: lead.Phone }, { $set: updates });
       }
 
       // Eligibility API request
@@ -161,7 +161,7 @@ async function processBatch(leads) {
         );
       }
 
-      await UserDB.updateOne({ phone: lead.Phone }, updateDoc);
+      await UserDB.updateOne({ Phone: lead.Phone }, updateDoc);
     } catch (err) {
       console.error("❌ Error processing lead:", err.message);
     }
