@@ -150,15 +150,26 @@ async function processBatch(leads) {
       };
 
       if (eligibilityResponse.status === "ACCEPT") {
-        const preApprovalResponse = await getPreApproval(lead);
-        console.log("✅ PreApproval Response:", preApprovalResponse); // Log PreApproval Response
+        // Check if the message is 'no duplicate found and partner can proceed with the lead'
+        if (
+          eligibilityResponse.message ===
+          "no duplicate found and partner can proceed with the lead"
+        ) {
+          // Only proceed to pre-approval if this message is received
+          const preApprovalResponse = await getPreApproval(lead);
+          console.log("✅ PreApproval Response:", preApprovalResponse); // Log PreApproval Response
 
-        updateDoc.$push.apiResponse = {
-          smartcoinRespo: preApprovalResponse,
-          status: preApprovalResponse.status,
-          message: preApprovalResponse.message,
-          createdAt: new Date().toISOString(),
-        };
+          updateDoc.$push.apiResponse = {
+            smartcoinRespo: preApprovalResponse,
+            status: preApprovalResponse.status,
+            message: preApprovalResponse.message,
+            createdAt: new Date().toISOString(),
+          };
+        } else {
+          console.log(
+            "⛔ No pre-approval, as eligibility message is not as expected.",
+          );
+        }
       } else {
         console.log(
           `⛔ No PreApproval — Status: ${eligibilityResponse.status}`,
