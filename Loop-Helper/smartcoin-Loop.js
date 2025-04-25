@@ -62,6 +62,7 @@ async function getPreApproval(lead) {
       return {
         status: "FAILED",
         message: response.data.message || "Unknown error",
+        pan: lead.pan, // Include PAN for debugging
       };
     }
   } catch (err) {
@@ -69,6 +70,7 @@ async function getPreApproval(lead) {
     return {
       status: "FAILED",
       message: err.response?.data?.message || err.message || "Unknown Error",
+      pan: lead.pan, // Include PAN for debugging
     };
   }
 }
@@ -96,9 +98,9 @@ async function processBatch(leads) {
         return;
       }
 
-      // ✅ PAN validation
+      // ✅ PAN validation BEFORE API call
       if (!isValidPAN(lead.pan)) {
-        console.error(`❌ Invalid PAN format for lead: ${lead.phone}. Skipping this lead.`);
+        console.error(`❌ Invalid PAN format for lead: ${lead.phone} with PAN: ${lead.pan}. Skipping this lead.`);
 
         await UserDB.updateOne(
           { phone: lead.phone },
@@ -106,7 +108,7 @@ async function processBatch(leads) {
             $push: {
               RefArr: {
                 name: "SkippedSmartcoin",
-                reason: "Invalid PAN format",
+                reason: `Invalid PAN format: ${lead.pan}`,
                 createdAt: new Date().toISOString(),
               },
             },
@@ -118,8 +120,7 @@ async function processBatch(leads) {
       const userDoc = await UserDB.findOne({ phone: lead.phone });
 
       if (
-        userDoc.RefArr &&
-        userDoc.RefArr.some((ref) => ref.name === "Smartcoin")
+        userDoc?.RefArr?.some((ref) => ref.name === "Smartcoin")
       ) {
         console.log(`⛔ Lead already processed for SmartCoin: ${lead.phone}`);
         return;
@@ -165,7 +166,23 @@ async function processBatch(leads) {
         console.log("✅ Lead created successfully in Pre-Approval API.");
         await UserDB.updateOne({ phone: lead.phone }, updateDoc);
       } else {
-        console.log("⛔ Pre-Approval failed:", preApprovalResponse.message);
+        console.log("⛔ Pre-Approval failed:", preApprovalResponse.message, "PAN:", preApprovalResponse.pan);
+
+        if (preApprovalResponse.message?.includes("mandatory field PAN is incorrect")) {
+          console.log(`❌ API rejected PAN: ${preApprovalResponse.pan} for lead ${lead.phone}. Marking as skipped.`);
+          await UserDB.updateOne(
+            { phone: lead.phone },
+            {
+              $push: {
+                RefArr: {
+                  name: "SkippedSmartcoin",
+                  reason: `API rejected PAN: ${preApprovalResponse.pan}`,
+                  createdAt: new Date().toISOString(),
+                },
+              },
+            }
+          );
+        }
       }
     } catch (err) {
       console.error("❌ Error processing lead:", err.message);
@@ -196,7 +213,8 @@ async function Loop() {
       await processBatch(leads);
     }
   } catch (error) {
-    console.error("❌ Error occurred in loop:", error.message);
+    console.error("❌ Error occurred in loop:", error.message);:w
+
   } finally {
     console.log("🔌 Closing DB connection...");
     mongoose.connection.close();
