@@ -47,13 +47,11 @@ async function getPreApproval(lead) {
       headers: getHeaders(),
     });
 
-    // Handle the successful API response
     console.log("✅ PreApproval API Response:", response.data);
 
     if (response.data.status === "success") {
       console.log("🎉 Lead created successfully with Lead ID:", response.data.leadId);
-      // You can now process the lead ID and response data as needed
-      return response.data; // Return the success data
+      return response.data;
     } else {
       console.error("❌ Failed to create lead:", response.data.message);
       return {
@@ -61,7 +59,6 @@ async function getPreApproval(lead) {
         message: response.data.message || "Unknown error",
       };
     }
-
   } catch (err) {
     console.error("❌ PreApproval API Error:", err.response?.data || err.message);
     return {
@@ -78,7 +75,21 @@ async function processBatch(leads) {
         !lead.phone || !lead.pan || !lead.employment || !lead.income || !lead.name || !lead.dob
       ) {
         console.error(`❌ Incomplete data for lead: ${lead.phone}. Skipping this lead.`);
-        return; 
+
+        await UserDB.updateOne(
+          { phone: lead.phone },
+          {
+            $push: {
+              RefArr: {
+                name: "SkippedSmartcoin",
+                reason: "Incomplete Data",
+                createdAt: new Date().toISOString(),
+              },
+            },
+          }
+        );
+
+        return;
       }
 
       const userDoc = await UserDB.findOne({ phone: lead.phone });
@@ -88,7 +99,7 @@ async function processBatch(leads) {
         userDoc.RefArr.some((ref) => ref.name === "Smartcoin")
       ) {
         console.log(`⛔ Lead already processed for SmartCoin: ${lead.phone}`);
-        return; 
+        return;
       }
 
       const updates = {};
@@ -109,17 +120,15 @@ async function processBatch(leads) {
       }
 
       const preApprovalResponse = await getPreApproval(lead);
-      console.log("✅ PreApproval Response:", preApprovalResponse); // Log PreApproval Response
+      console.log("✅ PreApproval Response:", preApprovalResponse);
 
-      // Check if Pre-Approval response is successful
       if (preApprovalResponse.status === "success") {
-        // If Pre-Approval was successful, update the database with the response
         const updateDoc = {
           $push: {
             apiResponse: {
               smartcoin: preApprovalResponse,
               status: preApprovalResponse.status,
-              message: preApprovalResponse.message, // Dynamic message from Pre-Approval response
+              message: preApprovalResponse.message,
               createdAt: new Date().toISOString(),
             },
             RefArr: {
@@ -143,13 +152,16 @@ async function processBatch(leads) {
   await Promise.all(promises);
 }
 
-
 async function Loop() {
   try {
     while (true) {
       console.log("📦 Fetching new leads...");
       const leads = await UserDB.aggregate([
-        { $match: { "RefArr.name": { $ne: "Smartcoin" } } }, // Filter leads where Smartcoin is not in RefArr
+        {
+          $match: {
+            "RefArr.name": { $nin: ["Smartcoin", "SkippedSmartcoin"] },
+          },
+        },
         { $limit: BATCH_SIZE },
       ]);
 
@@ -158,7 +170,7 @@ async function Loop() {
         break;
       }
 
-      await processBatch(leads); // Process the leads without delay
+      await processBatch(leads);
     }
   } catch (error) {
     console.error("❌ Error occurred in loop:", error.message);
