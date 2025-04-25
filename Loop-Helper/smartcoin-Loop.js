@@ -102,16 +102,22 @@ async function processBatch(leads) {
     try {
       const userDoc = await UserDB.findOne({ Phone: lead.Phone });
 
+      if (
+        userDoc.RefArr &&
+        userDoc.RefArr.some((ref) => ref.name === "smartcoin")
+      ) {
+        console.log(`⛔ Lead already processed for SmartCoin: ${lead.Phone}`);
+        return; // Skip the lead if smartcoin is already in RefArr
+      }
+
       const updates = {};
       let needUpdate = false;
 
-      // Handle apiResponse field for the UserDB
       if (userDoc.apiResponse && !Array.isArray(userDoc.apiResponse)) {
         updates.apiResponse = [userDoc.apiResponse];
         needUpdate = true;
       }
 
-      // Handle preApproval field for the UserDB
       if (userDoc.preApproval && !Array.isArray(userDoc.preApproval)) {
         updates.preApproval = [userDoc.preApproval];
         needUpdate = true;
@@ -121,24 +127,22 @@ async function processBatch(leads) {
         await UserDB.updateOne({ Phone: lead.Phone }, { $set: updates });
       }
 
-      // Eligibility API request
       const eligibilityResponse = await sendToNewAPI(lead);
       console.log("✅ Eligibility Response:", eligibilityResponse); // Log Eligibility Response
 
       const updateDoc = {
         $push: {
           apiResponse: {
-            fullResponse: {
+            smartcoin: {
               ...eligibilityResponse,
-              smartcoin: true,
+              Smartcoin: true,
             },
             status: eligibilityResponse.status,
-            amount: eligibilityResponse.amount,
             message: eligibilityResponse.message,
             createdAt: new Date().toISOString(),
           },
           RefArr: {
-            name: "smartcoin",
+            name: "Smartcoin",
             createdAt: new Date().toISOString(),
           },
         },
@@ -175,7 +179,7 @@ async function Loop() {
     while (true) {
       console.log("📦 Fetching new leads...");
       const leads = await UserDB.aggregate([
-        { $match: { "RefArr.name": { $ne: "SmartCoin" } } },
+        { $match: { "RefArr.name": { $ne: "Smartcoin" } } },
         { $limit: BATCH_SIZE },
       ]);
 
