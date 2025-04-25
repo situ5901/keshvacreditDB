@@ -74,6 +74,13 @@ async function getPreApproval(lead) {
 async function processBatch(leads) {
   const promises = leads.map(async (lead) => {
     try {
+      if (
+        !lead.phone || !lead.pan || !lead.employment || !lead.income || !lead.name || !lead.dob
+      ) {
+        console.error(`❌ Incomplete data for lead: ${lead.phone}. Skipping this lead.`);
+        return; 
+      }
+
       const userDoc = await UserDB.findOne({ phone: lead.phone });
 
       if (
@@ -81,7 +88,7 @@ async function processBatch(leads) {
         userDoc.RefArr.some((ref) => ref.name === "Smartcoin")
       ) {
         console.log(`⛔ Lead already processed for SmartCoin: ${lead.phone}`);
-        return; // Skip the lead if Smartcoin is already in RefArr
+        return; 
       }
 
       const updates = {};
@@ -135,6 +142,7 @@ async function processBatch(leads) {
 
   await Promise.all(promises);
 }
+
 
 async function Loop() {
   try {
