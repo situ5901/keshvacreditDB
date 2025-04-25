@@ -104,7 +104,7 @@ async function processBatch(leads) {
 
       if (
         userDoc.RefArr &&
-        userDoc.RefArr.some((ref) => ref.name === "smartcoin")
+        userDoc.RefArr.some((ref) => ref.name === "Smartcoin")
       ) {
         console.log(`⛔ Lead already processed for SmartCoin: ${lead.Phone}`);
         return; // Skip the lead if smartcoin is already in RefArr
@@ -179,7 +179,7 @@ async function Loop() {
     while (true) {
       console.log("📦 Fetching new leads...");
       const leads = await UserDB.aggregate([
-        { $match: { "RefArr.name": { $ne: "Smartcoin" } } },
+        { $match: { "RefArr.name": { $ne: "Smartcoin" } } }, // Filter leads where Smartcoin is not in RefArr
         { $limit: BATCH_SIZE },
       ]);
 
