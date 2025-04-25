@@ -3,16 +3,16 @@ const axios = require("axios");
 const qs = require("qs");
 require("dotenv").config();
 
-const MONGODB_URI = process.env.MONGODB_URI;
+const MONGODB_URINEW = process.env.MONGODB_URINEW;
 
 mongoose
-  .connect(MONGODB_URI)
+  .connect(MONGODB_URINEW)
   .then(() => console.log("✅ MongoDB Connected Successfully"))
   .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
 
 const UserDB = mongoose.model(
-  "loops",
-  new mongoose.Schema({}, { collection: "loops", strict: false }),
+  "userdb",
+  new mongoose.Schema({}, { collection: "userdb", strict: false }),
 );
 
 const BATCH_SIZE = 10;
@@ -34,12 +34,12 @@ function getHeaders() {
 async function sendToNewAPI(lead) {
   try {
     const payload = {
-      phone_number: String(lead.Phone),
-      pan: lead.PanCard,
-      employment_type: "Salaried",
-      net_monthly_income: "25000",
-      name_as_per_pan: lead.Name,
-      date_of_birth: lead.DOB,
+      phone_number: String(lead.phone),
+      pan: lead.pan,
+      employment_type: lead.employment,
+      net_monthly_income: lead.income,
+      name_as_per_pan: lead.name,
+      date_of_birth: lead.dob,
       Partner_id: Partner_id,
     };
 
@@ -67,12 +67,12 @@ async function sendToNewAPI(lead) {
 async function getPreApproval(lead) {
   try {
     const payload = {
-      phone_number: lead.Phone,
-      pan: lead.PanCard,
-      employment_type: "Salaried",
-      net_monthly_income: "25000",
-      name_as_per_pan: lead.Name,
-      date_of_birth: lead.DOB,
+      phone_number: String(lead.phone),
+      pan: lead.pan,
+      employment_type: lead.employment,
+      net_monthly_income: lead.income,
+      name_as_per_pan: lead.name,
+      date_of_birth: lead.dob,
       Partner_id: Partner_id,
     };
 
@@ -82,14 +82,23 @@ async function getPreApproval(lead) {
       headers: getHeaders(),
     });
 
+    // Handle the successful API response
     console.log("✅ PreApproval API Response:", response.data);
+    
+    if (response.data.status === "success") {
+      console.log("🎉 Lead created successfully with Lead ID:", response.data.leadId);
+      // You can now process the lead ID and response data as needed
+      return response.data; // Return the success data
+    } else {
+      console.error("❌ Failed to create lead:", response.data.message);
+      return {
+        status: "FAILED",
+        message: response.data.message || "Unknown error",
+      };
+    }
 
-    return response.data;
   } catch (err) {
-    console.error(
-      "❌ PreApproval API Error:",
-      err.response?.data || err.message,
-    );
+    console.error("❌ PreApproval API Error:", err.response?.data || err.message);
     return {
       status: "FAILED",
       message: err.response?.data?.message || err.message || "Unknown Error",
@@ -97,16 +106,17 @@ async function getPreApproval(lead) {
   }
 }
 
+
 async function processBatch(leads) {
   const promises = leads.map(async (lead) => {
     try {
-      const userDoc = await UserDB.findOne({ Phone: lead.Phone });
+      const userDoc = await UserDB.findOne({ phone: lead.phone });
 
       if (
         userDoc.RefArr &&
         userDoc.RefArr.some((ref) => ref.name === "Smartcoin")
       ) {
-        console.log(`⛔ Lead already processed for SmartCoin: ${lead.Phone}`);
+        console.log(`⛔ Lead already processed for SmartCoin: ${lead.phone}`);
         return; // Skip the lead if smartcoin is already in RefArr
       }
 
@@ -124,7 +134,7 @@ async function processBatch(leads) {
       }
 
       if (needUpdate) {
-        await UserDB.updateOne({ Phone: lead.Phone }, { $set: updates });
+        await UserDB.updateOne({ phone: lead.phone }, { $set: updates });
       }
 
       const eligibilityResponse = await sendToNewAPI(lead);
@@ -176,7 +186,7 @@ async function processBatch(leads) {
         );
       }
 
-      await UserDB.updateOne({ Phone: lead.Phone }, updateDoc);
+      await UserDB.updateOne({ phone: lead.phone }, updateDoc);
     } catch (err) {
       console.error("❌ Error processing lead:", err.message);
     }
