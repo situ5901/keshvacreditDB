@@ -100,25 +100,29 @@ async function getPreApproval(lead) {
 }
 
 async function processBatch(leads) {
-  for (let lead of leads) {
-    // Process the lead without printing the MongoDB document
-    const eligibilityResponse = await sendToNewAPI(lead);
-    console.log("✅ Eligibility Response:", eligibilityResponse); // Log Eligibility Response
+  // Parallel processing using Promise.all
+  const promises = leads.map(async (lead) => {
+    try {
+      // Eligibility API request
+      const eligibilityResponse = await sendToNewAPI(lead);
+      console.log("✅ Eligibility Response:", eligibilityResponse); // Log Eligibility Response
 
-    if (
-      eligibilityResponse.message ===
-      "no duplicate found and partner can proceed with the lead"
-    ) {
-      if (eligibilityResponse.status === "success") {
-        const preApprovalResponse = await getPreApproval(lead);
-        console.log("✅ PreApproval Response:", preApprovalResponse); // Log PreApproval Response
-      } else {
-        console.log(
-          `⛔ No PreApproval for: ${lead.phone} — Status: ${eligibilityResponse.status}`,
-        );
+      if (eligibilityResponse.message === "no duplicate found and partner can proceed with the lead") {
+        if (eligibilityResponse.status === "success") {
+          // PreApproval API request if eligibility is successful
+          const preApprovalResponse = await getPreApproval(lead);
+          console.log("✅ PreApproval Response:", preApprovalResponse); // Log PreApproval Response
+        } else {
+          console.log(`⛔ No PreApproval for: ${lead.phone} — Status: ${eligibilityResponse.status}`);
+        }
       }
+    } catch (err) {
+      console.error("❌ Error processing lead:", err.message);
     }
-  }
+  });
+
+  // Wait for all promises to complete concurrently
+  await Promise.all(promises);
 }
 
 async function Loop() {
@@ -126,11 +130,7 @@ async function Loop() {
     while (true) {
       console.log("📦 Fetching new leads...");
       const leads = await UserDB.aggregate([
-        {
-          $match: {
-            "RefArr.name": { $ne: "SmartCoin" },
-          },
-        },
+        { $match: { "RefArr.name": { $ne: "SmartCoin" } } },
         { $limit: BATCH_SIZE },
         { $sort: { _id: 1 } },
       ]);
@@ -140,7 +140,7 @@ async function Loop() {
         break;
       }
 
-      await processBatch(leads); // Process the leads without logging MongoDB doc
+      await processBatch(leads); // Process the leads without delay
     }
   } catch (error) {
     console.error("❌ Error occurred in loop:", error.message);
