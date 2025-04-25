@@ -117,7 +117,7 @@ async function processBatch(leads) {
         userDoc.RefArr.some((ref) => ref.name === "Smartcoin")
       ) {
         console.log(`⛔ Lead already processed for SmartCoin: ${lead.phone}`);
-        return; // Skip the lead if smartcoin is already in RefArr
+        return; // Skip the lead if Smartcoin is already in RefArr
       }
 
       const updates = {};
@@ -166,6 +166,7 @@ async function processBatch(leads) {
           "no duplicate found and partner can proceed with the lead"
         ) {
           // Only proceed to pre-approval if this message is received
+          console.log("✅ Eligibility successful! Proceeding with Pre-Approval.");
           const preApprovalResponse = await getPreApproval(lead);
           console.log("✅ PreApproval Response:", preApprovalResponse); // Log PreApproval Response
 
