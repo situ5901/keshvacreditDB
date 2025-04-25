@@ -109,8 +109,8 @@ async function processBatch(leads) {
         // If Pre-Approval was successful, update the database with the response
         const updateDoc = {
           $push: {
-            preApproval: {
-              smartcoinRespo: preApprovalResponse,
+            apiResponse: {
+              smartcoin: preApprovalResponse,
               status: preApprovalResponse.status,
               message: preApprovalResponse.message, // Dynamic message from Pre-Approval response
               createdAt: new Date().toISOString(),
