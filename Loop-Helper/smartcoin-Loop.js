@@ -11,8 +11,8 @@ mongoose
   .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
 
 const UserDB = mongoose.model(
-  "userdb",
-  new mongoose.Schema({}, { collection: "userdb", strict: false }),
+  "loops",
+  new mongoose.Schema({}, { collection: "loops", strict: false }),
 );
 
 const BATCH_SIZE = 10;
@@ -34,12 +34,12 @@ function getHeaders() {
 async function sendToNewAPI(lead) {
   try {
     const payload = {
-      phone_number: lead.phone,
-      pan: lead.pan,
-      employment_type: lead.employment,
-      net_monthly_income: lead.income,
-      name_as_per_pan: lead.name,
-      date_of_birth: lead.dob,
+      phone_number: String(lead.Phone),
+      pan: lead.PanCard,
+      employment_type: "Salaried",
+      net_monthly_income: "25000",
+      name_as_per_pan: lead.Name,
+      date_of_birth: lead.DOB,
       Partner_id: Partner_id,
     };
 
@@ -49,7 +49,9 @@ async function sendToNewAPI(lead) {
       headers: getHeaders(),
     });
 
-    console.log("✅ Eligibility Response:", response.data);
+    // Log the full response data from the Eligibility API
+    console.log("✅ Eligibility API Response:", response.data);
+
     return response.data;
   } catch (err) {
     console.error(
@@ -66,12 +68,12 @@ async function sendToNewAPI(lead) {
 async function getPreApproval(lead) {
   try {
     const payload = {
-      phone_number: lead.phone,
-      pan: lead.pan,
-      employment_type: lead.employment,
-      net_monthly_income: lead.income,
-      name_as_per_pan: lead.name,
-      date_of_birth: lead.dob,
+      phone_number: lead.Phone,
+      pan: lead.PanCard,
+      employment_type: "Salaried",
+      net_monthly_income: "25000",
+      name_as_per_pan: lead.Name,
+      date_of_birth: lead.DOB,
       Partner_id: Partner_id,
     };
 
@@ -81,7 +83,9 @@ async function getPreApproval(lead) {
       headers: getHeaders(),
     });
 
-    console.log("✅ PreApproval Response:", response.data);
+    // Log the full response data from the PreApproval API
+    console.log("✅ PreApproval API Response:", response.data);
+
     return response.data;
   } catch (err) {
     console.error(
@@ -95,99 +99,40 @@ async function getPreApproval(lead) {
   }
 }
 
-async function processBatch(leads, successCounter) {
+async function processBatch(leads) {
   for (let lead of leads) {
-    const userDoc = await UserDB.findOne({ phone: lead.phone });
-
-    const updates = {};
-    let needUpdate = false;
-
-    if (userDoc.apiResponse && !Array.isArray(userDoc.apiResponse)) {
-      updates.apiResponse = [userDoc.apiResponse];
-      needUpdate = true;
-    }
-
-    if (userDoc.preApproval && !Array.isArray(userDoc.preApproval)) {
-      updates.preApproval = [userDoc.preApproval];
-      needUpdate = true;
-    }
-
-    if (needUpdate) {
-      await UserDB.updateOne({ phone: lead.phone }, { $set: updates });
-    }
-
-    const response = await sendToNewAPI(lead);
+    // Process the lead without printing the MongoDB document
+    const eligibilityResponse = await sendToNewAPI(lead);
+    console.log("✅ Eligibility Response:", eligibilityResponse); // Log Eligibility Response
 
     if (
-      response.message ===
+      eligibilityResponse.message ===
       "no duplicate found and partner can proceed with the lead"
     ) {
-      successCounter.count++;
+      if (eligibilityResponse.status === "success") {
+        const preApprovalResponse = await getPreApproval(lead);
+        console.log("✅ PreApproval Response:", preApprovalResponse); // Log PreApproval Response
+      } else {
+        console.log(
+          `⛔ No PreApproval for: ${lead.phone} — Status: ${eligibilityResponse.status}`,
+        );
+      }
     }
-
-    const updateDoc = {
-      $push: {
-        apiResponse: {
-          SmartCoinResponse: {
-            SmartCoin: true,
-            ...response,
-          },
-          status: response.status,
-          message: response.message,
-          createdAt: new Date().toISOString(),
-        },
-        RefArr: {
-          name: "SmartCoin",
-          createdAt: new Date().toISOString(),
-        },
-      },
-      $unset: { accounts: "" },
-    };
-
-    if (response.status === "success") {
-      const preApproval = await getPreApproval(lead);
-
-      updateDoc.$push.apiResponse = {
-        SmartCoinResponse: preApproval,
-        status: preApproval.status,
-        message: preApproval.message,
-        createdAt: new Date().toISOString(),
-      };
-
-      console.log(`✅ PreApproval done for: ${lead.phone}`);
-    } else {
-      console.log(
-        `⛔ No PreApproval for: ${lead.phone} — Status: ${response.status}`,
-      );
-    }
-
-    // Final update with response and mark as processed
-    await UserDB.updateOne(
-      { phone: lead.phone },
-      {
-        ...updateDoc,
-        $set: { processed: true }, // ✅ Important: mark as processed
-      },
-    );
   }
 }
 
 async function Loop() {
-  let processedCount = 0;
-  const successCounter = { count: 0 };
-
   try {
     while (true) {
       console.log("📦 Fetching new leads...");
-
       const leads = await UserDB.aggregate([
         {
           $match: {
-            processed: { $ne: true },
             "RefArr.name": { $ne: "SmartCoin" },
           },
         },
         { $limit: BATCH_SIZE },
+        { $sort: { _id: 1 } },
       ]);
 
       if (leads.length === 0) {
@@ -195,19 +140,13 @@ async function Loop() {
         break;
       }
 
-      await processBatch(leads, successCounter);
-      processedCount += leads.length;
-
-      console.log(`✅ Total Processed: ${processedCount}`);
+      await processBatch(leads); // Process the leads without logging MongoDB doc
     }
   } catch (error) {
     console.error("❌ Error occurred in loop:", error.message);
   } finally {
     console.log("🔌 Closing DB connection...");
     mongoose.connection.close();
-    console.log(
-      `📊 Total 'no duplicate found and partner can proceed with the lead' count: ${successCounter.count}`,
-    );
   }
 }
 
