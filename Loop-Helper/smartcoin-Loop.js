@@ -15,7 +15,7 @@ const UserDB = mongoose.model(
   new mongoose.Schema({}, { collection: "userdb", strict: false }),
 );
 
-const BATCH_SIZE = 10;
+const BATCH_SIZE = 1;
 const Partner_id = "Keshvacredit";
 
 const ELIGIBILITY_API =
