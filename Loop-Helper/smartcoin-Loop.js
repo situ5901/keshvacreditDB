@@ -55,7 +55,10 @@ async function getPreApproval(lead) {
     console.log("✅ PreApproval API Response:", response.data);
 
     if (response.data.status === "success") {
-      console.log("🎉 Lead created successfully with Lead ID:", response.data.leadId);
+      console.log(
+        "🎉 Lead created successfully with Lead ID:",
+        response.data.leadId,
+      );
       return response.data;
     } else {
       console.error("❌ Failed to create lead:", response.data.message);
@@ -66,7 +69,10 @@ async function getPreApproval(lead) {
       };
     }
   } catch (err) {
-    console.error("❌ PreApproval API Error:", err.response?.data || err.message);
+    console.error(
+      "❌ PreApproval API Error:",
+      err.response?.data || err.message,
+    );
     return {
       status: "FAILED",
       message: err.response?.data?.message || err.message || "Unknown Error",
@@ -79,9 +85,16 @@ async function processBatch(leads) {
   const promises = leads.map(async (lead) => {
     try {
       if (
-        !lead.phone || !lead.pan || !lead.employment || !lead.income || !lead.name || !lead.dob
+        !lead.phone ||
+        !lead.pan ||
+        !lead.employment ||
+        !lead.income ||
+        !lead.name ||
+        !lead.dob
       ) {
-        console.error(`❌ Incomplete data for lead: ${lead.phone}. Skipping this lead.`);
+        console.error(
+          `❌ Incomplete data for lead: ${lead.phone}. Skipping this lead.`,
+        );
 
         await UserDB.updateOne(
           { phone: lead.phone },
@@ -93,14 +106,16 @@ async function processBatch(leads) {
                 createdAt: new Date().toISOString(),
               },
             },
-          }
+          },
         );
         return;
       }
 
       // ✅ PAN validation BEFORE API call
       if (!isValidPAN(lead.pan)) {
-        console.error(`❌ Invalid PAN format for lead: ${lead.phone} with PAN: ${lead.pan}. Skipping this lead.`);
+        console.error(
+          `❌ Invalid PAN format for lead: ${lead.phone} with PAN: ${lead.pan}. Skipping this lead.`,
+        );
 
         await UserDB.updateOne(
           { phone: lead.phone },
@@ -112,16 +127,14 @@ async function processBatch(leads) {
                 createdAt: new Date().toISOString(),
               },
             },
-          }
+          },
         );
         return;
       }
 
       const userDoc = await UserDB.findOne({ phone: lead.phone });
 
-      if (
-        userDoc?.RefArr?.some((ref) => ref.name === "Smartcoin")
-      ) {
+      if (userDoc?.RefArr?.some((ref) => ref.name === "Smartcoin")) {
         console.log(`⛔ Lead already processed for SmartCoin: ${lead.phone}`);
         return;
       }
@@ -166,11 +179,20 @@ async function processBatch(leads) {
         console.log("✅ Lead created successfully in Pre-Approval API.");
         await UserDB.updateOne({ phone: lead.phone }, updateDoc);
       } else {
-        console.log("⛔ Pre-Approval failed:", preApprovalResponse.message, "PAN:", preApprovalResponse.pan);
-        // Optionally, you can add logic here to specifically handle "mandatory field PAN is incorrect"
-        // and mark it as skipped if you prefer not to rely solely on the isValidPAN function.
-        if (preApprovalResponse.message?.includes("mandatory field PAN is incorrect")) {
-          console.log(`❌ API rejected PAN: ${preApprovalResponse.pan} for lead ${lead.phone}. Marking as skipped.`);
+        console.log(
+          "⛔ Pre-Approval failed:",
+          preApprovalResponse.message,
+          "PAN:",
+          preApprovalResponse.pan,
+        );
+        if (
+          preApprovalResponse.message?.includes(
+            "mandatory field PAN is incorrect",
+          )
+        ) {
+          console.log(
+            `❌ API rejected PAN: ${preApprovalResponse.pan} for lead ${lead.phone}. Marking as skipped.`,
+          );
           await UserDB.updateOne(
             { phone: lead.phone },
             {
@@ -181,7 +203,7 @@ async function processBatch(leads) {
                   createdAt: new Date().toISOString(),
                 },
               },
-            }
+            },
           );
         }
       }
@@ -222,3 +244,4 @@ async function Loop() {
 }
 
 Loop();
+
