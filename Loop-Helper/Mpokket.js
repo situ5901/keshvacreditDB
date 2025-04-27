@@ -102,7 +102,7 @@ async function getPreApproval(user) {
 }
 
 async function processBatch(users) {
-  const batchPromises = users.map(async (user) => {
+  const promises = users.map(async (user) => {
     const userDoc = await UserDB.findOne({ phone: user.phone });
 
     if (userDoc) {
@@ -169,7 +169,8 @@ async function processBatch(users) {
     }
   });
 
-  await Promise.all(batchPromises); // This will send all API requests concurrently
+  // Using Promise.all to process all users concurrently
+  await Promise.all(promises);
 }
 
 async function startProcessing() {
@@ -188,11 +189,11 @@ async function startProcessing() {
       ]);
 
       if (leads.length === 0) {
-        console.log("⏸️ No leads found. Waiting before retry...");
-        continue;
+        console.log("⏸️ No leads found.");
+        break;  // No more leads, stop processing
       }
 
-      await processBatch(leads); // This processes all leads concurrently
+      await processBatch(leads);
       console.log(`🎉 Processed ${leads.length} leads successfully!`);
     }
   } catch (error) {
