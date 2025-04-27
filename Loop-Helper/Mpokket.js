@@ -101,6 +101,7 @@ async function getPreApproval(user) {
   }
 }
 
+// Function to process users without waiting
 async function processBatch(users) {
   const promises = users.map(async (user) => {
     const userDoc = await UserDB.findOne({ phone: user.phone });
@@ -169,7 +170,7 @@ async function processBatch(users) {
     }
   });
 
-  // Using Promise.all to process all users concurrently
+  // Using Promise.all to process all users concurrently (without waiting)
   await Promise.all(promises);
 }
 
@@ -190,10 +191,10 @@ async function startProcessing() {
 
       if (leads.length === 0) {
         console.log("⏸️ No leads found.");
-        break;  // No more leads, stop processing
+        break; // No more leads, stop processing
       }
 
-      await processBatch(leads);
+      await processBatch(leads); // Process all leads at once
       console.log(`🎉 Processed ${leads.length} leads successfully!`);
     }
   } catch (error) {
