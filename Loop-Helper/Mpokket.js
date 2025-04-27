@@ -14,24 +14,32 @@ const UserDB = mongoose.model(
   new mongoose.Schema({}, { collection: "userdb", strict: false }),
 );
 
+const BATCH_SIZE = 10;
 const PartnerID = "Keshvacredit";
 const dedupeAPI = "https://api.mpkt.in/acquisition-affiliate/v1/dedupe/check";
 const CreateUserAPI = "https://api.mpkt.in/acquisition-affiliate/v1/user";
 const API_KEY = "2A331F81163D447C9B5941910D2BD";
 
+// const dedupeAPI =
+//   "https://stg-api.mpkt.in/acquisition-affiliate/v1/dedupe/check";
+// const CreateUserAPI = "https://stg-api.mpkt.in/acquisition-affiliate/v1/user";
+//
+// const API_KEY = "B6AB0D38B1B44BFC9F38789037D8D";
 async function sendToNewAPI(user) {
   try {
     const email = user?.email ? user.email.toString() : "";
     const phone = user?.phone ? user.phone.toString() : "";
 
     if (!email || !phone) {
-      console.error(`❌ Missing Email or Phone for user: ${user._id}`);
-      return null; // Skip this user
+      throw new Error("Email or Phone is missing in user object");
     }
 
+    const encodedEmail = Buffer.from(email).toString("base64");
+    const encodedPhone = Buffer.from(phone).toString("base64");
+
     const payload = {
-      email_id: Buffer.from(email).toString("base64"),
-      mobile_number: Buffer.from(phone).toString("base64"),
+      email_id: encodedEmail,
+      mobile_number: encodedPhone,
       partnerId: PartnerID,
     };
 
@@ -44,9 +52,7 @@ async function sendToNewAPI(user) {
       },
     });
 
-    console.log("✅ Eligibility Response:");
-    console.log(JSON.stringify(response.data, null, 2)); // Pretty print
-
+    console.log("✅ Eligibility Response:", response.data);
     return response.data;
   } catch (err) {
     console.error(
@@ -81,9 +87,7 @@ async function getPreApproval(user) {
       },
     });
 
-    console.log("✅ PreApproval Response:");
-    console.log(JSON.stringify(response.data, null, 2)); // Pretty print
-
+    console.log("✅ PreApproval Response:", response.data);
     return response.data;
   } catch (err) {
     console.error(
@@ -97,72 +101,97 @@ async function getPreApproval(user) {
   }
 }
 
+async function processBatch(users) {
+  for (let user of users) {
+    const userDoc = await UserDB.findOne({ phone: user.phone });
+
+    if (userDoc) {
+      const updates = {};
+      let needUpdate = false;
+
+      if (userDoc.apiResponse && !Array.isArray(userDoc.apiResponse)) {
+        updates.apiResponse = [userDoc.apiResponse];
+        needUpdate = true;
+      }
+
+      if (userDoc.preApproval && !Array.isArray(userDoc.preApproval)) {
+        updates.preApproval = [userDoc.preApproval];
+        needUpdate = true;
+      }
+
+      if (needUpdate) {
+        await UserDB.updateOne({ phone: user.phone }, { $set: updates });
+      }
+
+      const response = await sendToNewAPI(user);
+
+      const updateDoc = {
+        $push: {
+          apiResponse: {
+            MpokketResponse: {
+              ...response,
+              Mpokket: true,
+            },
+            status_code: response.status_code,
+            message: response.message,
+            createdAt: new Date().toISOString(),
+          },
+          RefArr: {
+            name: "Mpokket",
+            createdAt: new Date().toISOString(),
+          },
+        },
+        $unset: { accounts: "" },
+      };
+
+      if (response.status_code === "1205") {
+        const preApproval = await getPreApproval(user);
+        updateDoc.$push.apiResponse = {
+          MpokketResponse: {
+            ...response,
+            Mpokket: true,
+          },
+          status: preApproval.status,
+          message: preApproval.message,
+          createdAt: new Date().toISOString(),
+        };
+      } else {
+        console.log(`⛔ No PreApproval — Status Code: ${response.status_code}`);
+      }
+
+      await UserDB.updateOne({ phone: user.phone }, updateDoc);
+      await UserDB.updateOne(
+        { phone: user.phone },
+        { $set: { processed: true } },
+      );
+
+      console.log("✅ Lead processed successfully:", user.phone);
+    }
+  }
+}
+
 async function startProcessing() {
   try {
     while (true) {
       console.log("📦 Fetching leads...");
 
-      const users = await UserDB.find({
-        "RefArr.name": { $ne: "Mpokket" },
-      }).limit(10); // Fetch 10 leads at a time to speed up
+      const leads = await UserDB.aggregate([
+        {
+          $match: {
+            processed: { $ne: true },
+            "RefArr.name": { $ne: "Mpokket" },
+          },
+        },
+        { $limit: BATCH_SIZE },
+      ]);
 
-      if (users.length === 0) {
-        console.log("⏸️ No leads found. Retrying...");
-        await new Promise((resolve) => setTimeout(resolve, 3000)); // Optional, just in case no users
+      if (leads.length === 0) {
+        console.log("⏸️ No leads found. Waiting before retry...");
         continue;
       }
 
-      // Create an array of promises for concurrent API calls
-      const promises = users.map(async (user) => {
-        const response = await sendToNewAPI(user);
-        if (response && response.status_code === "1205") {
-          const preApproval = await getPreApproval(user);
-          return { user, response, preApproval };
-        }
-        return { user, response };
-      });
-
-      // Wait for all promises to complete concurrently
-      const results = await Promise.all(promises);
-
-      // Process the results
-      for (const result of results) {
-        const { user, response, preApproval } = result;
-
-        const updateDoc = {
-          $push: {
-            apiResponse: {
-              MpokketResponse: {
-                ...response,
-                Mpokket: true,
-              },
-              status_code: response.status_code,
-              message: response.message,
-              createdAt: new Date().toISOString(),
-            },
-            RefArr: {
-              name: "Mpokket",
-              createdAt: new Date().toISOString(),
-            },
-          },
-          $unset: { accounts: "" },
-        };
-
-        if (preApproval) {
-          updateDoc.$push.apiResponse = {
-            MpokketResponse: {
-              ...response,
-              Mpokket: true,
-            },
-            status: preApproval.status,
-            message: preApproval.message,
-            createdAt: new Date().toISOString(),
-          };
-        }
-
-        await UserDB.updateOne({ _id: user._id }, updateDoc);
-        console.log(`✅ Lead processed successfully: ${user.phone}`);
-      }
+      await processBatch(leads);
+      console.log(`🎉 Processed ${leads.length} leads successfully!`);
     }
   } catch (error) {
     console.error("❌ Error occurred:", error.message);
