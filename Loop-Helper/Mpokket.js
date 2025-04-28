@@ -70,7 +70,7 @@ async function sendToNewAPI(user) {
 async function getPreApproval(user) {
   try {
     const payload = {
-      mobile_no: user.phone,
+      mobile_no: String(user.phone),
       pancard: user.pan,
       email_id: user.email,
       Full_name: user.name,
