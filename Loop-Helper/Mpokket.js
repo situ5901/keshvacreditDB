@@ -2,10 +2,10 @@ const mongoose = require("mongoose");
 const axios = require("axios");
 require("dotenv").config();
 
-const MONGODB_URI = process.env.MONGODB_URI;
+const MONGODB_URINEW = process.env.MONGODB_URINEW;
 
 mongoose
-  .connect(MONGODB_URI)
+  .connect(MONGODB_URINEW)
   .then(() => console.log("✅ MongoDB Connected Successfully"))
   .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
 
@@ -71,6 +71,7 @@ async function getPreApproval(user) {
   try {
     const payload = {
       mobile_no: user.phone,
+      pancard: user.pan,
       email_id: user.email,
       Full_name: user.name,
       date_of_birth: user.dob,
@@ -159,7 +160,6 @@ async function processBatch(users) {
       } else {
         console.log(`⛔ No PreApproval — Status Code: ${response.status_code}`);
       }
-
       await UserDB.updateOne({ phone: user.phone }, updateDoc);
       await UserDB.updateOne(
         { phone: user.phone },
@@ -193,7 +193,6 @@ async function startProcessing() {
         console.log("⏸️ No leads found.");
         break; // No more leads, stop processing
       }
-
       await processBatch(leads); // Process all leads at once
       console.log(`🎉 Processed ${leads.length} leads successfully!`);
     }
