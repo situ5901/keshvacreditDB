@@ -23,12 +23,14 @@ const loanAmount = "20000"; // ✅ as string
 async function sendToNewAPI(lead) {
   let response = {};
   try {
+    const formattedDob = new Date(lead.dob).toISOString().slice(0, 10); // ✅ Format: YYYY-MM-DD
+
     const apiRequestBody = {
       mobile: lead.phone,
       name: lead.name,
       email: lead.email,
       employeeType: lead.employment,
-      dob: lead.dob,
+      dob: formattedDob,
       pancard: lead.pan,
       loanAmount: loanAmount,
       Partner_id: Partner_id,
@@ -60,7 +62,6 @@ async function sendToNewAPI(lead) {
 
 async function processBatch(users) {
   const promises = users.map(async (user) => {
-    // Check karo agar lead already processed hai
     const existingUser = await UserDB.findOne({ phone: user.phone });
 
     if (existingUser && existingUser.isSentToAPI) {
@@ -68,7 +69,6 @@ async function processBatch(users) {
       return { status: "skipped", message: "Already processed" };
     }
 
-    // Agar nahi processed hai, to API call bhejo
     return sendToNewAPI(user);
   });
 
@@ -94,7 +94,7 @@ async function processBatch(users) {
             createdAt: new Date().toISOString(),
           },
         },
-        $set: { isSentToAPI: true }, // Mark as processed after successful API call
+        $set: { isSentToAPI: true },
         $unset: { accounts: "" },
       },
     );
@@ -116,7 +116,7 @@ async function loop() {
           $match: {
             processed: { $ne: true },
             "RefArr.name": { $ne: "kamakshi" },
-            isSentToAPI: { $ne: true }, // Ensure lead hasn't been sent to API
+            isSentToAPI: { $ne: true },
           },
         },
         { $limit: MAX_LEADS },
@@ -138,4 +138,4 @@ async function loop() {
   }
 }
 
-loop(); // Run the process once
+loop(); // Start the process
