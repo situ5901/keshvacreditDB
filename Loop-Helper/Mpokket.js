@@ -171,7 +171,7 @@ async function processBatch(users) {
   });
 
   // Using Promise.all to process all users concurrently (without waiting)
-  await Promise.all(promises);
+  await Promise.allSettled(promises);
 }
 
 async function startProcessing() {
