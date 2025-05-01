@@ -15,7 +15,6 @@ const UserDB = mongoose.model(
 );
 
 const BATCH_SIZE = 10;
-const MAX_LEADS = 50000;
 const PartnerID = "a8ce06a0-4fbd-489f-8d75-345548fb98a8";
 
 const ELIGIBILITY_API =
@@ -72,7 +71,7 @@ async function getPreApproval(user) {
       email: user.email,
       panNumber: user.pan,
       name: user.name,
-      dob: user.dob,
+      dob: user.dob ? new Date(user.dob).toISOString().split("T")[0] : null, // ✅ DOB formatted here
       income: user.income,
       employmentType: user.employment,
       orgName: "Infosys Ltd",
