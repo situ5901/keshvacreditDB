@@ -11,8 +11,8 @@ mongoose
   .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
 
 const UserDB = mongoose.model(
-  "userdb",
-  new mongoose.Schema({}, { collection: "userdb", strict: false }),
+  "loop",
+  new mongoose.Schema({}, { collection: "loop", strict: false }),
 );
 
 const BATCH_SIZE = 1;
