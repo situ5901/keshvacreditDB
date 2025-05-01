@@ -93,9 +93,10 @@ async function getPreApproval(user) {
   }
 }
 
-// Function to process each user without waiting for others
-async function processUser(user) {
-  try {
+async function processBatch(users) {
+  const allResponses = []; // Store all responses for both APIs
+
+  const promises = users.map(async (user) => {
     const userDoc = await UserDB.findOne({ phone: user.phone });
 
     if (userDoc) {
@@ -116,8 +117,35 @@ async function processUser(user) {
         await UserDB.updateOne({ phone: user.phone }, { $set: updates });
       }
 
+      // Send data to dedupe API and capture the response
       const response = await sendToNewAPI(user);
+      allResponses.push({
+        phone: user.phone,
+        dedupeAPIResponse: response, // Store response from dedupe API
+      });
 
+      // Check if PreApproval is required
+      if (response.status_code === "1205") {
+        const preApproval = await getPreApproval(user);
+        allResponses.push({
+          phone: user.phone,
+          preApprovalResponse: preApproval, // Store response from create user API
+        });
+
+        updateDoc.$push.apiResponse = {
+          MpokketResponse: {
+            ...response,
+            Mpokket: true,
+          },
+          status: preApproval.status,
+          message: preApproval.message,
+          createdAt: new Date().toISOString(),
+        };
+      } else {
+        console.log(`⛔ No PreApproval — Status Code: ${response.status_code}`);
+      }
+
+      // Update the user document with responses
       const updateDoc = {
         $push: {
           apiResponse: {
@@ -137,21 +165,6 @@ async function processUser(user) {
         $unset: { accounts: "" },
       };
 
-      if (response.status_code === "1205") {
-        const preApproval = await getPreApproval(user);
-        updateDoc.$push.apiResponse = {
-          MpokketResponse: {
-            ...response,
-            Mpokket: true,
-          },
-          status: preApproval.status,
-          message: preApproval.message,
-          createdAt: new Date().toISOString(),
-        };
-      } else {
-        console.log(`⛔ No PreApproval — Status Code: ${response.status_code}`);
-      }
-
       await UserDB.updateOne({ phone: user.phone }, updateDoc);
       await UserDB.updateOne(
         { phone: user.phone },
@@ -160,12 +173,26 @@ async function processUser(user) {
 
       console.log("✅ Lead processed successfully:", user.phone);
     }
-  } catch (error) {
-    console.error("❌ Error processing user:", user.phone, error.message);
-  }
+  });
+
+  // Wait for all promises to resolve concurrently
+  await Promise.all(promises);
+
+  // After batch is processed, show consolidated response for both APIs
+  console.log("📊 Consolidated API Responses:");
+  console.log("------------------------------------------------------------");
+  allResponses.forEach((response) => {
+    console.log(`Phone: ${response.phone}`);
+    if (response.dedupeAPIResponse) {
+      console.log("Dedupe API Response:", response.dedupeAPIResponse);
+    }
+    if (response.preApprovalResponse) {
+      console.log("PreApproval API Response:", response.preApprovalResponse);
+    }
+    console.log("------------------------------------------------------------");
+  });
 }
 
-// Main loop to fetch leads and process them continuously
 async function startProcessing() {
   try {
     while (true) {
@@ -174,6 +201,7 @@ async function startProcessing() {
       const leads = await UserDB.aggregate([
         {
           $match: {
+            processed: { $ne: true },
             "RefArr.name": { $ne: "Mpokket" },
           },
         },
@@ -185,12 +213,8 @@ async function startProcessing() {
         break; // No more leads, stop processing
       }
 
-      // Process users immediately as their API responses are received
-      for (const lead of leads) {
-        processUser(lead); // Start processing without waiting for completion
-      }
-
-      console.log(`🎉 Processing ${leads.length} leads...`);
+      await processBatch(leads); // Process all leads at once
+      console.log(`🎉 Processed ${leads.length} leads successfully!`);
     }
   } catch (error) {
     console.error("❌ Error occurred:", error.message);
