@@ -70,7 +70,7 @@ async function sendToNewAPI(user) {
 async function getPreApproval(user) {
   try {
     const payload = {
-      mobile_no: String(user.phone),
+      mobile_no: user.phone,
       pancard: user.pan,
       email_id: user.email,
       Full_name: user.name,
@@ -171,7 +171,7 @@ async function processBatch(users) {
   });
 
   // Using Promise.all to process all users concurrently (without waiting)
-  await Promise.allStalled(promises);
+  await Promise.all(promises);
 }
 
 async function startProcessing() {
