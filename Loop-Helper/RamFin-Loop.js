@@ -2,10 +2,10 @@ const axios = require("axios");
 const mongoose = require("mongoose");
 require("dotenv").config();
 
-const MONGODB_URI = process.env.MONGODB_URI;
+const MONGODB_URINEW = process.env.MONGODB_URINEW;
 
 mongoose
-  .connect(MONGODB_URI)
+  .connect(MONGODB_URINEW)
   .then(() => console.log("✅ MongoDB Connected Successfully"))
   .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
 
@@ -16,7 +16,7 @@ const UserDB = mongoose.model(
 
 const newAPI =
   "https://preprod.ramfincorp.co.in/loanapply/ramfincorp_api/lead_gen/api/v1/create_lead";
-const MAX_LEADS = 5;
+const MAX_LEADS = 1;
 const Partner_id = "Keshvacredit";
 const loanAmount = 20000;
 let processedCount = 0;
@@ -29,7 +29,7 @@ async function sendToNewAPI(lead) {
       name: lead.name,
       email: lead.email,
       employeeType: lead.employment,
-      dob: lead.dob,
+      dob: user.dob ? new Date(user.dob).toISOString().split("T")[0] : null, // ✅ DOB formatted here
       pancard: lead.pan,
       loanAmount: loanAmount,
       Partner_id: Partner_id,
