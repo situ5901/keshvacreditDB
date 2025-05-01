@@ -11,8 +11,8 @@ mongoose
   .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
 
 const UserDB = mongoose.model(
-  "loop",
-  new mongoose.Schema({}, { collection: "loop", strict: false }),
+  "Loop",
+  new mongoose.Schema({}, { collection: "Loop", strict: false }),
 );
 
 const BATCH_SIZE = 1;
@@ -37,11 +37,11 @@ async function getPreApproval(lead) {
   try {
     const payload = {
       phone_number: String(lead.phone),
-      pan: lead.pan,
-      employment_type: lead.employment,
-      net_monthly_income: lead.income,
-      name_as_per_pan: lead.name,
-      date_of_birth: lead.dob,
+      pan: lead.Pan,
+      employment_type: "SALARIED",
+      net_monthly_income: "25000",
+      name_as_per_pan: lead.Name,
+      date_of_birth: lead.DOB,
       Partner_id: Partner_id,
     };
 
@@ -64,7 +64,7 @@ async function getPreApproval(lead) {
       return {
         status: "FAILED",
         message: response.data.message || "Unknown error",
-        pan: lead.pan, // Include PAN for debugging
+        pan: lead.Pan,
       };
     }
   } catch (err) {
@@ -75,7 +75,7 @@ async function getPreApproval(lead) {
     return {
       status: "FAILED",
       message: err.response?.data?.message || err.message || "Unknown Error",
-      pan: lead.pan, // Include PAN for debugging
+      pan: lead.Pan,
     };
   }
 }
@@ -83,25 +83,19 @@ async function getPreApproval(lead) {
 async function processBatch(leads) {
   const promises = leads.map(async (lead) => {
     try {
-      if (
-        !lead.phone ||
-        !lead.pan ||
-        !lead.employment ||
-        !lead.income ||
-        !lead.name ||
-        !lead.dob
-      ) {
-        console.error(
-          `❌ Incomplete data for lead: ${lead.phone}. Skipping this lead.`,
-        );
+      // 🧹 Normalize keys
+      lead.Pan = lead.Pan || lead.pan;
 
+      // ❌ Skip if required fields are missing
+      if (!lead.phone || !lead.Name || !lead.DOB || !lead.Pan) {
+        console.error(`❌ Incomplete data for lead: ${lead.phone}. Skipping.`);
         await UserDB.updateOne(
           { phone: lead.phone },
           {
             $push: {
               RefArr: {
                 name: "SkippedSmartcoin",
-                reason: "Incomplete Data",
+                reason: "Incomplete data (missing phone/Name/DOB/PAN)",
                 createdAt: new Date().toISOString(),
               },
             },
@@ -110,19 +104,18 @@ async function processBatch(leads) {
         return;
       }
 
-      // ✅ PAN validation BEFORE API call
-      if (!isValidPAN(lead.pan)) {
+      // ❌ PAN Validation
+      if (!isValidPAN(lead.Pan)) {
         console.error(
-          `❌ Invalid PAN format for lead: ${lead.phone} with PAN: ${lead.pan}. Skipping this lead.`,
+          `❌ Invalid PAN format for lead: ${lead.phone} with PAN: ${lead.Pan}`,
         );
-
         await UserDB.updateOne(
           { phone: lead.phone },
           {
             $push: {
               RefArr: {
                 name: "SkippedSmartcoin",
-                reason: `Invalid PAN format: ${lead.pan}`,
+                reason: `Invalid PAN format: ${lead.Pan}`,
                 createdAt: new Date().toISOString(),
               },
             },
@@ -131,13 +124,14 @@ async function processBatch(leads) {
         return;
       }
 
+      // ❌ Already Processed
       const userDoc = await UserDB.findOne({ phone: lead.phone });
-
       if (userDoc?.RefArr?.some((ref) => ref.name === "Smartcoin")) {
         console.log(`⛔ Lead already processed for SmartCoin: ${lead.phone}`);
         return;
       }
 
+      // 🧹 Normalize existing fields
       const updates = {};
       let needUpdate = false;
 
@@ -155,6 +149,7 @@ async function processBatch(leads) {
         await UserDB.updateOne({ phone: lead.phone }, { $set: updates });
       }
 
+      // 🚀 Send to SmartCoin API
       const preApprovalResponse = await getPreApproval(lead);
       console.log("✅ PreApproval Response:", preApprovalResponse);
 
@@ -175,23 +170,15 @@ async function processBatch(leads) {
           $unset: { accounts: "" },
         };
 
-        console.log("✅ Lead created successfully in Pre-Approval API.");
         await UserDB.updateOne({ phone: lead.phone }, updateDoc);
+        console.log("✅ Lead processed successfully:", lead.phone);
       } else {
-        console.log(
-          "⛔ Pre-Approval failed:",
-          preApprovalResponse.message,
-          "PAN:",
-          preApprovalResponse.pan,
-        );
+        console.log(`⛔ API failed: ${preApprovalResponse.message}`);
         if (
           preApprovalResponse.message?.includes(
             "mandatory field PAN is incorrect",
           )
         ) {
-          console.log(
-            `❌ API rejected PAN: ${preApprovalResponse.pan} for lead ${lead.phone}. Marking as skipped.`,
-          );
           await UserDB.updateOne(
             { phone: lead.phone },
             {
@@ -228,14 +215,14 @@ async function Loop() {
       ]);
 
       if (leads.length === 0) {
-        console.log("✅ All leads processed. No more new data.");
+        console.log("✅ All leads processed. No more data.");
         break;
       }
 
       await processBatch(leads);
     }
   } catch (error) {
-    console.error("❌ Error occurred in loop:", error.message);
+    console.error("❌ Loop error:", error.message);
   } finally {
     console.log("🔌 Closing DB connection...");
     mongoose.connection.close();
