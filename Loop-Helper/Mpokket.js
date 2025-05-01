@@ -171,7 +171,7 @@ async function processBatch(users) {
   });
 
   // Using Promise.all to process all users concurrently (without waiting)
-  await Promise.allSettled(promises);
+  await Promise.allStalled(promises);
 }
 
 async function startProcessing() {
@@ -182,6 +182,7 @@ async function startProcessing() {
       const leads = await UserDB.aggregate([
         {
           $match: {
+            processed: { $ne: true },
             "RefArr.name": { $ne: "Mpokket" },
           },
         },
