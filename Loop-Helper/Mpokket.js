@@ -14,13 +14,17 @@ const UserDB = mongoose.model(
   new mongoose.Schema({}, { collection: "userdb", strict: false }),
 );
 
-const BATCH_SIZE = 1; // You can adjust this number based on your needs
+const BATCH_SIZE = 1;
 const PartnerID = "Keshvacredit";
 const dedupeAPI = "https://api.mpkt.in/acquisition-affiliate/v1/dedupe/check";
 const CreateUserAPI = "https://api.mpkt.in/acquisition-affiliate/v1/user";
 const API_KEY = "2A331F81163D447C9B5941910D2BD";
 
-// Function to send request to the Dedupe API
+// const dedupeAPI =
+//   "https://stg-api.mpkt.in/acquisition-affiliate/v1/dedupe/check";
+// const CreateUserAPI = "https://stg-api.mpkt.in/acquisition-affiliate/v1/user";
+//
+// const API_KEY = "B6AB0D38B1B44BFC9F38789037D8D";
 async function sendToNewAPI(user) {
   try {
     const email = user?.email ? user.email.toString() : "";
@@ -51,7 +55,10 @@ async function sendToNewAPI(user) {
     console.log("✅ Eligibility Response:", response.data);
     return response.data;
   } catch (err) {
-    console.error("❌ Eligibility API Error:", err.message);
+    console.error(
+      "❌ Eligibility API Error:",
+      err.response?.data || err.message,
+    );
     return {
       status: "FAILED",
       status_code: err.response?.status || "UNKNOWN",
@@ -60,7 +67,6 @@ async function sendToNewAPI(user) {
   }
 }
 
-// Function to get pre-approval from the Create User API
 async function getPreApproval(user) {
   try {
     const payload = {
@@ -85,7 +91,10 @@ async function getPreApproval(user) {
     console.log("✅ PreApproval Response:", response.data);
     return response.data;
   } catch (err) {
-    console.error("❌ PreApproval API Error:", err.message);
+    console.error(
+      "❌ PreApproval API Error:",
+      err.response?.data || err.message,
+    );
     return {
       status: "FAILED",
       message: err.response?.data?.message || err.message || "Unknown Error",
@@ -93,9 +102,8 @@ async function getPreApproval(user) {
   }
 }
 
+// Function to process users without waiting
 async function processBatch(users) {
-  const allResponses = []; // Store all responses for both APIs
-
   const promises = users.map(async (user) => {
     const userDoc = await UserDB.findOne({ phone: user.phone });
 
@@ -117,35 +125,8 @@ async function processBatch(users) {
         await UserDB.updateOne({ phone: user.phone }, { $set: updates });
       }
 
-      // Send data to dedupe API and capture the response
       const response = await sendToNewAPI(user);
-      allResponses.push({
-        phone: user.phone,
-        dedupeAPIResponse: response, // Store response from dedupe API
-      });
 
-      // Check if PreApproval is required
-      if (response.status_code === "1205") {
-        const preApproval = await getPreApproval(user);
-        allResponses.push({
-          phone: user.phone,
-          preApprovalResponse: preApproval, // Store response from create user API
-        });
-
-        updateDoc.$push.apiResponse = {
-          MpokketResponse: {
-            ...response,
-            Mpokket: true,
-          },
-          status: preApproval.status,
-          message: preApproval.message,
-          createdAt: new Date().toISOString(),
-        };
-      } else {
-        console.log(`⛔ No PreApproval — Status Code: ${response.status_code}`);
-      }
-
-      // Update the user document with responses
       const updateDoc = {
         $push: {
           apiResponse: {
@@ -165,6 +146,20 @@ async function processBatch(users) {
         $unset: { accounts: "" },
       };
 
+      if (response.status_code === "1205") {
+        const preApproval = await getPreApproval(user);
+        updateDoc.$push.apiResponse = {
+          MpokketResponse: {
+            ...response,
+            Mpokket: true,
+          },
+          status: preApproval.status,
+          message: preApproval.message,
+          createdAt: new Date().toISOString(),
+        };
+      } else {
+        console.log(`⛔ No PreApproval — Status Code: ${response.status_code}`);
+      }
       await UserDB.updateOne({ phone: user.phone }, updateDoc);
       await UserDB.updateOne(
         { phone: user.phone },
@@ -175,22 +170,8 @@ async function processBatch(users) {
     }
   });
 
-  // Wait for all promises to resolve concurrently
+  // Using Promise.all to process all users concurrently (without waiting)
   await Promise.all(promises);
-
-  // After batch is processed, show consolidated response for both APIs
-  console.log("📊 Consolidated API Responses:");
-  console.log("------------------------------------------------------------");
-  allResponses.forEach((response) => {
-    console.log(`Phone: ${response.phone}`);
-    if (response.dedupeAPIResponse) {
-      console.log("Dedupe API Response:", response.dedupeAPIResponse);
-    }
-    if (response.preApprovalResponse) {
-      console.log("PreApproval API Response:", response.preApprovalResponse);
-    }
-    console.log("------------------------------------------------------------");
-  });
 }
 
 async function startProcessing() {
@@ -212,7 +193,6 @@ async function startProcessing() {
         console.log("⏸️ No leads found.");
         break; // No more leads, stop processing
       }
-
       await processBatch(leads); // Process all leads at once
       console.log(`🎉 Processed ${leads.length} leads successfully!`);
     }
