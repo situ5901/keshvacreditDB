@@ -2,10 +2,10 @@ const mongoose = require("mongoose");
 const axios = require("axios");
 require("dotenv").config();
 
-const MONGODB_URI = process.env.MONGODB_URI;
+const MONGODB_URINEW = process.env.MONGODB_URINEW;
 
 mongoose
-  .connect(MONGODB_URI)
+  .connect(MONGODB_URINEW)
   .then(() => console.log("✅ MongoDB Connected Successfully"))
   .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
 
@@ -14,7 +14,7 @@ const UserDB = mongoose.model(
   new mongoose.Schema({}, { collection: "userdb", strict: false }),
 );
 
-const BATCH_SIZE = 1;
+const BATCH_SIZE = 5;
 const CREATE_USER_TOKEN_API =
   "https://onboardingapi.fatakpay.com/external-api/v1/create-user-token";
 const ELIGIBILITY_API =
@@ -56,7 +56,7 @@ async function sendEligibilityCheck(user, token) {
       last_name: user.last_name || "kumar",
       employment_type_id: user.employment,
       pan: user.pan || null,
-      dob: user.dob || null,
+      dob: user.dob ? new Date(user.dob).toISOString().split("T")[0] : null, // ✅ DOB formatted here
       email: user.email || "not@provided.com",
       pincode: user.pincode || "400001",
       home_address: user.home_address || "123 MG Road, Mumbai",
@@ -69,7 +69,7 @@ async function sendEligibilityCheck(user, token) {
       consent_timestamp: new Date().toISOString(),
     };
 
-    console.log(`\n📤 Sending Eligibility Check for: ${user.phone}`);
+    console.log(`\n📤 Sending Eligibility for: ${user.phone}`);
     console.log("➡️ Payload:", payload);
 
     const response = await axios.post(ELIGIBILITY_API, payload, {
@@ -79,9 +79,10 @@ async function sendEligibilityCheck(user, token) {
       },
     });
 
-    console.log("📥 Eligibility API Response:");
-    console.dir(response.data, { depth: null });
-
+    console.log(
+      "📥 Eligibility API Raw Response:",
+      JSON.stringify(response.data, null, 2),
+    );
     return response.data;
   } catch (err) {
     const errorMessage = err.response?.data || err.message || "Unknown error";
@@ -96,7 +97,7 @@ async function processBatch(users, token) {
 
     const userDoc = await UserDB.findOne({ phone: user.phone });
 
-    if (userDoc?.RefArr?.some((ref) => ref.name === "FatakPayPL")) {
+    if (userDoc?.RefArr?.some((ref) => ref.name === "FatakPay")) {
       console.log(`⚠️ Skipping ${user.phone} (already processed)`);
       continue;
     }
@@ -106,49 +107,49 @@ async function processBatch(users, token) {
     const updateDoc = {
       $push: {
         apiResponse: {
-          FatakPayPL: true,
+          FatakPayDCL: true,
           status: eligibilityResponse.success ? "Eligible" : "Ineligible",
           message: eligibilityResponse.message,
           data: eligibilityResponse.data || {},
           createdAt: new Date().toISOString(),
         },
         RefArr: {
-          name: "FatakPayPL",
+          name: "FatakPay",
           createdAt: new Date().toISOString(),
         },
       },
     };
 
     await UserDB.updateOne({ phone: user.phone }, updateDoc);
-    console.log(`✅ Updated user in DB: ${user.phone}`);
+    console.log(`✅ DB updated for: ${user.phone}`);
   }
 }
 
 async function Loop() {
   const token = await createUserToken();
   if (!token) {
-    console.log("❌ Could not generate token. Exiting process.");
+    console.log("❌ Token missing. Aborting...");
     return;
   }
 
   while (true) {
     try {
-      console.log("\n🔍 Fetching new leads...");
+      console.log("\n🔎 Looking for new leads...");
 
       const leads = await UserDB.aggregate([
-        { $match: { "RefArr.name": { $ne: "FatakPayPL" } } },
+        { $match: { "RefArr.name": { $ne: "FatakPay" } } },
         { $limit: BATCH_SIZE },
       ]);
 
       if (leads.length === 0) {
-        console.log("⏸️ No new leads found. Continuing loop...");
-        continue; // No delay, continues checking
+        console.log("⏸️ No unprocessed leads. Checking again...");
+        continue;
       }
 
       await processBatch(leads, token);
-      console.log(`✅ Batch processed: ${leads.length} user(s)`);
+      console.log(`✅ Processed batch of ${leads.length} users`);
     } catch (err) {
-      console.error("🔥 Error in processing loop:", err.message);
+      console.error("❌ Error in loop:", err.message);
     }
   }
 }

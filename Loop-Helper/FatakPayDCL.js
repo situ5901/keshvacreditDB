@@ -2,10 +2,10 @@ const mongoose = require("mongoose");
 const axios = require("axios");
 require("dotenv").config();
 
-const MONGODB_URI = process.env.MONGODB_URI;
+const MONGODB_URINEW = process.env.MONGODB_URINEW;
 
 mongoose
-  .connect(MONGODB_URI)
+  .connect(MONGODB_URINEW)
   .then(() => console.log("✅ MongoDB Connected Successfully"))
   .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
 
@@ -31,7 +31,10 @@ async function createUserToken() {
       headers: { "Content-Type": "application/json" },
     });
 
-    console.log("\n🎟️ Token API Raw Response:", JSON.stringify(response.data, null, 2));
+    console.log(
+      "\n🎟️ Token API Raw Response:",
+      JSON.stringify(response.data, null, 2),
+    );
 
     if (response.data.success && response.data.data?.token) {
       console.log("✅ Token generated successfully:", response.data.data.token);
@@ -54,7 +57,7 @@ async function sendEligibilityCheck(user, token) {
       last_name: user.last_name || "kumar",
       employment_type_id: user.employment,
       pan: user.pan || null,
-      dob: user.dob || null,
+      dob: user.dob ? new Date(user.dob).toISOString().split("T")[0] : null, // ✅ DOB formatted here
       email: user.email || "not@provided.com",
       pincode: user.pincode || "400001",
       home_address: user.home_address || "123 MG Road, Mumbai",
@@ -77,7 +80,10 @@ async function sendEligibilityCheck(user, token) {
       },
     });
 
-    console.log("📥 Eligibility API Raw Response:", JSON.stringify(response.data, null, 2));
+    console.log(
+      "📥 Eligibility API Raw Response:",
+      JSON.stringify(response.data, null, 2),
+    );
     return response.data;
   } catch (err) {
     const errorMessage = err.response?.data || err.message || "Unknown error";

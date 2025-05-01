@@ -2,6 +2,7 @@ const axios = require("axios");
 const mongoose = require("mongoose");
 require("dotenv").config();
 
+// MongoDB connection
 const MONGODB_URINEW = process.env.MONGODB_URI;
 
 mongoose
@@ -12,31 +13,32 @@ mongoose
     process.exit(1);
   });
 
+// MongoDB model
 const UserDB = mongoose.model(
   "userdb",
   new mongoose.Schema({}, { collection: "userdb", strict: false }),
 );
 
 const MAX_LEADS = 5;
-const Partner_id = "Keshvacredit";
 let processedCount = 0;
 
+// API config
 const newAPI = "https://api.rupee112fintech.com/marketing-check-dedupe/";
 
 function getHeaders() {
   return {
     Username: "KESHVACREDIT_20250421",
-    Auth: "98d206c1c728c9af5ee6ed32edee63e0",
+    Auth: "a154c75adc5c96003c740668545c8ed59ff99f5ee520e8feb4b8087a41b2eb2a",
     "Content-Type": "application/json",
   };
 }
 
+// Send data to external API
 async function sendToNewAPI(lead) {
   try {
     const apiRequestBody = {
       mobile: lead.phone,
       pancard: lead.pan,
-      Partner_id: Partner_id,
     };
 
     console.log("📤 Sending Lead Data to API:", apiRequestBody);
@@ -51,15 +53,16 @@ async function sendToNewAPI(lead) {
     console.error("🚫 API Call Failed:", error.message);
 
     return {
-      Status: "failed",
-      message:
-        error.response?.data?.Message ||
+      Status: 0,
+      Error:
+        error.response?.data?.Error ||
         error.response?.statusText ||
-        "API did not return a valid response",
+        "Unknown API error",
     };
   }
 }
 
+// Process a batch of leads
 async function processBatch(users) {
   const promises = users.map((user) => sendToNewAPI(user));
   const results = await Promise.all(promises);
@@ -78,7 +81,7 @@ async function processBatch(users) {
             apiResponse: {
               rupee112: response,
               Status: response.Status,
-              message: response.message,
+              message: response.Message || response.Error || "",
               createdAt: new Date().toISOString(),
             },
             RefArr: {
@@ -100,6 +103,7 @@ async function processBatch(users) {
   }
 }
 
+// Loop through batches
 async function loop() {
   try {
     let hasMoreLeads = true;
@@ -125,6 +129,7 @@ async function loop() {
         console.log(`✅ Total Processed: ${processedCount}`);
       }
 
+      // Wait 2 seconds between batches
       await new Promise((resolve) => setTimeout(resolve, 2000));
     }
   } catch (error) {
