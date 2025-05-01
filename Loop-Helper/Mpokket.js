@@ -14,17 +14,13 @@ const UserDB = mongoose.model(
   new mongoose.Schema({}, { collection: "userdb", strict: false }),
 );
 
-const BATCH_SIZE = 1;
+const BATCH_SIZE = 1; // You can adjust this number based on your needs
 const PartnerID = "Keshvacredit";
 const dedupeAPI = "https://api.mpkt.in/acquisition-affiliate/v1/dedupe/check";
 const CreateUserAPI = "https://api.mpkt.in/acquisition-affiliate/v1/user";
 const API_KEY = "2A331F81163D447C9B5941910D2BD";
 
-// const dedupeAPI =
-//   "https://stg-api.mpkt.in/acquisition-affiliate/v1/dedupe/check";
-// const CreateUserAPI = "https://stg-api.mpkt.in/acquisition-affiliate/v1/user";
-//
-// const API_KEY = "B6AB0D38B1B44BFC9F38789037D8D";
+// Function to send request to the Dedupe API
 async function sendToNewAPI(user) {
   try {
     const email = user?.email ? user.email.toString() : "";
@@ -55,10 +51,7 @@ async function sendToNewAPI(user) {
     console.log("✅ Eligibility Response:", response.data);
     return response.data;
   } catch (err) {
-    console.error(
-      "❌ Eligibility API Error:",
-      err.response?.data || err.message,
-    );
+    console.error("❌ Eligibility API Error:", err.message);
     return {
       status: "FAILED",
       status_code: err.response?.status || "UNKNOWN",
@@ -67,6 +60,7 @@ async function sendToNewAPI(user) {
   }
 }
 
+// Function to get pre-approval from the Create User API
 async function getPreApproval(user) {
   try {
     const payload = {
@@ -91,10 +85,7 @@ async function getPreApproval(user) {
     console.log("✅ PreApproval Response:", response.data);
     return response.data;
   } catch (err) {
-    console.error(
-      "❌ PreApproval API Error:",
-      err.response?.data || err.message,
-    );
+    console.error("❌ PreApproval API Error:", err.message);
     return {
       status: "FAILED",
       message: err.response?.data?.message || err.message || "Unknown Error",
@@ -102,9 +93,9 @@ async function getPreApproval(user) {
   }
 }
 
-// Function to process users without waiting
-async function processBatch(users) {
-  const promises = users.map(async (user) => {
+// Function to process each user without waiting for others
+async function processUser(user) {
+  try {
     const userDoc = await UserDB.findOne({ phone: user.phone });
 
     if (userDoc) {
@@ -160,6 +151,7 @@ async function processBatch(users) {
       } else {
         console.log(`⛔ No PreApproval — Status Code: ${response.status_code}`);
       }
+
       await UserDB.updateOne({ phone: user.phone }, updateDoc);
       await UserDB.updateOne(
         { phone: user.phone },
@@ -168,12 +160,12 @@ async function processBatch(users) {
 
       console.log("✅ Lead processed successfully:", user.phone);
     }
-  });
-
-  // Using Promise.all to process all users concurrently (without waiting)
-  await Promise.all(promises);
+  } catch (error) {
+    console.error("❌ Error processing user:", user.phone, error.message);
+  }
 }
 
+// Main loop to fetch leads and process them continuously
 async function startProcessing() {
   try {
     while (true) {
@@ -182,7 +174,6 @@ async function startProcessing() {
       const leads = await UserDB.aggregate([
         {
           $match: {
-            processed: { $ne: true },
             "RefArr.name": { $ne: "Mpokket" },
           },
         },
@@ -193,8 +184,13 @@ async function startProcessing() {
         console.log("⏸️ No leads found.");
         break; // No more leads, stop processing
       }
-      await processBatch(leads); // Process all leads at once
-      console.log(`🎉 Processed ${leads.length} leads successfully!`);
+
+      // Process users immediately as their API responses are received
+      for (const lead of leads) {
+        processUser(lead); // Start processing without waiting for completion
+      }
+
+      console.log(`🎉 Processing ${leads.length} leads...`);
     }
   } catch (error) {
     console.error("❌ Error occurred:", error.message);
