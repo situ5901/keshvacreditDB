@@ -176,26 +176,23 @@ async function processBatch(users) {
 
 async function startProcessing() {
   try {
-    while (true) {
-      console.log("📦 Fetching leads...");
-
-      const leads = await UserDB.aggregate([
-        {
-          $match: {
-            processed: { $ne: true },
-            "RefArr.name": { $ne: "Mpokket" },
-          },
+    console.log("📦 Fetching all pending leads...");
+    const allLeads = await UserDB.aggregate([
+      {
+        $match: {
+          "RefArr.name": { $ne: "Mpokket" },
         },
-        { $limit: BATCH_SIZE },
-      ]);
+      },
+    ]);
 
-      if (leads.length === 0) {
-        console.log("⏸️ No leads found.");
-        break; // No more leads, stop processing
-      }
-      await processBatch(leads); // Process all leads at once
-      console.log(`🎉 Processed ${leads.length} leads successfully!`);
+    const batches = [];
+    for (let i = 0; i < allLeads.length; i += BATCH_SIZE) {
+      batches.push(allLeads.slice(i, i + BATCH_SIZE));
     }
+
+    await Promise.allSettled(batches.map((batch) => processBatch(batch)));
+
+    console.log("🎉 All leads processed in parallel batches!");
   } catch (error) {
     console.error("❌ Error occurred:", error.message);
   } finally {
