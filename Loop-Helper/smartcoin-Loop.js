@@ -11,8 +11,8 @@ mongoose
   .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
 
 const UserDB = mongoose.model(
-  "Loop",
-  new mongoose.Schema({}, { collection: "Loop", strict: false }),
+  "userdb",
+  new mongoose.Schema({}, { collection: "userdb", strict: false }),
 );
 
 const BATCH_SIZE = 1;
@@ -37,11 +37,13 @@ async function getPreApproval(lead) {
   try {
     const payload = {
       phone_number: String(lead.phone),
-      pan: lead.Pan,
-      employment_type: "SALARIED",
-      net_monthly_income: "25000",
-      name_as_per_pan: lead.Name,
-      date_of_birth: lead.DOB,
+      pan: lead.pan,
+      employment_type: lead.employment,
+      net_monthly_income: lead.income || 0,
+      name_as_per_pan: lead.name,
+      date_of_birth: lead.DOB
+        ? new Date(user.dob).toISOString().split("T")[0]
+        : null,
       Partner_id: Partner_id,
     };
 
@@ -84,10 +86,10 @@ async function processBatch(leads) {
   const promises = leads.map(async (lead) => {
     try {
       // 🧹 Normalize keys
-      lead.Pan = lead.Pan || lead.pan;
+      lead.pan = lead.pan || lead.pan;
 
       // ❌ Skip if required fields are missing
-      if (!lead.phone || !lead.Name || !lead.DOB || !lead.Pan) {
+      if (!lead.phone || !lead.name || !lead.dob || !lead.pan) {
         console.error(`❌ Incomplete data for lead: ${lead.phone}. Skipping.`);
         await UserDB.updateOne(
           { phone: lead.phone },
@@ -105,7 +107,7 @@ async function processBatch(leads) {
       }
 
       // ❌ PAN Validation
-      if (!isValidPAN(lead.Pan)) {
+      if (!isValidPAN(lead.pan)) {
         console.error(
           `❌ Invalid PAN format for lead: ${lead.phone} with PAN: ${lead.Pan}`,
         );
