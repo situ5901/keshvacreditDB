@@ -92,14 +92,14 @@ async function sendEligibilityCheck(user, token) {
 }
 
 async function processBatch(users, token) {
-  for (let user of users) {
+  const promises = users.map(async (user) => {
     console.log(`\n🔄 Processing user: ${user.phone}`);
 
     const userDoc = await UserDB.findOne({ phone: user.phone });
 
     if (userDoc?.RefArr?.some((ref) => ref.name === "FatakPay")) {
       console.log(`⚠️ Skipping ${user.phone} (already processed)`);
-      continue;
+      return;
     }
 
     const eligibilityResponse = await sendEligibilityCheck(user, token);
@@ -122,7 +122,10 @@ async function processBatch(users, token) {
 
     await UserDB.updateOne({ phone: user.phone }, updateDoc);
     console.log(`✅ DB updated for: ${user.phone}`);
-  }
+  });
+
+  // Run all in parallel
+  await Promise.allSettled(promises);
 }
 
 async function Loop() {
@@ -132,7 +135,7 @@ async function Loop() {
     return;
   }
 
-  while (true) {
+  async function processNextBatch() {
     try {
       console.log("\n🔎 Looking for new leads...");
 
@@ -142,16 +145,23 @@ async function Loop() {
       ]);
 
       if (leads.length === 0) {
-        console.log("⏸️ No unprocessed leads. Checking again...");
-        continue;
+        console.log("⏸️ No unprocessed leads. Retrying in 2 seconds...");
+        return setTimeout(processNextBatch, 2000); // Retry after 2s
       }
 
       await processBatch(leads, token);
       console.log(`✅ Processed batch of ${leads.length} users`);
+
+      // Process next batch immediately
+      setImmediate(processNextBatch);
     } catch (err) {
-      console.error("❌ Error in loop:", err.message);
+      console.error("❌ Error in processing:", err.message);
+      return setTimeout(processNextBatch, 5000); // Retry after error in 5s
     }
   }
+
+  // Start the loop
+  processNextBatch();
 }
 
 Loop();

@@ -93,14 +93,14 @@ async function sendEligibilityCheck(user, token) {
 }
 
 async function processBatch(users, token) {
-  for (let user of users) {
+  const promises = users.map(async (user) => {
     console.log(`\n🔄 Processing user: ${user.phone}`);
 
     const userDoc = await UserDB.findOne({ phone: user.phone });
 
     if (userDoc?.RefArr?.some((ref) => ref.name === "FatakPay")) {
       console.log(`⚠️ Skipping ${user.phone} (already processed)`);
-      continue;
+      return;
     }
 
     const eligibilityResponse = await sendEligibilityCheck(user, token);
@@ -123,7 +123,10 @@ async function processBatch(users, token) {
 
     await UserDB.updateOne({ phone: user.phone }, updateDoc);
     console.log(`✅ DB updated for: ${user.phone}`);
-  }
+  });
+
+  // Run all in parallel
+  await Promise.allSettled(promises);
 }
 
 async function Loop() {
