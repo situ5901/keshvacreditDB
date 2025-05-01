@@ -2,10 +2,10 @@ const mongoose = require("mongoose");
 const axios = require("axios");
 require("dotenv").config();
 
-const MONGODB_URI = process.env.MONGODB_URI;
+const MONGODB_URINEW = process.env.MONGODB_URINEW;
 
 mongoose
-  .connect(MONGODB_URI)
+  .connect(MONGODB_URINEW)
   .then(() => console.log("✅ MongoDB Connected Successfully"))
   .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
 
@@ -14,9 +14,8 @@ const UserDB = mongoose.model(
   new mongoose.Schema({}, { collection: "userdb", strict: false }),
 );
 
-const BATCH_SIZE = 10;
+const BATCH_SIZE = 5; // Set your batch size
 const PartnerID = "a8ce06a0-4fbd-489f-8d75-345548fb98a8";
-
 const ELIGIBILITY_API =
   "https://prod.zype.co.in/attribution-service/api/v1/underwriting/customerEligibility";
 const PRE_APPROVAL_API =
@@ -102,70 +101,78 @@ async function getPreApproval(user) {
 }
 
 async function processBatch(users) {
-  for (let user of users) {
-    const userDoc = await UserDB.findOne({ phone: user.phone });
+  const results = await Promise.allSettled(
+    users.map(async (user) => {
+      const userDoc = await UserDB.findOne({ phone: user.phone });
+      const updates = {};
+      let needUpdate = false;
 
-    const updates = {};
-    let needUpdate = false;
+      if (userDoc.apiResponse && !Array.isArray(userDoc.apiResponse)) {
+        updates.apiResponse = [userDoc.apiResponse];
+        needUpdate = true;
+      }
 
-    if (userDoc.apiResponse && !Array.isArray(userDoc.apiResponse)) {
-      updates.apiResponse = [userDoc.apiResponse];
-      needUpdate = true;
-    }
+      if (userDoc.preApproval && !Array.isArray(userDoc.preApproval)) {
+        updates.preApproval = [userDoc.preApproval];
+        needUpdate = true;
+      }
 
-    if (userDoc.preApproval && !Array.isArray(userDoc.preApproval)) {
-      updates.preApproval = [userDoc.preApproval];
-      needUpdate = true;
-    }
+      if (needUpdate) {
+        await UserDB.updateOne({ phone: user.phone }, { $set: updates });
+      }
 
-    if (needUpdate) {
-      await UserDB.updateOne({ phone: user.phone }, { $set: updates });
-    }
+      const response = await sendToNewAPI(user);
 
-    const response = await sendToNewAPI(user);
-
-    const updateDoc = {
-      $push: {
-        apiResponse: {
-          fullResponse: {
-            ...response,
-            Zype: true,
+      const updateDoc = {
+        $push: {
+          apiResponse: {
+            ZypeResponse: {
+              ...response,
+              Zype: true,
+            },
+            status: response.status,
+            amount: response.amount,
+            createdAt: new Date().toISOString(),
           },
-          status: response.status,
-          amount: response.amount,
-          message: response.message,
-          createdAt: new Date().toISOString(),
+          RefArr: {
+            name: "Zype",
+            createdAt: new Date().toISOString(),
+          },
         },
-        RefArr: {
-          name: "Zype",
-          createdAt: new Date().toISOString(),
-        },
-      },
-      $unset: { accounts: "" },
-    };
-
-    if (response.status === "ACCEPT") {
-      const preApproval = await getPreApproval(user);
-
-      updateDoc.$push.apiResponse = {
-        fullResponse: preApproval,
-        status: preApproval.status,
-        amount: preApproval.amount,
-        message: preApproval.message,
-        createdAt: new Date().toISOString(),
+        $unset: { accounts: "" },
       };
-    } else {
-      console.log(`⛔ No PreApproval — Status: ${response.status}`);
-    }
 
-    await UserDB.updateOne({ phone: user.phone }, updateDoc);
-  }
+      if (response.status === "ACCEPT") {
+        const preApproval = await getPreApproval(user);
+
+        updateDoc.$push.apiResponse = {
+          fullResponse: preApproval,
+          status: preApproval.status,
+          amount: preApproval.amount,
+          message: preApproval.message,
+          createdAt: new Date().toISOString(),
+        };
+      } else {
+        console.log(`⛔ No PreApproval — Status: ${response.status}`);
+      }
+
+      await UserDB.updateOne({ phone: user.phone }, updateDoc);
+    }),
+  );
+
+  // Handle any errors or log the results
+  results.forEach((result, index) => {
+    if (result.status === "rejected") {
+      console.error(`Error processing user at index ${index}:`, result.reason);
+    } else {
+      console.log(`Successfully processed user at index ${index}`);
+    }
+  });
 }
 
 async function Loop() {
   try {
     while (true) {
-      // Infinite loop — jab tak manually band na karo ya DB empty na ho
       console.log("📦 Fetching leads...");
 
       const leads = await UserDB.aggregate([
@@ -180,16 +187,13 @@ async function Loop() {
 
       if (leads.length === 0) {
         console.log("✅ No more leads left. Waiting for new data...");
-        // 5 second ka wait, fir dobara try karega
-        await new Promise((resolve) => setTimeout(resolve, 5000));
         continue;
       }
 
       await processBatch(leads);
       console.log(`✅ Processed batch of: ${leads.length}`);
 
-      // 1 sec ka delay har batch ke baad
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, 1000)); // 1 sec ka delay har batch ke baad
     }
   } catch (error) {
     console.error("❌ Error occurred:", error.message);
