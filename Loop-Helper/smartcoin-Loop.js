@@ -41,8 +41,8 @@ async function getPreApproval(lead) {
       employment_type: lead.employment,
       net_monthly_income: lead.income || 0,
       name_as_per_pan: lead.name,
-      date_of_birth: lead.DOB
-        ? new Date(user.dob).toISOString().split("T")[0]
+      date_of_birth: lead.dob
+        ? new Date(lead.dob).toISOString().split("T")[0]
         : null,
       Partner_id: Partner_id,
     };
@@ -200,7 +200,7 @@ async function processBatch(leads) {
     }
   });
 
-  await Promise.all(promises);
+  await Promise.allSettled(promises);
 }
 
 async function Loop() {

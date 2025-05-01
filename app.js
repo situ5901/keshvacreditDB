@@ -7,7 +7,7 @@ const mongoose = require("mongoose");
 const User = require("./models/user.model");
 
 const API_VERSION = process.env.API_VERSION || "/v1";
-const MONGODB_URI = process.env.MONGODB_URI;
+const MONGODB_URI = process.env.MONGODB_URINEW;
 const PORT = process.env.PORT || 5000;
 
 const app = express();
@@ -27,10 +27,10 @@ app.use(
         callback(new Error("Not allowed by CORS"));
       }
     },
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],  
-    allowedHeaders: ['Content-Type', 'Authorization'],     
-    credentials: true,                                     
-  })
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true,
+  }),
 );
 
 app.use(logger("dev"));
@@ -43,9 +43,6 @@ const leads = require("./routes/leads.js");
 const loop = require("./PartnerAPI/LendingPlate.js");
 const api = require("./routes/api.js");
 const Crm = require("./routes/Crm.js");
-
-
-
 
 app.use(`/api${API_VERSION}/auth`, auth);
 app.use(`/api${API_VERSION}/leads`, leads);

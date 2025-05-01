@@ -4,11 +4,11 @@ const mongoose = require("mongoose");
 require("dotenv").config();
 
 mongoose.set("strictQuery", true);
-mongoose
-  .connect(process.env.MONGODB_URI)
-  .then(() => console.log("✅ MongoDB Connected Successfully"))
-  .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
-
+// mongoose
+//   .connect(process.env.MONGODB_URINEW)
+//   .then(() => console.log("✅ MongoDB Connected Successfully"))
+//   .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
+//
 const db = mongoose.connection;
 
 router.get("/get-all-leads", async (req, res) => {
@@ -17,7 +17,7 @@ router.get("/get-all-leads", async (req, res) => {
       .collection("userdb")
       .find(
         { "apiResponse.message": "Lead created successfully." },
-        { projection: { phone: 1, _id: 0 } }
+        { projection: { phone: 1, _id: 0 } },
       )
       .toArray();
 
@@ -25,7 +25,7 @@ router.get("/get-all-leads", async (req, res) => {
       .collection("userdb")
       .find(
         { "apiResponse.fullResponse.status": "ACCEPT" },
-        { projection: { phone: 1, _id: 0 } }
+        { projection: { phone: 1, _id: 0 } },
       )
       .toArray();
 
@@ -33,7 +33,7 @@ router.get("/get-all-leads", async (req, res) => {
       .collection("userdb")
       .find(
         { "apiResponse.message": "You are eligible." },
-        { projection: { phone: 1, _id: 0 } }
+        { projection: { phone: 1, _id: 0 } },
       )
       .toArray();
 
