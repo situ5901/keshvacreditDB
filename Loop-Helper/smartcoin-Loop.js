@@ -17,7 +17,6 @@ const UserDB = mongoose.model(
 
 const BATCH_SIZE = 1;
 const Partner_id = "Keshvacredit";
-
 const PRE_APPROVAL_API =
   "https://leads.smartcoin.co.in/partner/keshvacredit/lead/create";
 
@@ -33,6 +32,28 @@ function isValidPAN(pan) {
   return /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(pan);
 }
 
+// 🧠 DOB formatter
+function formatDOB(dob) {
+  if (!dob) return null;
+
+  // Case: yyyy-mm-dd (already correct)
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dob)) return dob;
+
+  // Case: dd-mm-yyyy
+  if (/^\d{2}-\d{2}-\d{4}$/.test(dob)) {
+    const [dd, mm, yyyy] = dob.split("-");
+    return `${yyyy}-${mm}-${dd}`;
+  }
+
+  // Fallback for unknown format
+  try {
+    const date = new Date(dob);
+    return date.toISOString().split("T")[0];
+  } catch {
+    return null;
+  }
+}
+
 async function getPreApproval(lead) {
   try {
     const payload = {
@@ -41,9 +62,7 @@ async function getPreApproval(lead) {
       employment_type: lead.employment,
       net_monthly_income: lead.income || 0,
       name_as_per_pan: lead.name,
-      date_of_birth: lead.dob
-        ? new Date(lead.dob).toISOString().split("T")[0]
-        : null,
+      date_of_birth: formatDOB(lead.dob),
       Partner_id: Partner_id,
     };
 
@@ -85,10 +104,8 @@ async function getPreApproval(lead) {
 async function processBatch(leads) {
   const promises = leads.map(async (lead) => {
     try {
-      // 🧹 Normalize keys
       lead.pan = lead.pan || lead.pan;
 
-      // ❌ Skip if required fields are missing
       if (!lead.phone || !lead.name || !lead.dob || !lead.pan) {
         console.error(`❌ Incomplete data for lead: ${lead.phone}. Skipping.`);
         await UserDB.updateOne(
@@ -106,7 +123,6 @@ async function processBatch(leads) {
         return;
       }
 
-      // ❌ PAN Validation
       if (!isValidPAN(lead.pan)) {
         console.error(
           `❌ Invalid PAN format for lead: ${lead.phone} with PAN: ${lead.Pan}`,
@@ -126,14 +142,12 @@ async function processBatch(leads) {
         return;
       }
 
-      // ❌ Already Processed
       const userDoc = await UserDB.findOne({ phone: lead.phone });
       if (userDoc?.RefArr?.some((ref) => ref.name === "Smartcoin")) {
         console.log(`⛔ Lead already processed for SmartCoin: ${lead.phone}`);
         return;
       }
 
-      // 🧹 Normalize existing fields
       const updates = {};
       let needUpdate = false;
 
@@ -151,7 +165,6 @@ async function processBatch(leads) {
         await UserDB.updateOne({ phone: lead.phone }, { $set: updates });
       }
 
-      // 🚀 Send to SmartCoin API
       const preApprovalResponse = await getPreApproval(lead);
       console.log("✅ PreApproval Response:", preApprovalResponse);
 
