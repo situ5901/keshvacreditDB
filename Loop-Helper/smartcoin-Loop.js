@@ -15,7 +15,7 @@ const UserDB = mongoose.model(
   new mongoose.Schema({}, { collection: "userdb", strict: false }),
 );
 
-const BATCH_SIZE = 1;
+const BATCH_SIZE = 50;
 const Partner_id = "Keshvacredit";
 const PRE_APPROVAL_API =
   "https://leads.smartcoin.co.in/partner/keshvacredit/lead/create";
@@ -218,7 +218,6 @@ async function processBatch(leads) {
 async function Loop() {
   try {
     while (true) {
-      console.log("📦 Fetching new leads...");
       const leads = await UserDB.aggregate([
         {
           $match: {
