@@ -107,6 +107,7 @@ async function processBatch(leads) {
       lead.pan = lead.pan || lead.pan;
 
       if (!lead.phone || !lead.name || !lead.dob || !lead.pan) {
+        console.error(`❌ Incomplete data for lead: ${lead.phone}. Skipping.`);
         await UserDB.updateOne(
           { phone: lead.phone },
           {
@@ -218,6 +219,7 @@ async function processBatch(leads) {
 async function Loop() {
   try {
     while (true) {
+      console.log("📦 Fetching new leads...");
       const leads = await UserDB.aggregate([
         {
           $match: {
