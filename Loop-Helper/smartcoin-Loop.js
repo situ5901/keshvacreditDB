@@ -216,6 +216,8 @@ async function processBatch(leads) {
   await Promise.allSettled(promises);
 }
 
+let totalLeads = 0;
+
 async function Loop() {
   try {
     while (true) {
@@ -235,6 +237,7 @@ async function Loop() {
       }
 
       await processBatch(leads);
+      totalLeads += leads.length;
     }
   } catch (error) {
     console.error("❌ Loop error:", error.message);
