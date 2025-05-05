@@ -14,7 +14,7 @@ const UserDB = mongoose.model(
   new mongoose.Schema({}, { collection: "userdb", strict: false }),
 );
 
-const BATCH_SIZE = 10;
+const BATCH_SIZE = 50;
 const PartnerID = "a8ce06a0-4fbd-489f-8d75-345548fb98a8";
 const ELIGIBILITY_API =
   "https://prod.zype.co.in/attribution-service/api/v1/underwriting/customerEligibility";
@@ -53,7 +53,10 @@ async function sendToNewAPI(user) {
     console.log("✅ Eligibility Response:", response.data);
     return response.data;
   } catch (err) {
-    console.error("❌ Eligibility API Error:", err.response?.data || err.message);
+    console.error(
+      "❌ Eligibility API Error:",
+      err.response?.data || err.message,
+    );
     return {
       status: "FAILED",
       message: err.response?.data?.message || err.message || "Unknown Error",
@@ -88,7 +91,10 @@ async function getPreApproval(user) {
     console.log("✅ PreApproval Response:", response.data);
     return response.data;
   } catch (err) {
-    console.error("❌ PreApproval API Error:", err.response?.data || err.message);
+    console.error(
+      "❌ PreApproval API Error:",
+      err.response?.data || err.message,
+    );
     return {
       status: "FAILED",
       message: err.response?.data?.message || err.message || "Unknown Error",
@@ -119,12 +125,14 @@ async function processBatch(users) {
 
         const updateDoc = {
           $push: {
-            apiResponse: [{
-              ZypeResponse: eligibility,
-              status: eligibility.status,
-              amount: eligibility.amount,
-              createdAt: new Date().toISOString(),
-            }],
+            apiResponse: [
+              {
+                ZypeResponse: eligibility,
+                status: eligibility.status,
+                amount: eligibility.amount,
+                createdAt: new Date().toISOString(),
+              },
+            ],
             RefArr: {
               name: "Zype",
               createdAt: new Date().toISOString(),
@@ -132,25 +140,11 @@ async function processBatch(users) {
           },
           $unset: { accounts: "" },
         };
-
-        if (eligibility.status === "ACCEPT") {
-          const preApproval = await getPreApproval(user);
-          updateDoc.$push.apiResponse.push({
-            ZypeResponse: preApproval,
-            status: preApproval.status,
-            amount: preApproval.amount,
-            message: preApproval.message,
-            createdAt: new Date().toISOString(),
-          });
-        } else {
-          console.log(`⛔ No PreApproval — Status: ${eligibility.status}`);
-        }
-
         await UserDB.updateOne({ phone: user.phone }, updateDoc);
       } catch (err) {
         console.error(`❌ Error processing user ${user.phone}:`, err.message);
       }
-    })
+    }),
   );
 
   results.forEach((result, index) => {
