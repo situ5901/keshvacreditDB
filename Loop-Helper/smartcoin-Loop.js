@@ -239,6 +239,7 @@ async function Loop() {
       await processBatch(leads);
       totalLeads += leads.length;
 
+      await new Promise((resolve) => setTimeout(resolve, 2000));
       console.log(`🏁 Total Successful SmartCoin Leads: ${successCount}`); // ✅ Final count
       console.log(`📊 Total Leads Processed So Far: ${totalLeads}`);
     }
