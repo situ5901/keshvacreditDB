@@ -10,9 +10,9 @@ mongoose
   .then(() => console.log("✅ MongoDB Connected Successfully"))
   .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
 
-const SmartcoinModel = mongoose.model(
-  "smartcoin",
-  new mongoose.Schema({}, { collection: "smartcoin", strict: false }),
+const UserDB = mongoose.model(
+  "userdb",
+  new mongoose.Schema({}, { collection: "userdb", strict: false }),
 );
 
 const BATCH_SIZE = 5;
@@ -59,12 +59,33 @@ async function getPreApproval(lead) {
       Partner_id: Partner_id,
     };
 
+    console.log("📤 Sending PreApproval Payload:", payload);
+
     const response = await axios.post(PRE_APPROVAL_API, qs.stringify(payload), {
       headers: getHeaders(),
     });
 
-    return response.data;
+    console.log("✅ PreApproval API Response:", response.data);
+
+    if (response.data.status === "success") {
+      console.log(
+        "🎉 Lead created successfully with Lead ID:",
+        response.data.leadId,
+      );
+      return response.data;
+    } else {
+      console.error("❌ Failed to create lead:", response.data.message);
+      return {
+        status: "FAILED",
+        message: response.data.message || "Unknown error",
+        pan: lead.pan,
+      };
+    }
   } catch (err) {
+    console.error(
+      "❌ PreApproval API Error:",
+      err.response?.data || err.message,
+    );
     return {
       status: "FAILED",
       message: err.response?.data?.message || err.message || "Unknown Error",
@@ -73,19 +94,22 @@ async function getPreApproval(lead) {
   }
 }
 
-let successCount = 0;
+let successCount = 0; // ✅ Count successful responses
 
 async function processBatch(leads) {
   const promises = leads.map(async (lead) => {
     try {
+      lead.pan = lead.pan || lead.pan;
+
       if (!lead.phone || !lead.name || !lead.dob || !lead.pan) {
-        await SmartcoinModel.updateOne(
+        console.error(`❌ Incomplete data for lead: ${lead.phone}. Skipping.`);
+        await UserDB.updateOne(
           { phone: lead.phone },
           {
             $push: {
               RefArr: {
                 name: "SkippedSmartcoin",
-                reason: "Incomplete data",
+                reason: "Incomplete data (missing phone/Name/DOB/PAN)",
                 createdAt: new Date().toISOString(),
               },
             },
@@ -95,13 +119,16 @@ async function processBatch(leads) {
       }
 
       if (!isValidPAN(lead.pan)) {
-        await SmartcoinModel.updateOne(
+        console.error(
+          `❌ Invalid PAN format for lead: ${lead.phone} with PAN: ${lead.pan}`,
+        );
+        await UserDB.updateOne(
           { phone: lead.phone },
           {
             $push: {
               RefArr: {
                 name: "SkippedSmartcoin",
-                reason: `Invalid PAN: ${lead.pan}`,
+                reason: `Invalid PAN format: ${lead.pan}`,
                 createdAt: new Date().toISOString(),
               },
             },
@@ -110,60 +137,76 @@ async function processBatch(leads) {
         return;
       }
 
-      const userDoc = await SmartcoinModel.findOne({ phone: lead.phone });
-
-      if (!userDoc) {
-        console.log(`⚠️ No document found for phone: ${lead.phone}`);
+      const userDoc = await UserDB.findOne({ phone: lead.phone });
+      if (userDoc?.RefArr?.some((ref) => ref.name === "Smartcoin")) {
+        console.log(`⛔ Lead already processed for SmartCoin: ${lead.phone}`);
         return;
       }
 
-      if (userDoc?.RefArr?.some((ref) => ref.name === "Smartcoin")) {
-        console.log(`⛔ Already processed: ${lead.phone}`);
-        return;
+      const updates = {};
+      let needUpdate = false;
+
+      if (userDoc.apiResponse && !Array.isArray(userDoc.apiResponse)) {
+        updates.apiResponse = [userDoc.apiResponse];
+        needUpdate = true;
+      }
+
+      if (userDoc.preApproval && !Array.isArray(userDoc.preApproval)) {
+        updates.preApproval = [userDoc.preApproval];
+        needUpdate = true;
+      }
+
+      if (needUpdate) {
+        await UserDB.updateOne({ phone: lead.phone }, { $set: updates });
       }
 
       const preApprovalResponse = await getPreApproval(lead);
+      console.log("✅ PreApproval Response:", preApprovalResponse);
 
       if (
         preApprovalResponse.status === "success" &&
         preApprovalResponse.message === "Lead created successfully"
       ) {
-        successCount++;
+        successCount++; // ✅ Count only on both conditions match
 
-        await SmartcoinModel.updateOne(
-          { phone: lead.phone },
-          {
-            $push: {
-              apiResponse: {
-                smartcoin: preApprovalResponse,
-                status: preApprovalResponse.status,
-                message: preApprovalResponse.message,
-                createdAt: new Date().toISOString(),
-              },
-              RefArr: {
-                name: "Smartcoin",
-                createdAt: new Date().toISOString(),
-              },
+        const updateDoc = {
+          $push: {
+            apiResponse: {
+              smartcoin: preApprovalResponse,
+              status: preApprovalResponse.status,
+              message: preApprovalResponse.message,
+              createdAt: new Date().toISOString(),
             },
-            $unset: { accounts: "" },
+            RefArr: {
+              name: "Smartcoin",
+              createdAt: new Date().toISOString(),
+            },
           },
-        );
+          $unset: { accounts: "" },
+        };
 
-        console.log(`✅ Lead processed: ${lead.phone}`);
+        await UserDB.updateOne({ phone: lead.phone }, updateDoc);
+        console.log("✅ Lead processed successfully:", lead.phone);
       } else {
-        console.log(`⛔ Failed: ${preApprovalResponse.message}`);
-        await SmartcoinModel.updateOne(
-          { phone: lead.phone },
-          {
-            $push: {
-              RefArr: {
-                name: "SkippedSmartcoin",
-                reason: preApprovalResponse.message,
-                createdAt: new Date().toISOString(),
+        console.log(`⛔ API failed: ${preApprovalResponse.message}`);
+        if (
+          preApprovalResponse.message?.includes(
+            "mandatory field PAN is incorrect",
+          )
+        ) {
+          await UserDB.updateOne(
+            { phone: lead.phone },
+            {
+              $push: {
+                RefArr: {
+                  name: "SkippedSmartcoin",
+                  reason: `API rejected PAN: ${preApprovalResponse.pan}`,
+                  createdAt: new Date().toISOString(),
+                },
               },
             },
-          },
-        );
+          );
+        }
       }
     } catch (err) {
       console.error("❌ Error processing lead:", err.message);
@@ -178,7 +221,8 @@ let totalLeads = 0;
 async function Loop() {
   try {
     while (true) {
-      const leads = await SmartcoinModel.aggregate([
+      console.log("📦 Fetching new leads...");
+      const leads = await UserDB.aggregate([
         {
           $match: {
             "RefArr.name": { $nin: ["Smartcoin", "SkippedSmartcoin"] },
@@ -188,20 +232,21 @@ async function Loop() {
       ]);
 
       if (leads.length === 0) {
-        console.log("✅ All leads processed.");
+        console.log("✅ All leads processed. No more data.");
         break;
       }
 
       await processBatch(leads);
       totalLeads += leads.length;
 
-      console.log(`🏁 Successful Leads: ${successCount}`);
-      console.log(`📊 Processed So Far: ${totalLeads}`);
+      console.log(`🏁 Total Successful SmartCoin Leads: ${successCount}`); // ✅ Final count
+      console.log(`📊 Total Leads Processed So Far: ${totalLeads}`);
     }
   } catch (error) {
     console.error("❌ Loop error:", error.message);
   } finally {
     console.log("🔌 Closing DB connection...");
+    console.log(`🏁 Total Successful SmartCoin Leads: ${successCount}`); // ✅ Final count
     mongoose.connection.close();
   }
 }
