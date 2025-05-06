@@ -103,8 +103,8 @@ async function processBatch(users) {
   }
 }
 
+let processedCount = 0;
 async function loop() {
-  let processedCount = 0;
   try {
     let hasMoreLeads = true;
 
