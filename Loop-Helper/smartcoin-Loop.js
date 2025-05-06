@@ -238,6 +238,8 @@ async function Loop() {
 
       await processBatch(leads);
       totalLeads += leads.length;
+
+      console.log(`🏁 Total Successful SmartCoin Leads: ${successCount}`); // ✅ Final count
       console.log(`📊 Total Leads Processed So Far: ${totalLeads}`);
     }
   } catch (error) {
