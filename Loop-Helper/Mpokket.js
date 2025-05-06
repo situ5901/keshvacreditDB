@@ -195,7 +195,7 @@ async function startProcessing() {
       }
 
       await processBatch(leads); // Process all leads at once
-      totalcount += leads.lenght;
+      totalcount += leads.length;
       console.log(`🎉 Processed ${totalcount} leads successfully!`);
     }
   } catch (error) {
