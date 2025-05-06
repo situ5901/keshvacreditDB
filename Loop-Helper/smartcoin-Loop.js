@@ -15,7 +15,7 @@ const UserDB = mongoose.model(
   new mongoose.Schema({}, { collection: "userdb", strict: false }),
 );
 
-const BATCH_SIZE = 10;
+const BATCH_SIZE = 5;
 const Partner_id = "Keshvacredit";
 const PRE_APPROVAL_API =
   "https://leads.smartcoin.co.in/partner/keshvacredit/lead/create";
@@ -32,20 +32,13 @@ function isValidPAN(pan) {
   return /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(pan);
 }
 
-// 🧠 DOB formatter
 function formatDOB(dob) {
   if (!dob) return null;
-
-  // Case: yyyy-mm-dd (already correct)
   if (/^\d{4}-\d{2}-\d{2}$/.test(dob)) return dob;
-
-  // Case: dd-mm-yyyy
   if (/^\d{2}-\d{2}-\d{4}$/.test(dob)) {
     const [dd, mm, yyyy] = dob.split("-");
     return `${yyyy}-${mm}-${dd}`;
   }
-
-  // Fallback for unknown format
   try {
     const date = new Date(dob);
     return date.toISOString().split("T")[0];
@@ -85,7 +78,7 @@ async function getPreApproval(lead) {
       return {
         status: "FAILED",
         message: response.data.message || "Unknown error",
-        pan: lead.Pan,
+        pan: lead.pan,
       };
     }
   } catch (err) {
@@ -96,10 +89,12 @@ async function getPreApproval(lead) {
     return {
       status: "FAILED",
       message: err.response?.data?.message || err.message || "Unknown Error",
-      pan: lead.Pan,
+      pan: lead.pan,
     };
   }
 }
+
+let successCount = 0; // ✅ Count successful responses
 
 async function processBatch(leads) {
   const promises = leads.map(async (lead) => {
@@ -125,7 +120,7 @@ async function processBatch(leads) {
 
       if (!isValidPAN(lead.pan)) {
         console.error(
-          `❌ Invalid PAN format for lead: ${lead.phone} with PAN: ${lead.Pan}`,
+          `❌ Invalid PAN format for lead: ${lead.phone} with PAN: ${lead.pan}`,
         );
         await UserDB.updateOne(
           { phone: lead.phone },
@@ -133,7 +128,7 @@ async function processBatch(leads) {
             $push: {
               RefArr: {
                 name: "SkippedSmartcoin",
-                reason: `Invalid PAN format: ${lead.Pan}`,
+                reason: `Invalid PAN format: ${lead.pan}`,
                 createdAt: new Date().toISOString(),
               },
             },
@@ -168,7 +163,12 @@ async function processBatch(leads) {
       const preApprovalResponse = await getPreApproval(lead);
       console.log("✅ PreApproval Response:", preApprovalResponse);
 
-      if (preApprovalResponse.status === "success") {
+      if (
+        preApprovalResponse.status === "success" &&
+        preApprovalResponse.message === "Lead created successfully"
+      ) {
+        successCount++; // ✅ Count only on both conditions match
+
         const updateDoc = {
           $push: {
             apiResponse: {
@@ -244,6 +244,7 @@ async function Loop() {
     console.error("❌ Loop error:", error.message);
   } finally {
     console.log("🔌 Closing DB connection...");
+    console.log(`🏁 Total Successful SmartCoin Leads: ${successCount}`); // ✅ Final count
     mongoose.connection.close();
   }
 }
