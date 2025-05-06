@@ -14,7 +14,7 @@ const UserDB = mongoose.model(
   new mongoose.Schema({}, { collection: "userdb", strict: false }),
 );
 
-const BATCH_SIZE = 1;
+const BATCH_SIZE = 5;
 const PartnerID = "Keshvacredit";
 const dedupeAPI = "https://api.mpkt.in/acquisition-affiliate/v1/dedupe/check";
 const CreateUserAPI = "https://api.mpkt.in/acquisition-affiliate/v1/user";
@@ -173,7 +173,7 @@ async function processBatch(users) {
   // Using Promise.all to process all users concurrently (without waiting)
   await Promise.allSettled(promises);
 }
-
+let totalcount = 0;
 async function startProcessing() {
   try {
     while (true) {
@@ -193,8 +193,10 @@ async function startProcessing() {
         console.log("⏸️ No leads found.");
         break; // No more leads, stop processing
       }
+
       await processBatch(leads); // Process all leads at once
-      console.log(`🎉 Processed ${leads.length} leads successfully!`);
+      totalcount += leads.lenght;
+      console.log(`🎉 Processed ${totalcount} leads successfully!`);
     }
   } catch (error) {
     console.error("❌ Error occurred:", error.message);
