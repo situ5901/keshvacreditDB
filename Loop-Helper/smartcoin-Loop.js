@@ -20,6 +20,9 @@ const Partner_id = "Keshvacredit";
 const PRE_APPROVAL_API =
   "https://leads.smartcoin.co.in/partner/keshvacredit/lead/create";
 
+// sleep helper
+const sleep = ms => new Promise(res => setTimeout(res, ms));
+
 function getHeaders() {
   return {
     "Content-Type": "application/x-www-form-urlencoded",
@@ -94,13 +97,12 @@ async function getPreApproval(lead) {
   }
 }
 
-let successCount = 0; // ✅ Count successful responses
+let successCount = 0;
+let totalLeads = 0;
 
 async function processBatch(leads) {
   const promises = leads.map(async (lead) => {
     try {
-      lead.pan = lead.pan || lead.pan;
-
       if (!lead.phone || !lead.name || !lead.dob || !lead.pan) {
         console.error(`❌ Incomplete data for lead: ${lead.phone}. Skipping.`);
         await UserDB.updateOne(
@@ -145,47 +147,42 @@ async function processBatch(leads) {
 
       const updates = {};
       let needUpdate = false;
-
       if (userDoc.apiResponse && !Array.isArray(userDoc.apiResponse)) {
         updates.apiResponse = [userDoc.apiResponse];
         needUpdate = true;
       }
-
       if (userDoc.preApproval && !Array.isArray(userDoc.preApproval)) {
         updates.preApproval = [userDoc.preApproval];
         needUpdate = true;
       }
-
       if (needUpdate) {
         await UserDB.updateOne({ phone: lead.phone }, { $set: updates });
       }
 
       const preApprovalResponse = await getPreApproval(lead);
-      console.log("✅ PreApproval Response:", preApprovalResponse);
-
       if (
         preApprovalResponse.status === "success" &&
         preApprovalResponse.message === "Lead created successfully"
       ) {
-        successCount++; // ✅ Count only on both conditions match
-
-        const updateDoc = {
-          $push: {
-            apiResponse: {
-              smartcoin: preApprovalResponse,
-              status: preApprovalResponse.status,
-              message: preApprovalResponse.message,
-              createdAt: new Date().toISOString(),
+        successCount++;
+        await UserDB.updateOne(
+          { phone: lead.phone },
+          {
+            $push: {
+              apiResponse: {
+                smartcoin: preApprovalResponse,
+                status: preApprovalResponse.status,
+                message: preApprovalResponse.message,
+                createdAt: new Date().toISOString(),
+              },
+              RefArr: {
+                name: "Smartcoin",
+                createdAt: new Date().toISOString(),
+              },
             },
-            RefArr: {
-              name: "Smartcoin",
-              createdAt: new Date().toISOString(),
-            },
+            $unset: { accounts: "" },
           },
-          $unset: { accounts: "" },
-        };
-
-        await UserDB.updateOne({ phone: lead.phone }, updateDoc);
+        );
         console.log("✅ Lead processed successfully:", lead.phone);
       } else {
         console.log(`⛔ API failed: ${preApprovalResponse.message}`);
@@ -216,8 +213,6 @@ async function processBatch(leads) {
   await Promise.allSettled(promises);
 }
 
-let totalLeads = 0;
-
 async function Loop() {
   try {
     while (true) {
@@ -239,14 +234,18 @@ async function Loop() {
       await processBatch(leads);
       totalLeads += leads.length;
 
-      console.log(`🏁 Total Successful SmartCoin Leads: ${successCount}`); // ✅ Final count
+      console.log(`🏁 Total Successful SmartCoin Leads: ${successCount}`);
       console.log(`📊 Total Leads Processed So Far: ${totalLeads}`);
+
+      // pause 5 seconds before next batch
+      console.log("⏸️ Waiting 5 seconds before next batch…");
+      await sleep(5000);
     }
   } catch (error) {
     console.error("❌ Loop error:", error.message);
   } finally {
     console.log("🔌 Closing DB connection...");
-    console.log(`🏁 Total Successful SmartCoin Leads: ${successCount}`); // ✅ Final count
+    console.log(`🏁 Total Successful SmartCoin Leads: ${successCount}`);
     mongoose.connection.close();
   }
 }
