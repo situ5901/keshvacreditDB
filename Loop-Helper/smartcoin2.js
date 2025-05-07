@@ -20,7 +20,7 @@ const Partner_id = "Keshvacredit";
 const PRE_APPROVAL_API =
   "https://leads.smartcoin.co.in/partner/keshvacredit/lead/create";
 
-function getHeaders() {
+function getheaders() {
   return {
     "content-type": "application/x-www-form-urlencoded",
     "admin-api-client-id": "sc_kvcd_oruwm5w5fxy4jnoi",
