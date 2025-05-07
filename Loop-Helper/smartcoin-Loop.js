@@ -11,8 +11,8 @@ mongoose
   .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
 
 const UserDB = mongoose.model(
-  "smcoll",
-  new mongoose.Schema({}, { collection: "smcoll", strict: false }),
+  "userdb",
+  new mongoose.Schema({}, { collection: "userdb", strict: false }),
 );
 
 const BATCH_SIZE = 5;
@@ -239,7 +239,6 @@ async function Loop() {
       await processBatch(leads);
       totalLeads += leads.length;
 
-      await new Promise((resolve) => setTimeout(resolve, 2000));
       console.log(`🏁 Total Successful SmartCoin Leads: ${successCount}`); // ✅ Final count
       console.log(`📊 Total Leads Processed So Far: ${totalLeads}`);
     }
