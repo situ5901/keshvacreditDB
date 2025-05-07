@@ -163,50 +163,35 @@ async function processBatch(leads) {
       const preApprovalResponse = await getPreApproval(lead);
       console.log("✅ PreApproval Response:", preApprovalResponse);
 
+      // ✅ Save every API response to DB
+      const updateDoc = {
+        $push: {
+          apiResponse: {
+            smartcoin: preApprovalResponse,
+            status: preApprovalResponse.status,
+            message: preApprovalResponse.message,
+            createdAt: new Date().toISOString(),
+          },
+          RefArr: {
+            name: "Smartcoin",
+            createdAt: new Date().toISOString(),
+          },
+        },
+        $unset: { accounts: "" },
+      };
+
+      const result = await UserDB.updateOne({ phone: lead.phone }, updateDoc);
+      console.log("🧾 Saved API response to DB:", result);
+
+      // ✅ Count only successful leads
       if (
         preApprovalResponse.status === "success" &&
         preApprovalResponse.message === "Lead created successfully"
       ) {
-        successCount++; // ✅ Count only on both conditions match
-
-        const updateDoc = {
-          $push: {
-            apiResponse: {
-              smartcoin: preApprovalResponse,
-              status: preApprovalResponse.status,
-              message: preApprovalResponse.message,
-              createdAt: new Date().toISOString(),
-            },
-            RefArr: {
-              name: "Smartcoin",
-              createdAt: new Date().toISOString(),
-            },
-          },
-          $unset: { accounts: "" },
-        };
-
-        await UserDB.updateOne({ phone: lead.phone }, updateDoc);
-        console.log("✅ Lead processed successfully:", lead.phone);
+        successCount++;
+        console.log("✅ Lead counted as success:", lead.phone);
       } else {
         console.log(`⛔ API failed: ${preApprovalResponse.message}`);
-        if (
-          preApprovalResponse.message?.includes(
-            "mandatory field PAN is incorrect",
-          )
-        ) {
-          await UserDB.updateOne(
-            { phone: lead.phone },
-            {
-              $push: {
-                RefArr: {
-                  name: "SkippedSmartcoin",
-                  reason: `API rejected PAN: ${preApprovalResponse.pan}`,
-                  createdAt: new Date().toISOString(),
-                },
-              },
-            },
-          );
-        }
       }
     } catch (err) {
       console.error("❌ Error processing lead:", err.message);
@@ -215,7 +200,6 @@ async function processBatch(leads) {
 
   await Promise.allSettled(promises);
 }
-
 let totalLeads = 0;
 
 async function Loop() {
