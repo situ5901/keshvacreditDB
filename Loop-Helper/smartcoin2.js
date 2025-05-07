@@ -62,7 +62,7 @@ async function getPreApproval(lead) {
     console.log("📤 Sending PreApproval Payload:", payload);
 
     const response = await axios.post(PRE_APPROVAL_API, qs.stringify(payload), {
-      headers: getHeaders(),
+      headers: getheaders(),
     });
 
     console.log("✅ PreApproval API Response:", response.data);
