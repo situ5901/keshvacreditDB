@@ -11,8 +11,8 @@ mongoose
   .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
 
 const UserDB = mongoose.model(
-  "smcoll", // ✅ Change collection name
-  new mongoose.Schema({}, { collection: "smcoll", strict: false }),
+  "Loop", // ✅ Change collection name
+  new mongoose.Schema({}, { collection: "Loop", strict: false }),
 );
 
 const BATCH_SIZE = 5;
@@ -20,7 +20,7 @@ const Partner_id = "Keshvacredit";
 const PRE_APPROVAL_API =
   "https://leads.smartcoin.co.in/partner/keshvacredit/lead/create";
 
-function getheaders() {
+function getHeaders() {
   return {
     "content-type": "application/x-www-form-urlencoded",
     "admin-api-client-id": "sc_kvcd_oruwm5w5fxy4jnoi",
