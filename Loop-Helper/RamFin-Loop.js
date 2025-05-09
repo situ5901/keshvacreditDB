@@ -16,7 +16,7 @@ const UserDB = mongoose.model(
 
 const newAPI =
   "https://www.ramfincorp.com/loanapply/ramfincorp_api/lead_gen/api/v1/create_lead";
-const MAX_LEADS = 50;
+const MAX_LEADS = 5;
 const Partner_id = "Keshvacredit";
 const loanAmount = 20000;
 let processedCount = 0;
@@ -28,14 +28,13 @@ async function sendToNewAPI(lead) {
       customer_name: lead.name,
       email: lead.email,
       mobile: lead.phone,
-      loan_amount: lead.loanAmount || 500000, // default if not provided
       pancard: lead.pan,
       Partner_id: Partner_id,
-      loan_amount: loanAmount,
+      loan_amount: lead.loanAmount || loanAmount,
     };
 
     console.log(
-      "Sending Lead Data to Ramfin API:",
+      "📤 Sending Lead Data to Ramfin API:",
       JSON.stringify(apiRequestBody, null, 2),
     );
 
@@ -45,6 +44,7 @@ async function sendToNewAPI(lead) {
         Authorization:
           "Basic cmFtZmluX2U2NmIxNmE5ZjZiNzQ5YTAzOTBmZWRjM2U4ZjNkZjZmOmI3YjJlZDU1MjM5NjA5NzM5NmQwOWE2N2RkZTI4NjUyMDNjZDMxYjA=",
       },
+      timeout: 10000, // 10 seconds timeout
     });
 
     response.status = apiResponse.data.status || "success";
@@ -55,7 +55,12 @@ async function sendToNewAPI(lead) {
       error.response?.data?.message || "API did not return a valid response";
 
     if (error.response) {
-      console.error("API Error Response:", error.response.data);
+      console.error("❌ API Error:", {
+        statusCode: error.response.status,
+        data: error.response.data,
+      });
+    } else {
+      console.error("❌ Axios Error:", error.message);
     }
   }
   return response;
@@ -69,27 +74,33 @@ async function processBatch(users) {
     const user = users[i];
     const response = results[i];
 
-    console.log("User:", user.phone, "Response:", response);
+    console.log("📞 User:", user.phone, "➡️ Response:", response);
 
-    const updateResponse = await UserDB.updateOne(
-      { phone: user.phone },
-      {
-        $push: {
-          apiResponse: {
-            status: response.status,
-            message: response.message,
-            createdAt: new Date().toISOString(),
+    try {
+      const updateResponse = await UserDB.updateOne(
+        { phone: user.phone },
+        {
+          $push: {
+            apiResponse: {
+              RamFin: {
+                status: response.status,
+                message: response.message,
+              },
+              createdAt: new Date().toISOString(),
+            },
+            RefArr: {
+              name: "RamFin",
+              createdAt: new Date().toISOString(),
+            },
           },
-          RefArr: {
-            name: "RamFin",
-            createdAt: new Date().toISOString(),
-          },
+          $set: { processed: true },
+          $unset: { accounts: "" },
         },
-        $unset: { accounts: "" },
-      },
-    );
-
-    console.log(`UpdateResponse for ${user.phone}:`, updateResponse);
+      );
+      console.log(`✅ Updated DB for ${user.phone}:`, updateResponse);
+    } catch (err) {
+      console.error(`❌ Failed to update DB for ${user.phone}:`, err.message);
+    }
   }
 }
 
@@ -116,15 +127,16 @@ async function loop() {
       } else {
         await processBatch(leads);
         processedCount += leads.length;
-        console.log(`✅ Processed ${processedCount} leads.`);
+        console.log(`✅ Processed ${processedCount} leads so far.`);
       }
 
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, 2000)); // Delay to prevent rate-limiting
     }
   } catch (error) {
     console.error("🚫 Error in loop:", error.message);
   } finally {
     mongoose.connection.close();
+    console.log("🔌 MongoDB connection closed.");
   }
 }
 
