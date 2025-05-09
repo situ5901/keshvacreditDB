@@ -107,7 +107,7 @@ async function processBatch(users, token) {
     const updateDoc = {
       $push: {
         apiResponse: {
-          FatakPayDCL: true,
+          FatakPayPL: true,
           status: eligibilityResponse.success ? "Eligible" : "Ineligible",
           message: eligibilityResponse.message,
           data: eligibilityResponse.data || {},
