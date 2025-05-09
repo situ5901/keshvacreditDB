@@ -24,7 +24,7 @@ function getheaders() {
   return {
     "content-type": "application/x-www-form-urlencoded",
     "admin-api-client-id": "SC_KVCD_oruwm5w5fXy4JNoi",
-    "admin-api-client-key": "esy7kphmg6g9hu90",
+    "admin-api-client-key": "esy7kphMG6G9hu90",
   };
 }
 
