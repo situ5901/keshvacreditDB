@@ -15,8 +15,8 @@ const UserDB = mongoose.model(
 );
 
 const newAPI =
-  "https://preprod.ramfincorp.co.in/loanapply/ramfincorp_api/lead_gen/api/v1/create_lead";
-const MAX_LEADS = 1;
+  "https://www.ramfincorp.com/loanapply/ramfincorp_api/lead_gen/api/v1/create_lead";
+const MAX_LEADS = 50;
 const Partner_id = "Keshvacredit";
 const loanAmount = 20000;
 let processedCount = 0;
@@ -25,18 +25,17 @@ async function sendToNewAPI(lead) {
   let response = {};
   try {
     const apiRequestBody = {
-      mobile: lead.phone,
-      name: lead.name,
+      customer_name: lead.name,
       email: lead.email,
-      employeeType: lead.employment,
-      dob: user.dob ? new Date(user.dob).toISOString().split("T")[0] : null, // ✅ DOB formatted here
+      mobile: lead.phone,
+      loan_amount: lead.loanAmount || 500000, // default if not provided
       pancard: lead.pan,
-      loanAmount: loanAmount,
       Partner_id: Partner_id,
+      loan_amount: loanAmount,
     };
 
     console.log(
-      "Sending Lead Data to API:",
+      "Sending Lead Data to Ramfin API:",
       JSON.stringify(apiRequestBody, null, 2),
     );
 
@@ -44,12 +43,12 @@ async function sendToNewAPI(lead) {
       headers: {
         "Content-Type": "application/json",
         Authorization:
-          "Basic cmFtZmluX3FwZzhUZ1pGemlTcTY5ejRWb01wd3E2dGdLYUprUDZtOkUydmp4a0pCbHNWZFRFQkhkQ3puV29Nak1IN0ZSS3NW",
+          "Basic cmFtZmluX2U2NmIxNmE5ZjZiNzQ5YTAzOTBmZWRjM2U4ZjNkZjZmOmI3YjJlZDU1MjM5NjA5NzM5NmQwOWE2N2RkZTI4NjUyMDNjZDMxYjA=",
       },
     });
 
-    response.status = apiResponse.data.status;
-    response.message = apiResponse.data.message;
+    response.status = apiResponse.data.status || "success";
+    response.message = apiResponse.data.message || "Lead created successfully";
   } catch (error) {
     response.status = "failed";
     response.message =
@@ -120,7 +119,7 @@ async function loop() {
         console.log(`✅ Processed ${processedCount} leads.`);
       }
 
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      await new Promise((resolve) => setTimeout(resolve, 1000));
     }
   } catch (error) {
     console.error("🚫 Error in loop:", error.message);
