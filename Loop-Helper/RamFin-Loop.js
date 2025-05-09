@@ -16,7 +16,7 @@ const UserDB = mongoose.model(
 
 const newAPI =
   "https://www.ramfincorp.com/loanapply/ramfincorp_api/lead_gen/api/v1/create_lead";
-const MAX_LEADS = 5;
+const MAX_LEADS = 1;
 const Partner_id = "Keshvacredit";
 const loanAmount = 20000;
 let processedCount = 0;
@@ -66,15 +66,11 @@ async function sendToNewAPI(lead) {
   return response;
 }
 
+// Option 1: Parallel Database Updates (as suggested previously)
 async function processBatch(users) {
-  const promises = users.map((user) => sendToNewAPI(user));
-  const results = await Promise.all(promises);
-
-  for (let i = 0; i < users.length; i++) {
-    const user = users[i];
-    const response = results[i];
-
-    console.log("📞 User:", user.phone, "➡️ Response:", response);
+  const promises = users.map(async (user) => {
+    const apiResponse = await sendToNewAPI(user);
+    console.log("📞 User:", user.phone, "➡️ Response:", apiResponse);
 
     try {
       const updateResponse = await UserDB.updateOne(
@@ -83,8 +79,8 @@ async function processBatch(users) {
           $push: {
             apiResponse: {
               RamFin: {
-                status: response.status,
-                message: response.message,
+                status: apiResponse.status,
+                message: apiResponse.message,
               },
               createdAt: new Date().toISOString(),
             },
@@ -93,7 +89,6 @@ async function processBatch(users) {
               createdAt: new Date().toISOString(),
             },
           },
-          $set: { processed: true },
           $unset: { accounts: "" },
         },
       );
@@ -101,7 +96,9 @@ async function processBatch(users) {
     } catch (err) {
       console.error(`❌ Failed to update DB for ${user.phone}:`, err.message);
     }
-  }
+  });
+
+  await Promise.all(promises); // Wait for all API calls and DB updates to complete for the batch
 }
 
 async function loop() {
@@ -125,12 +122,12 @@ async function loop() {
         hasMoreLeads = false;
         console.log("🚫 No more leads to process.");
       } else {
-        await processBatch(leads);
+        await processBatch(leads); // Use either the parallel or bulk update version
         processedCount += leads.length;
         console.log(`✅ Processed ${processedCount} leads so far.`);
       }
 
-      await new Promise((resolve) => setTimeout(resolve, 2000)); // Delay to prevent rate-limiting
+      await new Promise((resolve) => setTimeout(resolve, 1000)); // Delay to prevent rate-limiting
     }
   } catch (error) {
     console.error("🚫 Error in loop:", error.message);
