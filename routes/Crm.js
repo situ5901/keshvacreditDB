@@ -11,7 +11,7 @@ router.get("/get-all-leads", async (req, res) => {
     const ramfinLeads = await db
       .collection("userdb")
       .find(
-        { "apiResponse.message": "Lead created successfully." },
+        { "apiResponse.message": "Success" },
         { projection: { phone: 1, _id: 0 } },
       )
       .toArray();
