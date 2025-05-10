@@ -23,10 +23,12 @@ const PRE_APPROVAL_API =
 function getheaders() {
   return {
     "content-type": "application/x-www-form-urlencoded",
-    "admin-api-client-id": "sc_kvcd_oruwm5w5fxy4jnoi",
-    "admin-api-client-key": "esy7kphmg6g9hu90",
+    "admin-api-client-id": "SC_KVCD_oruwm5w5fXy4JNoi",
+    "admin-api-client-key": "esy7kphMG6G9hu90",
   };
 }
+
+//situ kumar//
 
 function isValidPAN(pan) {
   return /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(pan);
