@@ -4,6 +4,11 @@ const mongoose = require("mongoose");
 require("dotenv").config();
 
 mongoose.set("strictQuery", true);
+// mongoose
+//   .connect(process.env.MONGODB_URINEW)
+//   .then(() => console.log("✅ MongoDB Connected Successfully"))
+//   .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
+//
 const db = mongoose.connection;
 
 router.get("/get-all-leads", async (req, res) => {
@@ -11,15 +16,20 @@ router.get("/get-all-leads", async (req, res) => {
     const ramfinLeads = await db
       .collection("userdb")
       .find(
-        { "apiResponse.message": "Success" },
-        { projection: { phone: 1, _id: 0 } },
+        {
+          "apiResponse.RamFin.status": "1",
+          "apiResponse.RamFin.message": "Success",
+        },
+        {
+          projection: { phone: 1, _id: 0 },
+        },
       )
       .toArray();
 
     const zypeLeads = await db
       .collection("userdb")
       .find(
-        { "apiResponse.ZypeResponse.status": "ACCEPT" },
+        { "apiResponse.fullResponse.status": "ACCEPT" },
         { projection: { phone: 1, _id: 0 } },
       )
       .toArray();
