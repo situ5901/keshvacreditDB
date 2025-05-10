@@ -4,11 +4,6 @@ const mongoose = require("mongoose");
 require("dotenv").config();
 
 mongoose.set("strictQuery", true);
-// mongoose
-//   .connect(process.env.MONGODB_URINEW)
-//   .then(() => console.log("✅ MongoDB Connected Successfully"))
-//   .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
-//
 const db = mongoose.connection;
 
 router.get("/get-all-leads", async (req, res) => {
