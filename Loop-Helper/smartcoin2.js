@@ -229,7 +229,7 @@ async function Loop() {
 
       console.log(`📊 Total Leads Processed So Far: ${totalLeads}`);
 
-      await new Promise((res) => setTimeout(res, 1000));
+      await new Promise((res) => setTimeout(res, 300));
     }
   } catch (error) {
     console.error("❌ Loop error:", error.message);
