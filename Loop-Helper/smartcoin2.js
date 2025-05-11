@@ -228,8 +228,6 @@ async function Loop() {
       console.log(`🏁 Total Successful SmartCoin Leads: ${successCount}`); // ✅ Final count
 
       console.log(`📊 Total Leads Processed So Far: ${totalLeads}`);
-
-      await new Promise((res) => setTimeout(res, 300));
     }
   } catch (error) {
     console.error("❌ Loop error:", error.message);
