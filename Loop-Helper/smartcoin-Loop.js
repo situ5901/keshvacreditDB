@@ -15,7 +15,7 @@ const UserDB = mongoose.model(
   new mongoose.Schema({}, { collection: "smcoll", strict: false }),
 );
 
-const BATCH_SIZE = 10;
+const BATCH_SIZE = 100;
 const Partner_id = "Keshvacredit";
 const PRE_APPROVAL_API =
   "https://leads.smartcoin.co.in/partner/keshvacredit/lead/create";
@@ -225,6 +225,7 @@ async function Loop() {
 
       console.log(`🏁 Total Successful SmartCoin Leads: ${successCount}`); // ✅ Final count
       console.log(`📊 Total Leads Processed So Far: ${totalLeads}`);
+      await new Promise((resolve) => setTimeout(resolve, 1000));
     }
   } catch (error) {
     console.error("❌ Loop error:", error.message);
