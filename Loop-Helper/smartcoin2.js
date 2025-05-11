@@ -152,7 +152,6 @@ async function processLead(lead) {
 
 async function processBatch(leads) {
   const queue = [...leads];
-  const workers = [];
 
   while (queue.length > 0) {
     const chunk = queue.splice(0, CONCURRENCY_LIMIT);
