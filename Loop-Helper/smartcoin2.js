@@ -11,11 +11,11 @@ mongoose
   .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
 
 const UserDB = mongoose.model(
-  "Loop", // ✅ Change collection name
-  new mongoose.Schema({}, { collection: "Loop", strict: false }),
+  "smcoll", // ✅ Change collection name
+  new mongoose.Schema({}, { collection: "smcoll", strict: false }),
 );
 
-const BATCH_SIZE = 5;
+const BATCH_SIZE = 10;
 const Partner_id = "Keshvacredit";
 const PRE_APPROVAL_API =
   "https://leads.smartcoin.co.in/partner/keshvacredit/lead/create";
