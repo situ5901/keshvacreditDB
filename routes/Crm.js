@@ -11,16 +11,16 @@ router.get("/demo", async (req, res) => {
 });
 router.get("/get-all", async (req, res) => {
   try {
-    const ramfinLeads = await db
-      .collection("userdb")
-      .find(
-        {
-          "apiResponse.RamFin.status": "1",
-          "apiResponse.RamFin.message": "Success",
-        },
-        { projection: { phone: 1, _id: 0 } },
-      )
-      .toArray();
+    // const ramfinLeads = await db
+    //   .collection("userdb")
+    //   .find(
+    //     {
+    //       "apiResponse.RamFin.status": "1",
+    //       "apiResponse.RamFin.message": "Success",
+    //     },
+    //     { projection: { phone: 1, _id: 0 } },
+    //   )
+    //   .toArray();
 
     const zypeLeads = await db
       .collection("userdb")
@@ -38,7 +38,7 @@ router.get("/get-all", async (req, res) => {
       )
       .toArray();
 
-    const ramfinPhones = ramfinLeads.map((l) => l.phone);
+    // const ramfinPhones = ramfinLeads.map((l) => l.phone);
     const zypePhones = zypeLeads.map((l) => l.phone);
     const fatakPayPhones = fatakPayLeads.map((l) => l.phone);
 
