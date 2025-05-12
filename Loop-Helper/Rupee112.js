@@ -2,18 +2,9 @@ const axios = require("axios");
 const mongoose = require("mongoose");
 require("dotenv").config();
 
-// MongoDB connection
 const MONGODB_URINEW = process.env.MONGODB_URI;
 
-mongoose
-  .connect(MONGODB_URINEW)
-  .then(() => console.log("✅ MongoDB Connected Successfully"))
-  .catch((err) => {
-    console.error("🚫 MongoDB Connection Error:", err);
-    process.exit(1);
-  });
-
-// MongoDB model
+// MongoDB model setup
 const UserDB = mongoose.model(
   "userdb",
   new mongoose.Schema({}, { collection: "userdb", strict: false }),
@@ -21,8 +12,6 @@ const UserDB = mongoose.model(
 
 const MAX_LEADS = 5;
 let processedCount = 0;
-
-// API config
 const newAPI = "https://api.rupee112fintech.com/marketing-check-dedupe/";
 
 function getHeaders() {
@@ -33,25 +22,20 @@ function getHeaders() {
   };
 }
 
-// Send data to external API
 async function sendToNewAPI(lead) {
   try {
     const apiRequestBody = {
       mobile: lead.phone,
       pancard: lead.pan,
     };
-
     console.log("📤 Sending Lead Data to API:", apiRequestBody);
-
     const apiResponse = await axios.post(newAPI, apiRequestBody, {
       headers: getHeaders(),
     });
-
     console.log("✅ API Response Received:", apiResponse.data);
     return apiResponse.data;
   } catch (error) {
     console.error("🚫 API Call Failed:", error.message);
-
     return {
       Status: 0,
       Error:
@@ -62,7 +46,6 @@ async function sendToNewAPI(lead) {
   }
 }
 
-// Process a batch of leads
 async function processBatch(users) {
   const promises = users.map((user) => sendToNewAPI(user));
   const results = await Promise.all(promises);
@@ -92,7 +75,6 @@ async function processBatch(users) {
           $unset: { accounts: "" },
         },
       );
-
       console.log(`✅ MongoDB updated for ${user.phone}:`, updateResponse);
     } catch (updateError) {
       console.error(
@@ -103,14 +85,11 @@ async function processBatch(users) {
   }
 }
 
-// Loop through batches
 async function loop() {
   try {
     let hasMoreLeads = true;
-
     while (hasMoreLeads) {
       console.log("🔄 Fetching users...");
-
       const leads = await UserDB.aggregate([
         {
           $match: {
@@ -129,7 +108,6 @@ async function loop() {
         console.log(`✅ Total Processed: ${processedCount}`);
       }
 
-      // Wait 2 seconds between batches
       await new Promise((resolve) => setTimeout(resolve, 2000));
     }
   } catch (error) {
@@ -140,4 +118,15 @@ async function loop() {
   }
 }
 
-loop();
+async function main() {
+  try {
+    await mongoose.connect(MONGODB_URINEW);
+    console.log("✅ MongoDB Connected Successfully");
+    await loop();
+  } catch (err) {
+    console.error("🚫 MongoDB Connection Error:", err);
+    process.exit(1);
+  }
+}
+
+main();
