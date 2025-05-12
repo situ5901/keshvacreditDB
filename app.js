@@ -42,13 +42,13 @@ const auth = require("./routes/auth.js");
 const leads = require("./routes/leads.js");
 const loop = require("./PartnerAPI/LendingPlate.js");
 const api = require("./routes/api.js");
-const Crm = require("./routes/Crm.js");
+const getAll = require("./routes/Crm.js");
 
 app.use(`/api${API_VERSION}/auth`, auth);
 app.use(`/api${API_VERSION}/leads`, leads);
 app.use(`/api${API_VERSION}/loop`, loop);
 app.use(`/api${API_VERSION}/api`, api);
-app.use(`/api${API_VERSION}/Crm`, Crm);
+app.use(`/api${API_VERSION}/getAll`, getAll);
 app.use((err, req, res, _next) => {
   res.status(err.status || 500).json({ error: err.message });
 });

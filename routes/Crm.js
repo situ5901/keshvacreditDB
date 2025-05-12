@@ -6,7 +6,7 @@ require("dotenv").config();
 mongoose.set("strictQuery", true);
 const db = mongoose.connection;
 
-router.get("/get-all-leads", async (req, res) => {
+router.get("/get-all", async (req, res) => {
   try {
     const ramfinLeads = await db
       .collection("userdb")
