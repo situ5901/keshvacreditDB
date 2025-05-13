@@ -16,7 +16,7 @@ const UserDB = mongoose.model(
 
 const newAPI =
   "https://kamakshimoney.com/loanapply/kamakshimoney_api/lead_gen/api/v1/create_lead";
-const MAX_LEADS = 5;
+const MAX_LEADS = 50;
 const Partner_id = "Keshvacredit";
 const loanAmount = "20000"; // ✅ as string
 
@@ -129,6 +129,8 @@ async function loop() {
         await processBatch(leads);
         processedCount += leads.length;
         console.log(`✅ Total Processed: ${processedCount}`);
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        console.log("🔄 Waiting for 1 seconds...");
       }
     }
   } catch (err) {
