@@ -2,16 +2,16 @@ const mongoose = require("mongoose");
 const axios = require("axios");
 require("dotenv").config();
 
-const MONGODB_URINEW = process.env.MONGODB_URINEW;
+const MONGODB_URIVISH = process.env.MONGODB_URIVISH;
 
 mongoose
-  .connect(MONGODB_URINEW)
+  .connect(MONGODB_URIVISH)
   .then(() => console.log("✅ MongoDB Connected Successfully"))
   .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
 
 const UserDB = mongoose.model(
-  "userdb",
-  new mongoose.Schema({}, { collection: "userdb", strict: false }),
+  "smcoll",
+  new mongoose.Schema({}, { collection: "smcoll", strict: false }),
 );
 
 const BATCH_SIZE = 5; // Set your batch size
@@ -65,12 +65,27 @@ async function sendToNewAPI(user) {
 // Pre-Approval API
 async function getPreApproval(user) {
   try {
+    function formatDOB(dob) {
+      if (!dob) return null;
+
+      const parts = dob.split("/");
+      if (parts.length !== 3) return null;
+
+      let [month, day, year] = parts;
+
+      if (month.length === 1) month = `0${month}`;
+      if (day.length === 1) day = `0${day}`;
+
+      return `${year}-${month}-${day}`; // Output: "1998-06-15"
+    }
+
     const payload = {
       mobileNumber: String(user.phone),
       email: user.email,
       panNumber: user.pan,
       name: user.name,
-      dob: user.dob ? new Date(user.dob).toISOString().split("T")[0] : null, // ✅ DOB formatted here
+      // dob: user.dob ? new Date(user.dob).toISOString().split("T")[0] : null, // ✅ DOB formatted here
+      dob: formatDOB(user.dob),
       income: user.income,
       employmentType: user.employment,
       orgName: "Infosys Ltd",
@@ -169,7 +184,7 @@ async function processBatch(users) {
     }
   });
 }
-
+let processedCount = 0;
 async function Loop() {
   try {
     while (true) {
@@ -190,8 +205,9 @@ async function Loop() {
       }
 
       await processBatch(leads);
+      processedCount += leads.length;
       console.log(`✅ Processed batch of: ${leads.length}`);
-
+      console.log(`🏁 Total Processed Leads: ${processedCount}`);
       await new Promise((resolve) => setTimeout(resolve, 1000)); // 1 sec ka delay har batch ke baad
     }
   } catch (error) {
