@@ -141,6 +141,7 @@ async function processBatch(users, token) {
   await Promise.allSettled(promises);
 }
 
+let lastRun = 0;
 async function Loop() {
   const token = await createUserToken();
   if (!token) {
@@ -163,8 +164,9 @@ async function Loop() {
       }
 
       await processBatch(leads, token);
+      lastRun += leads.length;
       console.log(`✅ Processed batch of ${leads.length} users`);
-
+      console.log(`✅ Last run: ${lastRun}`);
       // Process next batch immediately
       setImmediate(processNextBatch);
     } catch (err) {
