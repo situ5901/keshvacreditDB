@@ -14,7 +14,7 @@ const UserDB = mongoose.model(
   new mongoose.Schema({}, { collection: "smcoll", strict: false }),
 );
 
-const BATCH_SIZE = 100; // Set your batch size
+const BATCH_SIZE = 5; // Set your batch size
 const PartnerID = "a8ce06a0-4fbd-489f-8d75-345548fb98a8";
 const ELIGIBILITY_API =
   "https://prod.zype.co.in/attribution-service/api/v1/underwriting/customerEligibility";
@@ -62,12 +62,12 @@ async function sendToNewAPI(user) {
   }
 }
 
-// Pre-Approval API
 async function getPreApproval(user) {
   try {
     function formatDOB(dob) {
       if (!dob) return null;
 
+      // Expected input: "6/15/1998" or "06/15/1998"
       const parts = dob.split("/");
       if (parts.length !== 3) return null;
 
@@ -193,7 +193,8 @@ async function Loop() {
       const leads = await UserDB.aggregate([
         {
           $match: {
-            "RefArr.name": { $ne: "Zype" },
+            "RefArr.name": "Zype",
+            "apiResponse.ZypeResponse.message": "REJECT",
           },
         },
         { $limit: BATCH_SIZE },

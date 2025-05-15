@@ -2,6 +2,8 @@ const express = require("express");
 const router = express.Router();
 const mongoose = require("mongoose");
 require("dotenv").config();
+const User = require("../models/user.model"); // Ensure correct path
+const Users = require("../models/checkdata"); // Ensure correct path
 
 mongoose.set("strictQuery", true);
 const db = mongoose.connection;
@@ -63,6 +65,33 @@ router.get("/get-all", async (req, res) => {
       message: "Error fetching leads",
       error: error.message,
     });
+  }
+});
+
+router.post("/check-data", async (req, res) => {
+  try {
+    const { phone } = req.body;
+
+    if (!Array.isArray(phone)) {
+      return res.status(400).json({ message: "Please enter a number" });
+    }
+
+    // Correct field name used here: "phone"
+    const foundUser = await Users.find({ phone: { $in: phone } }).select(
+      "phone",
+    );
+
+    const foundNumbers = foundUser.map((user) => user.phone);
+
+    const response = phone.map((num) => ({
+      phone: num,
+      status: foundNumbers.includes(num) ? "Duplicate" : "Not Duplicate",
+    }));
+
+    res.json({ data: response });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Error" });
   }
 });
 module.exports = router;
