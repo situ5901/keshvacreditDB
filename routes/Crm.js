@@ -68,6 +68,10 @@ router.get("/get-all", async (req, res) => {
   }
 });
 
+router.get("/Test", async (req, res) => {
+  res.send("Hello CRM");
+});
+
 router.post("/check-data", async (req, res) => {
   try {
     const { phone } = req.body;
