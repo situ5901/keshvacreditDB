@@ -69,7 +69,7 @@ async function sendEligibilityCheck(user, token) {
       last_name: user.last_name || "kumar",
       employment_type_id: user.employment,
       pan: user.pan || null,
-      dob: formatDOB(user.dob) || null,
+      dob: user.dob,
       email: user.email || "not@provided.com",
       pincode: user.pincode || "400001",
       home_address: user.home_address || "123 MG Road, Mumbai",
@@ -141,7 +141,6 @@ async function processBatch(users, token) {
   await Promise.allSettled(promises);
 }
 
-let lastRun = 0;
 async function Loop() {
   const token = await createUserToken();
   if (!token) {
@@ -164,9 +163,8 @@ async function Loop() {
       }
 
       await processBatch(leads, token);
-      lastRun += leads.length;
       console.log(`✅ Processed batch of ${leads.length} users`);
-      console.log(`✅ Last run: ${lastRun}`);
+
       // Process next batch immediately
       setImmediate(processNextBatch);
     } catch (err) {
