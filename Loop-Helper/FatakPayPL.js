@@ -69,7 +69,7 @@ async function sendEligibilityCheck(user, token) {
       last_name: user.last_name || "kumar",
       employment_type_id: user.employment,
       pan: user.pan || null,
-      dob: user.dob,
+      dob: formatDOB(user.dob),
       email: user.email || "not@provided.com",
       pincode: user.pincode || "400001",
       home_address: user.home_address || "123 MG Road, Mumbai",
