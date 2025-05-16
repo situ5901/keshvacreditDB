@@ -2,10 +2,10 @@ const mongoose = require("mongoose");
 const axios = require("axios");
 require("dotenv").config();
 
-const MONGODB_URINEW = process.env.MONGODB_URINEW;
+const MONGODB_URIVISH = process.env.MONGODB_URIVISH;
 
 mongoose
-  .connect(MONGODB_URINEW)
+  .connect(MONGODB_URIVISH)
   .then(() => console.log("✅ MongoDB Connected Successfully"))
   .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
 
@@ -14,7 +14,7 @@ const UserDB = mongoose.model(
   new mongoose.Schema({}, { collection: "userdb", strict: false }),
 );
 
-const BATCH_SIZE = 5; // Set your batch size
+const BATCH_SIZE = 1; // Set your batch size
 const PartnerID = "a8ce06a0-4fbd-489f-8d75-345548fb98a8";
 const ELIGIBILITY_API =
   "https://prod.zype.co.in/attribution-service/api/v1/underwriting/customerEligibility";
