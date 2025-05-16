@@ -2,19 +2,19 @@ const mongoose = require("mongoose");
 const axios = require("axios");
 require("dotenv").config();
 
-const MONGODB_URINEW = process.env.MONGODB_URINEW;
+const MONGODB_URIVISH = process.env.MONGODB_URIVISH;
 
 mongoose
-  .connect(MONGODB_URINEW)
+  .connect(MONGODB_URIVISH)
   .then(() => console.log("✅ MongoDB Connected Successfully"))
   .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
 
 const UserDB = mongoose.model(
-  "userdb",
-  new mongoose.Schema({}, { collection: "userdb", strict: false }),
+  "smcoll",
+  new mongoose.Schema({}, { collection: "smcoll", strict: false }),
 );
 
-const BATCH_SIZE = 5;
+const BATCH_SIZE = 1;
 const CREATE_USER_TOKEN_API =
   "https://onboardingapi.fatakpay.com/external-api/v1/create-user-token";
 const ELIGIBILITY_API =
@@ -50,26 +50,13 @@ async function createUserToken() {
 
 async function sendEligibilityCheck(user, token) {
   try {
-    function formatDOB(dob) {
-      if (!dob) return null;
-
-      const parts = dob.split("/");
-      if (parts.length !== 3) return null;
-
-      let [month, day, year] = parts;
-
-      if (month.length === 1) month = `0${month}`;
-      if (day.length === 1) day = `0${day}`;
-
-      return `${year}-${month}-${day}`; // Output: "1998-06-15"
-    }
     const payload = {
       mobile: user.phone,
       first_name: user.name,
       last_name: user.last_name || "kumar",
       employment_type_id: user.employment,
       pan: user.pan || null,
-      dob: formatDOB(user.dob),
+      dob: user.dob ? new Date(user.dob).toISOString().split("T")[0] : null, // ✅ DOB formatted here
       email: user.email || "not@provided.com",
       pincode: user.pincode || "400001",
       home_address: user.home_address || "123 MG Road, Mumbai",
@@ -121,7 +108,7 @@ async function processBatch(users, token) {
       $push: {
         apiResponse: {
           FatakPayPL: true,
-          status: eligibilityResponse.success ? "Eligible" : "Ineligible",
+          status: eligibilityResponse.success,
           message: eligibilityResponse.message,
           data: eligibilityResponse.data || {},
           createdAt: new Date().toISOString(),
