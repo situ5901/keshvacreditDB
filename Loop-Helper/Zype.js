@@ -10,11 +10,11 @@ mongoose
   .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
 
 const UserDB = mongoose.model(
-  "userdb",
-  new mongoose.Schema({}, { collection: "userdb", strict: false }),
+  "smcoll",
+  new mongoose.Schema({}, { collection: "smcoll", strict: false }),
 );
 
-const BATCH_SIZE = 1; // Set your batch size
+const BATCH_SIZE = 5; // Set your batch size
 const PartnerID = "a8ce06a0-4fbd-489f-8d75-345548fb98a8";
 const ELIGIBILITY_API =
   "https://prod.zype.co.in/attribution-service/api/v1/underwriting/customerEligibility";
@@ -193,8 +193,7 @@ async function Loop() {
       const leads = await UserDB.aggregate([
         {
           $match: {
-            "RefArr.name": "Zype",
-            "apiResponse.ZypeResponse.message": "REJECT",
+            "RefArr.name": { $ne: "Zype" },
           },
         },
         { $limit: BATCH_SIZE },

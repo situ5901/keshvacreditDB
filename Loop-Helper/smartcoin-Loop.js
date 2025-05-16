@@ -11,7 +11,7 @@ mongoose
   .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
 
 const UserDB = mongoose.model(
-  "smcoll",
+  "smcoll", // ✅ Change collection name
   new mongoose.Schema({}, { collection: "smcoll", strict: false }),
 );
 
@@ -28,6 +28,10 @@ function getheaders() {
   };
 }
 
+function isValidPAN(pan) {
+  return /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(pan);
+}
+
 function formatDOB(dob) {
   if (!dob) return null;
   if (/^\d{4}-\d{2}-\d{2}$/.test(dob)) return dob;
@@ -41,11 +45,6 @@ function formatDOB(dob) {
   } catch {
     return null;
   }
-}
-
-// ✅ PAN validation function
-function isValidPAN(pan) {
-  return /^[A-Z]{5}[0-9]{4}[A-Z]$/.test(pan.toUpperCase());
 }
 
 async function getPreApproval(lead) {
@@ -95,7 +94,7 @@ async function getPreApproval(lead) {
   }
 }
 
-let successCount = 0;
+let successCount = 0; // ✅ Count successful responses
 
 async function processBatch(leads) {
   const promises = leads.map(async (lead) => {
@@ -164,6 +163,7 @@ async function processBatch(leads) {
       const preApprovalResponse = await getPreApproval(lead);
       console.log("✅ PreApproval Response:", preApprovalResponse);
 
+      // ✅ Save every API response to DB
       const updateDoc = {
         $push: {
           apiResponse: {
@@ -183,6 +183,7 @@ async function processBatch(leads) {
       const result = await UserDB.updateOne({ phone: lead.phone }, updateDoc);
       console.log("🧾 Saved API response to DB:", result);
 
+      // ✅ Count only successful leads
       if (
         preApprovalResponse.status === "success" &&
         preApprovalResponse.message === "Lead created successfully"
@@ -199,7 +200,6 @@ async function processBatch(leads) {
 
   await Promise.allSettled(promises);
 }
-
 let totalLeads = 0;
 
 async function Loop() {
@@ -223,7 +223,7 @@ async function Loop() {
       await processBatch(leads);
       totalLeads += leads.length;
 
-      console.log(`🏁 Total Successful SmartCoin Leads: ${successCount}`);
+      console.log(`🏁 Total Successful SmartCoin Leads: ${successCount}`); // ✅ Final count
       console.log(`📊 Total Leads Processed So Far: ${totalLeads}`);
       await new Promise((resolve) => setTimeout(resolve, 1000));
     }
@@ -231,7 +231,7 @@ async function Loop() {
     console.error("❌ Loop error:", error.message);
   } finally {
     console.log("🔌 Closing DB connection...");
-    console.log(`🏁 Total Successful SmartCoin Leads: ${successCount}`);
+    console.log(`🏁 Total Successful SmartCoin Leads: ${successCount}`); // ✅ Final count
     mongoose.connection.close();
   }
 }
