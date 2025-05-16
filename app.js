@@ -42,7 +42,7 @@ const auth = require("./routes/auth.js");
 const leads = require("./routes/leads.js");
 const loop = require("./PartnerAPI/LendingPlate.js");
 const api = require("./routes/api.js");
-const getAll = require("./routes/Crm.js");
+const getAll = require("./routes/allapis.js");
 
 app.use(`/api${API_VERSION}/auth`, auth);
 app.use(`/api${API_VERSION}/leads`, leads);
