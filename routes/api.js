@@ -95,14 +95,6 @@ router.post("/userinfo", async (req, res) => {
       loanAmount,
       income,
       dob,
-      bank_name,
-      bank_account_number,
-      bank_account_name,
-      ifsc_code,
-      bussiness_address,
-      company_name,
-      date_of_business,
-      type_of_business,
     } = req.body;
 
     // Check for missing fields
@@ -187,15 +179,6 @@ router.post("/userinfo", async (req, res) => {
       loanAmount,
       income,
       dob,
-      bank_name,
-      bank_account_number,
-      bank_account_name,
-      ifsc_code,
-      bussiness_address,
-      company_name,
-      date_of_business,
-      type_of_business,
-
       partner: "Keshvacredit", // Default partner
     });
 
