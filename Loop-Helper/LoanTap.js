@@ -1,25 +1,44 @@
 const axios = require("axios");
 const mongoose = require("mongoose");
+const crypto = require("crypto");
 require("dotenv").config();
 
-// MongoDB connection
-const MONGODB_URINEW = process.env.MONGODB_URINEW;
+const MONGODB_URIVISH = process.env.MONGODB_URIVISH;
 
 mongoose
-  .connect(MONGODB_URINEW)
+  .connect(MONGODB_URIVISH)
   .then(() => console.log("✅ MongoDB Connected Successfully"))
   .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
 
 const UserDB = mongoose.model(
-  "loops",
-  new mongoose.Schema({}, { collection: "loops", strict: false }),
+  "smcoll",
+  new mongoose.Schema({}, { collection: "smcoll", strict: false }),
 );
 
-// Request headers
+const partnerKey = "p1JZ8ljtVxJfxLs5eS43Z7jJL81lRzDC"; // example
+
+const iv = Buffer.alloc(16, 0);
+
+function generateXApiAuth() {
+  const epochSeconds = Math.floor(Date.now() / 1000).toString();
+
+  const cipher = crypto.createCipheriv(
+    "aes-256-cbc",
+    Buffer.from(partnerKey, "utf8"),
+    iv,
+  );
+
+  let encrypted = cipher.update(epochSeconds, "utf8", "base64");
+  encrypted += cipher.final("base64");
+
+  return encrypted;
+}
+
+// Headers function
 function getHeaders() {
   return {
     "Content-Type": "application/json",
-    "X-API-AUTH": "ykbls6i8o0gphxCX5fz5KQ==",
+    "X-API-AUTH": generateXApiAuth(),
     "REQ-PRODUCT-ID": "lt-personal-term-loan-reducing",
     "PARTNER-ID": "dummy-pl",
   };
@@ -29,18 +48,24 @@ const API_URL = "https://prod.thearks.in/v1-application/transact";
 const MAX_LEADS = 1;
 const Partner_id = "Keshvacredit";
 
-// API Submission
+// Function to send lead data to API
 async function sendToNewAPI(lead) {
   try {
+    function convertDateFormat(dob) {
+      const [month, day, year] = dob.split("/");
+      return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+    }
+
     const applicant = {
-      job_type: lead.employment,
-      full_name: lead.name,
-      personal_email: lead.email,
-      mobile_number: lead.phone,
-      dob: lead.dob?.replaceAll("-", ""),
-      gender: lead.gender,
-      pan_card: lead.pan,
-      loan_city: lead.state,
+      job_type: lead.employment?.toLowerCase() || "",
+      full_name: lead.name?.toLowerCase() || "",
+      personal_email: lead.email?.toLowerCase() || "",
+      mobile_number: String(lead.phone),
+      dob: convertDateFormat(lead.dob),
+      gender: lead.gender?.toLowerCase() || "",
+      pan_card: lead.pan?.toLowerCase() || "",
+      home_zipcode: lead.pincode,
+      loan_city: lead.state?.toLowerCase() || "",
       fixed_income: lead.income,
       Partner_id: Partner_id,
       consent_given: "yes",
@@ -49,7 +74,6 @@ async function sendToNewAPI(lead) {
         .replace("T", " ")
         .slice(0, 19),
     };
-
     const requestBody = {
       add_application: applicant,
     };
@@ -62,9 +86,13 @@ async function sendToNewAPI(lead) {
 
     console.log("✅ API Success:", response.data);
 
+    // Extract status and message from the response
+    const status = response.data.add_application.answer.status;
+    const message = response.data.add_application.answer.message;
+
     return {
-      status: response.data?.add_application?.answer?.status || "unknown",
-      message: response.data?.add_application?.answer?.message || "No message",
+      status: status,
+      message: message,
     };
   } catch (error) {
     console.error("❌ API Error:", error.response?.data || error.message);
@@ -76,33 +104,31 @@ async function sendToNewAPI(lead) {
   }
 }
 
-// Process and update leads
+// Process leads batch
 async function processBatch(users) {
   const results = await Promise.allSettled(
     users.map(async (user) => {
       const existingUser = await UserDB.findOne({ phone: user.phone });
-      if (existingUser?.isSentToAPI) {
-        console.log(`⏭️ Skipping ${user.phone}, already processed.`);
-        return { status: "skipped", message: "Already sent" };
-      }
 
       const result = await sendToNewAPI(user);
 
+      // Update MongoDB with the API response status and message
       await UserDB.updateOne(
         { phone: user.phone },
         {
-          $push: {
-            apiResponse: {
-              salaryOnTime: result,
+          $set: {
+            "apiResponse.LoanTap": {
               message: result.message,
-              createdAt: new Date().toISOString(),
-            },
-            RefArr: {
-              name: "salaryOnTime",
+              status: result.status,
               createdAt: new Date().toISOString(),
             },
           },
-          $set: { isSentToAPI: true },
+          $push: {
+            RefArr: {
+              name: "LoanTap",
+              createdAt: new Date().toISOString(),
+            },
+          },
           $unset: { accounts: "" },
         },
       );
@@ -115,7 +141,7 @@ async function processBatch(users) {
   return results;
 }
 
-// Batch loop
+// Main loop to fetch and process leads continuously
 let processedCount = 0;
 async function loop() {
   try {
@@ -126,9 +152,7 @@ async function loop() {
       const leads = await UserDB.aggregate([
         {
           $match: {
-            processed: { $ne: true },
-            "RefArr.name": { $ne: "salaryOnTime" },
-            isSentToAPI: { $ne: true },
+            "RefArr.name": { $ne: "LoanTap" },
           },
         },
         { $limit: MAX_LEADS },
@@ -152,5 +176,5 @@ async function loop() {
   }
 }
 
-// Start the loop
+// Start processing
 loop();
