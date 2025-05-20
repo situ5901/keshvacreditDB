@@ -73,7 +73,7 @@ function formatDOB(dob) {
 
   // If dob is a string in MM/DD/YYYY or M/D/YYYY
   if (typeof dob === "string") {
-    const parts = dob.split("/");
+    // const parts = dob.split("/");
     if (parts.length !== 3) {
       console.warn("⚠️ Invalid DOB string format:", dob);
       return null;
