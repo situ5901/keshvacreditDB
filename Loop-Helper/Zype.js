@@ -14,7 +14,7 @@ const UserDB = mongoose.model(
   new mongoose.Schema({}, { collection: "smcoll", strict: false }),
 );
 
-const BATCH_SIZE = 100;
+const BATCH_SIZE = 100; // Set your batch size
 const PartnerID = "a8ce06a0-4fbd-489f-8d75-345548fb98a8";
 const ELIGIBILITY_API =
   "https://prod.zype.co.in/attribution-service/api/v1/underwriting/customerEligibility";
@@ -62,42 +62,17 @@ async function sendToNewAPI(user) {
   }
 }
 
-// ✅ Updated formatDOB function
-function formatDOB(dob) {
-  if (!dob) return null;
-
-  // If dob is a Date object
-  if (dob instanceof Date) {
-    return dob.toISOString().split("T")[0]; // YYYY-MM-DD
-  }
-
-  // If dob is a string in MM/DD/YYYY or M/D/YYYY
-  if (typeof dob === "string") {
-    // const parts = dob.split("/");
-    if (parts.length !== 3) {
-      console.warn("⚠️ Invalid DOB string format:", dob);
-      return null;
-    }
-
-    let [month, day, year] = parts;
-    if (month.length === 1) month = `0${month}`;
-    if (day.length === 1) day = `0${day}`;
-
-    return `${year}-${month}-${day}`; // YYYY-MM-DD
-  }
-
-  console.warn("⚠️ Unrecognized DOB type:", dob);
-  return null;
-}
-
 async function getPreApproval(user) {
   try {
+ 
+
     const payload = {
       mobileNumber: String(user.phone),
       email: user.email,
       panNumber: user.pan,
       name: user.name,
-      dob: formatDOB(user.dob),
+      // dob: user.dob ? new Date(user.dob).toISOString().split("T")[0] : null, // ✅ DOB formatted here
+      dob: user.dob,
       income: user.income,
       employmentType: user.employment,
       orgName: "Infosys Ltd",
@@ -187,17 +162,16 @@ async function processBatch(users) {
     }),
   );
 
+  // Handle any errors or log the results
   results.forEach((result, index) => {
     if (result.status === "rejected") {
-      console.error(`❌ Error processing user at index ${index}:`, result.reason);
+      console.error(`Error processing user at index ${index}:`, result.reason);
     } else {
-      console.log(`✅ Successfully processed user at index ${index}`);
+      console.log(`Successfully processed user at index ${index}`);
     }
   });
 }
-
 let processedCount = 0;
-
 async function Loop() {
   try {
     while (true) {
@@ -214,7 +188,6 @@ async function Loop() {
 
       if (leads.length === 0) {
         console.log("✅ No more leads left. Waiting for new data...");
-        await new Promise((resolve) => setTimeout(resolve, 5000));
         continue;
       }
 
@@ -222,10 +195,10 @@ async function Loop() {
       processedCount += leads.length;
       console.log(`✅ Processed batch of: ${leads.length}`);
       console.log(`🏁 Total Processed Leads: ${processedCount}`);
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, 1000)); // 1 sec ka delay har batch ke baad
     }
   } catch (error) {
-    console.error("❌ Error occurred in main loop:", error.message);
+    console.error("❌ Error occurred:", error.message);
   } finally {
     console.log("🔌 Closing DB connection...");
     mongoose.connection.close();
