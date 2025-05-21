@@ -4,6 +4,7 @@ require("dotenv").config();
 
 const MONGODB_URINEW = process.env.MONGODB_URINEW;
 
+// MongoDB connection
 mongoose
   .connect(MONGODB_URINEW)
   .then(() => console.log("✅ MongoDB Connected Successfully"))
@@ -18,12 +19,20 @@ const newAPI =
   "https://kamakshimoney.com/loanapply/kamakshimoney_api/lead_gen/api/v1/create_lead";
 const MAX_LEADS = 50;
 const Partner_id = "Keshvacredit";
-const loanAmount = "20000"; // ✅ as string
+const loanAmount = "20000"; // must be string
 
+// Send a single lead to external API
 async function sendToNewAPI(lead) {
   let response = {};
   try {
-    const formattedDob = new Date(lead.dob).toISOString().slice(0, 10); // ✅ Format: YYYY-MM-DD
+    const formattedDob = new Date(lead.dob).toISOString().slice(0, 10);
+
+    // Validate phone number
+    if (!lead.phone || isNaN(lead.phone)) {
+      response.status = "failed";
+      response.message = "Invalid mobile number";
+      return response;
+    }
 
     const apiRequestBody = {
       mobile: lead.phone,
@@ -47,19 +56,25 @@ async function sendToNewAPI(lead) {
     });
 
     response.status = apiResponse.data.status;
-    response.message = apiResponse.data.message;
+    response.message = apiResponse.data.message || "No message from API";
   } catch (error) {
     response.status = "failed";
-    response.message =
-      error.response?.data?.message || "API did not return a valid response";
+    response.message = error.response?.data?.message;
 
     if (error.response) {
-      console.error("❌ API Error:", error.response.data);
+      console.error("❌ API Error:", {
+        statusCode: error.response.status,
+        data: error.response.data,
+      });
+    } else {
+      console.error("❌ Axios Error:", error.message);
     }
   }
+
   return response;
 }
 
+// Process a batch of users
 async function processBatch(users) {
   const promises = users.map(async (user) => {
     const existingUser = await UserDB.findOne({ phone: user.phone });
@@ -86,7 +101,7 @@ async function processBatch(users) {
         $push: {
           apiResponse: {
             Kamakshi: response.value,
-            message: response.message,
+            message: response.value?.message || "No message",
             createdAt: new Date().toISOString(),
           },
           RefArr: {
@@ -103,7 +118,9 @@ async function processBatch(users) {
   }
 }
 
+// Loop and process all unprocessed leads in batches
 let processedCount = 0;
+
 async function loop() {
   try {
     let hasMoreLeads = true;
@@ -130,7 +147,7 @@ async function loop() {
         processedCount += leads.length;
         console.log(`✅ Total Processed: ${processedCount}`);
         await new Promise((resolve) => setTimeout(resolve, 1000));
-        console.log("🔄 Waiting for 1 seconds...");
+        console.log("⏳ Waiting for 1 second before next batch...");
       }
     }
   } catch (err) {
@@ -140,4 +157,5 @@ async function loop() {
   }
 }
 
-loop(); // Start the process
+// Start processing
+loop();

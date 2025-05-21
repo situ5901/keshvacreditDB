@@ -51,8 +51,7 @@ async function sendToNewAPI(lead) {
     response.message = apiResponse.data.message || "Lead created successfully";
   } catch (error) {
     response.status = "failed";
-    response.message =
-      error.response?.data?.message || "API did not return a valid response";
+    response.message = error.response?.data?.message;
 
     if (error.response) {
       console.error("❌ API Error:", {
