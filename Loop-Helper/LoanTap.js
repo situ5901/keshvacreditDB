@@ -16,25 +16,20 @@ const UserDB = mongoose.model(
 );
 
 const partnerKey = "p1JZ8ljtVxJfxLs5eS43Z7jJL81lRzDC"; // example
-
 const iv = Buffer.alloc(16, 0);
 
 function generateXApiAuth() {
   const epochSeconds = Math.floor(Date.now() / 1000).toString();
-
   const cipher = crypto.createCipheriv(
     "aes-256-cbc",
     Buffer.from(partnerKey, "utf8"),
     iv,
   );
-
   let encrypted = cipher.update(epochSeconds, "utf8", "base64");
   encrypted += cipher.final("base64");
-
   return encrypted;
 }
 
-// Headers function
 function getHeaders() {
   return {
     "Content-Type": "application/json",
@@ -48,22 +43,33 @@ const API_URL = "https://prod.thearks.in/v1-application/transact";
 const MAX_LEADS = 1;
 const Partner_id = "Keshvacredit";
 
-// Function to send lead data to API
+function convertDobToYYYYMMDD(dob) {
+  if (!dob) {
+    console.warn("⚠️ Missing DOB:", dob);
+    return null;
+  }
+  let date = typeof dob === "string" ? new Date(dob) : dob;
+  if (!(date instanceof Date) || isNaN(date.getTime())) {
+    console.warn("⚠️ Invalid date format:", dob);
+    return null;
+  }
+  const year = date.getUTCFullYear();
+  const month = String(date.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(date.getUTCDate()).padStart(2, "0");
+  return `${year}${month}${day}`;
+}
+
+// ✅ Send data to LoanTap API
 async function sendToNewAPI(lead) {
   try {
-    function convertDateFormat(dob) {
-      const [month, day, year] = dob.split("/");
-      return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
-    }
-
     const applicant = {
       job_type: lead.employment?.toLowerCase() || "",
       full_name: lead.name?.toLowerCase() || "",
       personal_email: lead.email?.toLowerCase() || "",
       mobile_number: String(lead.phone),
-      dob: convertDateFormat(lead.dob),
+      dob: convertDobToYYYYMMDD(lead.dob),
       gender: lead.gender?.toLowerCase() || "",
-      pan_card: lead.pan?.toLowerCase() || "",
+      pan_card: lead.pan,
       home_zipcode: lead.pincode,
       loan_city: lead.state?.toLowerCase() || "",
       fixed_income: lead.income,
@@ -74,9 +80,8 @@ async function sendToNewAPI(lead) {
         .replace("T", " ")
         .slice(0, 19),
     };
-    const requestBody = {
-      add_application: applicant,
-    };
+
+    const requestBody = { add_application: applicant };
 
     console.log("📤 Sending Lead:", applicant.mobile_number);
 
@@ -86,44 +91,44 @@ async function sendToNewAPI(lead) {
 
     console.log("✅ API Success:", response.data);
 
-    // Extract status and message from the response
-    const status = response.data.add_application.answer.status;
-    const message = response.data.add_application.answer.message;
+    const status = response.data?.add_application?.answer?.status || "unknown";
+    const message =
+      response.data?.add_application?.answer?.message || "No message";
 
     return {
-      status: status,
-      message: message,
+      status,
+      message,
+      rawResponse: response.data, // ✅ Full API response
     };
   } catch (error) {
     console.error("❌ API Error:", error.response?.data || error.message);
-
     return {
       status: "failed",
       message: error.response?.data?.message || "API error",
+      rawResponse: error.response?.data || null, // ✅ Full error response
     };
   }
 }
 
-// Process leads batch
+// ✅ Process one batch of users
 async function processBatch(users) {
   const results = await Promise.allSettled(
     users.map(async (user) => {
       const existingUser = await UserDB.findOne({ phone: user.phone });
-
       const result = await sendToNewAPI(user);
 
-      // Update MongoDB with the API response status and message
       await UserDB.updateOne(
         { phone: user.phone },
         {
-          $set: {
-            "apiResponse.LoanTap": {
-              message: result.message,
-              status: result.status,
-              createdAt: new Date().toISOString(),
-            },
-          },
           $push: {
+            apiResponse: {
+              LoanTap: {
+                message: result.message,
+                status: result.status,
+                fullResponse: result.rawResponse,
+                createdAt: new Date().toISOString(),
+              },
+            },
             RefArr: {
               name: "LoanTap",
               createdAt: new Date().toISOString(),
@@ -141,7 +146,7 @@ async function processBatch(users) {
   return results;
 }
 
-// Main loop to fetch and process leads continuously
+// ✅ Main loop
 let processedCount = 0;
 async function loop() {
   try {
@@ -150,11 +155,7 @@ async function loop() {
       console.log("🔍 Fetching leads...");
 
       const leads = await UserDB.aggregate([
-        {
-          $match: {
-            "RefArr.name": { $ne: "LoanTap" },
-          },
-        },
+        { $match: { "RefArr.name": { $ne: "LoanTap" } } },
         { $limit: MAX_LEADS },
       ]);
 
@@ -176,5 +177,5 @@ async function loop() {
   }
 }
 
-// Start processing
+// ✅ Start
 loop();
