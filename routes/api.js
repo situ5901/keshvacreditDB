@@ -3,8 +3,9 @@ const router = express.Router();
 const axios = require("axios");
 const jwt = require("jsonwebtoken");
 const User = require("../models/user.model"); // Ensure correct path
+const Lead = require("../models/RamFinSch");
 const mongoose = require("mongoose");
-const Lead = require("../models/RamFinSch.js");
+
 require("dotenv").config();
 
 const otpStorage = new Map();
@@ -215,6 +216,7 @@ router.post("/getUsers", async (req, res) => {
   }
 });
 //eligibil Lender API//
+
 router.post("/ramfinwebAPI", async (req, res) => {
   try {
     const { mobile, name, email, employeeType, dob, pancard, loanAmount } =
@@ -301,6 +303,129 @@ router.post("/ramfinwebAPI", async (req, res) => {
         error: error.message,
       });
     }
+  }
+});
+
+// Your POST API
+const webRamfinSchema = new mongoose.Schema({
+  mobileNumber: String,
+  email: String,
+  panNumber: String,
+  name: String,
+  dob: String,
+  income: Number,
+  employmentType: String,
+  orgName: String,
+  status: String,
+  offer: Number,
+  createdAt: { type: Date, default: Date.now },
+});
+
+const WebRamfin = mongoose.model("webRamfin", webRamfinSchema);
+
+// API Route
+router.post("/zypewebapi", async (req, res) => {
+  try {
+    const {
+      mobileNumber,
+      email,
+      panNumber,
+      name,
+      dob,
+      income,
+      employmentType,
+      orgName,
+    } = req.body;
+
+    // ✅ Basic validation
+    if (
+      !mobileNumber ||
+      !email ||
+      !panNumber ||
+      !name ||
+      !dob ||
+      !income ||
+      !employmentType ||
+      !orgName
+    ) {
+      return res.status(400).json({ message: "All fields are required" });
+    }
+
+    // ✅ First API: customerEligibility
+    const eligibilityResponse = await axios.post(
+      "https://prod.zype.co.in/attribution-service/api/v1/underwriting/customerEligibility",
+      {
+        mobileNumber,
+        panNumber,
+        partnerId: "a8ce06a0-4fbd-489f-8d75-345548fb98a8",
+      },
+      {
+        headers: { "Content-Type": "application/json" },
+      },
+    );
+
+    // ✅ Check if eligible
+    if (eligibilityResponse.data.status !== "ACCEPT") {
+      return res
+        .status(200)
+        .json({
+          message: "Customer not eligible",
+          status: eligibilityResponse.data.status,
+        });
+    }
+
+    // ✅ Second API: preApprovalOffer
+    const preApprovalResponse = await axios.post(
+      "https://prod.zype.co.in/attribution-service/api/v1/underwriting/preApprovalOffer",
+      {
+        mobileNumber,
+        email,
+        panNumber,
+        name,
+        dob,
+        income,
+        employmentType,
+        orgName,
+        partnerId: "a8ce06a0-4fbd-489f-8d75-345548fb98a8",
+        bureauType: 1,
+        bureauName: "experian",
+        bureauData: "<BureauSampleDataInXMLText>",
+      },
+      {
+        headers: { "Content-Type": "application/json" },
+      },
+    );
+
+    const { status, offer } = preApprovalResponse.data;
+
+    // ✅ Save to DB
+    const saveData = new WebRamfin({
+      mobileNumber,
+      email,
+      panNumber,
+      name,
+      dob,
+      income,
+      employmentType,
+      orgName,
+      status,
+      offer,
+    });
+
+    await saveData.save();
+
+    // ✅ Return response
+    res.status(200).json({
+      message: "Data saved successfully",
+      status,
+      offer,
+    });
+  } catch (error) {
+    console.error("Zype API Error:", error.response?.data || error.message);
+    res.status(500).json({
+      message: "Error processing request",
+      error: error.response?.data || error.message,
+    });
   }
 });
 

@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 
-const leadSchema = new mongoose.Schema({
+const LeadWebRamFin = new mongoose.Schema({
   mobile: String,
   name: String,
   email: String,
@@ -10,6 +10,24 @@ const leadSchema = new mongoose.Schema({
   loanAmount: Number,
 });
 
-const Lead = mongoose.model("webRamFin", leadSchema); // Ensure correct model name
+const LeadDefault = new mongoose.Schema({
+  mobileNumber: String,
+  email: String,
+  panNumber: String,
+  name: String,
+  dob: Date,
+  income: Number,
+  employmentType: String,
+  orgName: String,
+});
+
+// Models using the same collection name "webRamFin"
+const LeadModel1 = mongoose.model("LeadModel1", LeadWebRamFin, "webRamFin");
+const LeadModel2 = mongoose.model("LeadModel2", LeadDefault, "webRamFin");
+
+const Lead = {
+  webRamFin: LeadModel1,
+  default: LeadModel2,
+};
 
 module.exports = Lead;
