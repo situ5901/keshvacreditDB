@@ -2,9 +2,14 @@ const axios = require("axios");
 const mongoose = require("mongoose");
 require("dotenv").config();
 
-const MONGODB_URINEW = process.env.MONGODB_URI;
+const MONGODB_URINEW = process.env.MONGODB_URINEW;
 
-// MongoDB model setup
+// MongoDB connection
+mongoose
+  .connect(MONGODB_URINEW)
+  .then(() => console.log("✅ MongoDB Connected Successfully"))
+  .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
+
 const UserDB = mongoose.model(
   "userdb",
   new mongoose.Schema({}, { collection: "userdb", strict: false }),
