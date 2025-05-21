@@ -366,12 +366,10 @@ router.post("/zypewebapi", async (req, res) => {
 
     // ✅ Check if eligible
     if (eligibilityResponse.data.status !== "ACCEPT") {
-      return res
-        .status(200)
-        .json({
-          message: "Customer not eligible",
-          status: eligibilityResponse.data.status,
-        });
+      return res.status(200).json({
+        message: "Customer not eligible",
+        status: eligibilityResponse.data.status,
+      });
     }
 
     // ✅ Second API: preApprovalOffer
