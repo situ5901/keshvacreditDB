@@ -19,11 +19,11 @@ router.post("/injectlead", checkLeadAuth, async (req, res) => {
 
       await existingUser.save(); // Save dedupe entry
 
-      return res.json({ 
-        success: true, 
+      return res.json({
+        success: true,
         message: "Existing user updated!",
-        status: "dedupe",  // 👈 Response me dedupe status
-        user: existingUser 
+        status: "dedupe", // 👈 Response me dedupe status
+        user: existingUser,
       });
     }
 
@@ -36,13 +36,12 @@ router.post("/injectlead", checkLeadAuth, async (req, res) => {
 
     await newUser.save();
 
-    res.json({ 
-      success: true, 
+    res.json({
+      success: true,
       message: "New user created!",
-      status: "new",  // 👈 Response me new status
-      user: newUser
+      status: "new", // 👈 Response me new status
+      user: newUser,
     });
-
   } catch (error) {
     res.status(500).json({ error: "Database error!", details: error.message });
   }

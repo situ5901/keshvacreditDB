@@ -40,13 +40,13 @@ app.use(cookieParser());
 
 const auth = require("./routes/auth.js");
 const leads = require("./routes/leads.js");
-const loop = require("./PartnerAPI/LendingPlate.js");
+const eligibility = require("./Show_Lenders/Lender_List.js");
 const api = require("./routes/api.js");
 const getAll = require("./routes/allapis.js");
 
 app.use(`/api${API_VERSION}/auth`, auth);
 app.use(`/api${API_VERSION}/leads`, leads);
-app.use(`/api${API_VERSION}/loop`, loop);
+app.use(`/api${API_VERSION}/eligibility`, eligibility);
 app.use(`/api${API_VERSION}/api`, api);
 app.use(`/api${API_VERSION}/getAll`, getAll);
 app.use((err, req, res, _next) => {
