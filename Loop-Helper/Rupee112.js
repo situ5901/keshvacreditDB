@@ -26,7 +26,7 @@ function getHeaders() {
     "Content-Type": "application/json",
   };
 }
-
+//add new leads to the database
 async function sendToNewAPI(lead) {
   try {
     const apiRequestBody = {
