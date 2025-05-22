@@ -21,6 +21,7 @@ const userSchema = new Schema(
     pan: { type: String, trim: true },
     aadhar: { type: String, trim: true },
     dob: { type: String, trim: true },
+    loanAmount: { type: String, trim: true },
     email: { type: String, trim: true },
     addr: { type: String, trim: true },
     pan: { type: String, trim: true },

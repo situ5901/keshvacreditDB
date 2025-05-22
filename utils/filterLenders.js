@@ -5,7 +5,7 @@ const eligibleLenders = [
     maxAge: 55,
     minIncome: 15000,
     maxIncome: 30000,
-    minLoan: 50000,
+    minLoan: 500,
     maxLoan: 80000,
   },
   {
@@ -14,7 +14,7 @@ const eligibleLenders = [
     maxAge: 55,
     minIncome: 25000,
     maxIncome: 50000,
-    minLoan: 60000,
+    minLoan: 500,
     maxLoan: 100000,
   },
   {
@@ -23,7 +23,7 @@ const eligibleLenders = [
     maxAge: 35,
     minIncome: 18000,
     maxIncome: 40000,
-    minLoan: 55000,
+    minLoan: 500,
     maxLoan: 90000,
   },
   {
@@ -32,7 +32,7 @@ const eligibleLenders = [
     maxAge: 60,
     minIncome: 10000,
     maxIncome: 20000,
-    minLoan: 50000,
+    minLoan: 500,
     maxLoan: 75000,
   },
   {
@@ -41,7 +41,7 @@ const eligibleLenders = [
     maxAge: 58,
     minIncome: 30000,
     maxIncome: 100000,
-    minLoan: 80000,
+    minLoan: 500,
     maxLoan: 100000,
   },
   {
@@ -49,8 +49,8 @@ const eligibleLenders = [
     minAge: 21,
     maxAge: 50,
     minIncome: 20000,
-    maxIncome: 30000,
-    minLoan: 50000,
+    maxIncome: 2000,
+    minLoan: 500,
     maxLoan: 80000,
   },
   {
@@ -59,7 +59,7 @@ const eligibleLenders = [
     maxAge: 60,
     minIncome: 40000,
     maxIncome: 150000,
-    minLoan: 70000,
+    minLoan: 500,
     maxLoan: 100000,
   },
 ];
