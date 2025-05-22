@@ -20,7 +20,7 @@ router.post("/lenderlist", async (req, res) => {
     const lenders = await filterLenders(age, income, loan);
 
     return res.status(200).json({
-      message: "Lenders fetched successfully",
+      message: "Fetch Eligible Lenders",
       data: lenders,
     });
   } catch (error) {
