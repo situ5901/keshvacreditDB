@@ -3,7 +3,7 @@ const { Schema, model } = mongoose;
 
 const userSchema = new Schema(
   {
-    phone: { type: Number, required: true },
+    phone: { type: String, required: true }, // Always store as string
   },
   { timestamps: true },
 );

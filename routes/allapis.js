@@ -74,28 +74,36 @@ router.get("/Test", async (req, res) => {
 
 router.post("/check-data", async (req, res) => {
   try {
-    const { phone } = req.body;
+    let { phone } = req.body;
 
+    // ✅ Validate array
     if (!Array.isArray(phone)) {
-      return res.status(400).json({ message: "Please enter a number" });
+      return res
+        .status(400)
+        .json({ message: "Please send an array of phone numbers" });
     }
 
-    // Correct field name used here: "phone"
-    const foundUser = await Users.find({ phone: { $in: phone } }).select(
+    // ✅ Convert all inputs to string for consistent comparison
+    const phoneStrings = phone.map((p) => p.toString());
+
+    // ✅ Find matching users (phone saved as string in DB)
+    const foundUsers = await User.find({ phone: { $in: phoneStrings } }).select(
       "phone",
     );
 
-    const foundNumbers = foundUser.map((user) => user.phone);
+    // ✅ Extract found phone numbers from DB
+    const foundNumbers = foundUsers.map((user) => user.phone);
 
-    const response = phone.map((num) => ({
+    // ✅ Prepare response
+    const response = phoneStrings.map((num) => ({
       phone: num,
       status: foundNumbers.includes(num) ? "Duplicate" : "Not Duplicate",
     }));
 
     res.json({ data: response });
   } catch (error) {
-    console.log(error);
-    res.status(500).json({ message: "Error" });
+    console.error("Error checking phone data:", error);
+    res.status(500).json({ message: "Internal Server Error" });
   }
 });
 module.exports = router;
