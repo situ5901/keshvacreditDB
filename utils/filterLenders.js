@@ -113,7 +113,7 @@ async function filterLenders(age, income, loan) {
       lender.minLoan <= loan &&
       lender.maxLoan >= loan
     ) {
-      acc.push(lender.name, lender.url);
+      acc.push(lender.name, lender.url, lender.utm);
     }
     return acc;
   }, []);
