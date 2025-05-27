@@ -68,7 +68,7 @@ const eligibleLenders = [
     maxIncome: 2000,
     minLoan: 500,
     maxLoan: 80000,
-    url: "https://www.rupee112.com/public/images/brand_logo.png",
+    url: "https://www.kamakshimoney.com/index_files/finpath-loan-logo.svg",
   },
   {
     name: "LoanTap",
