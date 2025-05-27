@@ -2,8 +2,8 @@ const express = require("express");
 const router = express.Router();
 const mongoose = require("mongoose");
 require("dotenv").config();
-const User = require("../models/user.model"); // Ensure correct path
-const Users = require("../models/checkdata"); // Ensure correct path
+const User = require("../models/user.model");
+const Users = require("../models/checkdata");
 
 mongoose.set("strictQuery", true);
 const db = mongoose.connection;
@@ -76,25 +76,20 @@ router.post("/check-data", async (req, res) => {
   try {
     let { phone } = req.body;
 
-    // ✅ Validate array
     if (!Array.isArray(phone)) {
       return res
         .status(400)
         .json({ message: "Please send an array of phone numbers" });
     }
 
-    // ✅ Convert all inputs to string for consistent comparison
     const phoneStrings = phone.map((p) => p.toString());
 
-    // ✅ Find matching users (phone saved as string in DB)
     const foundUsers = await User.find({ phone: { $in: phoneStrings } }).select(
       "phone",
     );
 
-    // ✅ Extract found phone numbers from DB
     const foundNumbers = foundUsers.map((user) => user.phone);
 
-    // ✅ Prepare response
     const response = phoneStrings.map((num) => ({
       phone: num,
       status: foundNumbers.includes(num) ? "Duplicate" : "Not Duplicate",

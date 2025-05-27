@@ -67,9 +67,7 @@ async function main() {
     process.exit(1);
   }
 }
-
 main();
-
 app.listen(PORT, () =>
   console.log(`🚀 Server running on http://localhost:${PORT}`),
 );
