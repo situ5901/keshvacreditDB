@@ -8,6 +8,7 @@ const eligibleLenders = [
     minLoan: 500,
     maxLoan: 80000,
     url: "https://www.ramfincorp.com/images/logo.png",
+    utm: "https://applyonline.ramfincorp.com/?utm_source=keshvacredit",
   },
 
   {
