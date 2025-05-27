@@ -38,7 +38,7 @@ const eligibleLenders = [
     maxIncome: 40000,
     minLoan: 500,
     maxLoan: 90000,
-    url: "https://web.fatakpay.com/assets/images/logo/Logo.svg",
+    url: "https://www.getzype.com/wp-content/uploads/2024/08/Group-852775729.webp",
   },
   {
     name: "Mpokket",
@@ -48,7 +48,7 @@ const eligibleLenders = [
     maxIncome: 20000,
     minLoan: 500,
     maxLoan: 75000,
-    url: "https://cdn.prod.website-files.com/64ea130f10713e77f6320da4/67ac2defec09b58763dac780_Logo_Full_mPokket_2312_R01.svg",
+    url: "https://www.getzype.com/wp-content/uploads/2024/08/Group-852775729.webp",
   },
   {
     name: "smartCoin",
