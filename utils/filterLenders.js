@@ -88,7 +88,7 @@ const eligibleLenders = [
     maxIncome: 150000,
     minLoan: 500,
     maxLoan: 100000,
-    url: "https://i.postimg.cc/sgkVCJpQ/download.png",
+    url: "https://www.bharatloan.com/public/images/brand_logo.png",
   },
   {
     name: "Flot",
