@@ -38,7 +38,7 @@ const eligibleLenders = [
     maxIncome: 40000,
     minLoan: 500,
     maxLoan: 90000,
-    url: "https://www.getzype.com/wp-content/uploads/2024/08/Group-852775729.webp",
+    url: "https://cashkuber.com/assets/images/assets/fatakpay.png",
   },
   {
     name: "Mpokket",
@@ -68,7 +68,7 @@ const eligibleLenders = [
     maxIncome: 2000,
     minLoan: 500,
     maxLoan: 80000,
-    url: "https://www.kamakshimoney.com/index_files/finpath-loan-logo.svg",
+    url: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRKwaRh-gK3h-15zdaN4ek-_lGArWiCigwCsA&s",
   },
   {
     name: "LoanTap",
