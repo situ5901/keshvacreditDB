@@ -20,6 +20,7 @@ const eligibleLenders = [
     minLoan: 500,
     maxLoan: 80000,
     url: "https://www.rupee112.com/public/images/brand_logo.png",
+    utm: "https://www.rupee112.com/apply-now?utm_source=KESHVACREDIT&utm_medium=",
   },
   {
     name: "Zype",
@@ -30,6 +31,7 @@ const eligibleLenders = [
     minLoan: 500,
     maxLoan: 100000,
     url: "https://www.getzype.com/wp-content/uploads/2024/08/Group-852775729.webp",
+    utm: "https://zype.sng.link/Ajygt/1ba7?_dl=com.zype.mobile&_smtype=3",
   },
   {
     name: "FatakPay",
@@ -40,6 +42,7 @@ const eligibleLenders = [
     minLoan: 500,
     maxLoan: 90000,
     url: "https://cashkuber.com/assets/images/assets/fatakpay.png",
+    utm: "https://web.fatakpay.com/authentication/login?utm_source=558_POVVE&utm_medium=",
   },
   {
     name: "Mpokket",
@@ -50,6 +53,7 @@ const eligibleLenders = [
     minLoan: 500,
     maxLoan: 75000,
     url: "https://mir-s3-cdn-cf.behance.net/project_modules/source/302bf6105854045.5f82a86549930.png",
+    utm: "https://web.mpokket.in/?utm_source=keshvacredit&utm_medium=keshvacredit",
   },
   {
     name: "smartCoin",
@@ -60,6 +64,7 @@ const eligibleLenders = [
     minLoan: 500,
     maxLoan: 100000,
     url: "https://framerusercontent.com/images/csl8apTjCrYTK5Qi20a4osUIHw.png?scale-down-to=512",
+    utm: "https://app.olyv.co.in/?utm_source=KeshvaCredit_Web&utm_campaign=KeshvaCredit_1",
   },
   {
     name: "Kamakshi",
@@ -90,6 +95,7 @@ const eligibleLenders = [
     minLoan: 500,
     maxLoan: 100000,
     url: "https://www.bharatloan.com/public/images/brand_logo.png",
+    utm: "https://www.bharatloan.com/apply-now?utm_source=KESHVACREDIT&utm_medium=",
   },
   {
     name: "Flot",
@@ -100,6 +106,7 @@ const eligibleLenders = [
     minLoan: 500,
     maxLoan: 100000,
     url: "https://myflot.com/_next/image?url=%2F_next%2Fstatic%2Fmedia%2FlogoImage.176890a7.png&w=384&q=75",
+    utm: "https://myflot.com/?utm_source=Keshvacredit&utm_medium=%7B_medium%7D&utm_campaign=%7B_campaign%7D",
   },
 ];
 async function filterLenders(age, income, loan) {
