@@ -98,7 +98,7 @@ const eligibleLenders = [
     maxIncome: 150000,
     minLoan: 500,
     maxLoan: 100000,
-    url: "https://play-lh.googleusercontent.com/mCRPGj1YzBy3UwbjRsz7u5koM7DnGFkusPsR96N9ZlW0qs_cIGLjLngRPqE40VKVmJ4",
+    url: "https://myflot.com/_next/image?url=%2F_next%2Fstatic%2Fmedia%2FlogoImage.176890a7.png&w=384&q=75",
   },
 ];
 async function filterLenders(age, income, loan) {
