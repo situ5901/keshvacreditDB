@@ -22,7 +22,8 @@ const newAPI = "https://api.rupee112fintech.com/marketing-check-dedupe/";
 function getHeaders() {
   return {
     Username: "KESHVACREDIT_20250421",
-    Auth: "98d206c1c728c9af5ee6ed32edee63e0",
+    Authorization:
+      "Basic S0VTSFZBQ1JFRElUXzIwMjUwNDI6OThkMjA2YzFjNzI4YzlhZjVlZTZlZDMyZWRlZTYzZTA=",
     "Content-Type": "application/json",
   };
 }
