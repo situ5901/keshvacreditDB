@@ -43,12 +43,14 @@ const leads = require("./routes/leads.js");
 const eligibility = require("./Show_Lenders/Lender_List.js");
 const api = require("./routes/api.js");
 const getAll = require("./routes/allapis.js");
+const leaveSend = require("./utils/leaveMail.js");
 
 app.use(`/api${API_VERSION}/auth`, auth);
 app.use(`/api${API_VERSION}/leads`, leads);
 app.use(`/api${API_VERSION}/eligibility`, eligibility);
 app.use(`/api${API_VERSION}/api`, api);
 app.use(`/api${API_VERSION}/getAll`, getAll);
+app.use(`/api${API_VERSION}/leaveSend`, leaveSend);
 app.use((err, req, res, _next) => {
   res.status(err.status || 500).json({ error: err.message });
 });
