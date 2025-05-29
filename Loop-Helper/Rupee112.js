@@ -2,7 +2,7 @@ const axios = require("axios");
 const mongoose = require("mongoose");
 require("dotenv").config();
 
-const MAX_LEADS = 500;
+const MAX_LEADS = 100;
 const LOAN_AMOUNT = "20000";
 const PARTNER_ID = "keshvacredit";
 const DEDUPE_API = "https://api.rupee112fintech.com/marketing-check-dedupe/";
