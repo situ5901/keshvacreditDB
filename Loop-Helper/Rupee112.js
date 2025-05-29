@@ -15,7 +15,7 @@ const UserDB = mongoose.model(
   new mongoose.Schema({}, { collection: "smcoll", strict: false }),
 );
 
-const MAX_LEADS = 5;
+const MAX_LEADS = 500;
 let processedCount = 0;
 const newAPI = "https://api.rupee112fintech.com/marketing-check-dedupe/";
 
