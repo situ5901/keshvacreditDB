@@ -14,130 +14,135 @@ const UserDB = mongoose.model(
   new mongoose.Schema({}, { collection: "userdb", strict: false }),
 );
 
-const MAX_LEADS = 15;
+const DEDUPE_API_URL =
+  "https://api.rupee112fintech.com/marketing-check-dedupe/";
+const MARKETING_PUSH_API_URL =
+  process.env.MARKETING_PUSH_API_URL ||
+  "https://api.rupee112fintech.com/marketing-push-data/";
+
+const Partner_id = "Keshvacredit";
+const loanAmount = "20000"; // must be string
+const MAX_LEADS = 50;
 let processedCount = 0;
-
-const dedupe = "https://api.rupee113fintech.com/marketing-check-dedupe/";
-const punchAPIs = "https://api.rupee113fintech.com/marketing-push-data/";
-
 function getHeaders() {
   return {
-    Username: "KESHVACREDIT_20250422",
-    Authorization:
-      "Basic a155c75adc5c96003c740668545c8ed59ff99f5ee520e8feb4b8087a41b2eb2a",
+    Username: "KESHVACREDIT_20250421",
+    Auth: "a154c75adc5c96003c740668545c8ed59ff99f5ee520e8feb4b8087a41b2eb2a",
     "Content-Type": "application/json",
   };
 }
 
-async function sendToNewAPI(lead) {
+async function sendToDedupeAPI(lead) {
   try {
     const apiRequestBody = {
       mobile: lead.phone,
       pancard: lead.pan,
     };
-
-    console.log(
-      "📤 Sending Lead Data to Primary API (dedupe):",
-      apiRequestBody,
-    );
-    const response = await axios.post(dedupe, apiRequestBody, {
+    console.log("📤 Sending Lead Data to Dedupe API:", apiRequestBody);
+    const apiResponse = await axios.post(DEDUPE_API_URL, apiRequestBody, {
       headers: getHeaders(),
     });
-
-    const responseData = response.data;
-
-    if (
-      responseData.Status === "3" &&
-      responseData.Message === "User not found" // Watch for non-breaking space!
-    ) {
-      console.log(
-        "✅ Dedupe API: User not found. Sending full payload to Punch API...",
-      );
-
-      const loanAmount = 20000;
-      const partner_id = "Keshvacredit";
-
-      const payload = {
-        full_name: lead.name,
-        email: lead.email,
-        mobile: lead.phone,
-        pancard: lead.pan,
-        pincode: lead.pincode,
-        income_type: lead.income,
-        loan_amount: loanAmount,
-        customer_lead_id: partner_id,
-      };
-
-      try {
-        const fallbackResponse = await axios.post(punchAPIs, payload, {
-          headers: getHeaders(),
-        });
-
-        console.log("✅ Punch API Response:", fallbackResponse.data);
-        return {
-          ...fallbackResponse.data,
-          fallbackUsed: true,
-        };
-      } catch (fallbackError) {
-        console.error("🚫 Punch API Call Failed:", fallbackError.message);
-        return {
-          Status: 1,
-          Error:
-            fallbackError.response?.data?.Error ||
-            fallbackError.response?.statusText ||
-            "Unknown fallback API error",
-          fallbackUsed: true,
-        };
-      }
-    } else {
-      console.log(
-        "ℹ️ Dedupe API: User found or not eligible. Skipping fallback.",
-      );
-      return null;
-    }
+    console.log("✅ Dedupe API Response Received:", apiResponse.data);
+    return apiResponse.data;
   } catch (error) {
-    console.error("🚫 Primary API Call Failed:", error.message);
+    console.error(
+      "🚫 Dedupe API Call Failed for",
+      lead.phone,
+      ":",
+      error.message,
+    );
     return {
-      Status: 1,
-      Error:
-        error.response?.data?.Error ||
-        error.response?.statusText ||
-        "Unknown API error",
+      Status: 0,
+      Error: error.response?.data?.Error,
+    };
+  }
+}
+
+async function sendToMarketingPushAPI(lead) {
+  try {
+    const apiRequestBody = {
+      full_name: lead.name,
+      mobile: lead.phone,
+      mobile_verification_flag: "0",
+      email: lead.email,
+      pancard: lead.pan,
+      pincode: lead.pincode,
+      income_type: "1",
+      monthly_salary: lead.income,
+      loan_amount: loanAmount,
+      Partner_id: Partner_id,
+    };
+    console.log("📤 Sending Lead Data to Marketing Push API:", apiRequestBody);
+    const apiResponse = await axios.post(
+      MARKETING_PUSH_API_URL,
+      apiRequestBody,
+      {
+        headers: getHeaders(),
+      },
+    );
+    console.log("✅ Marketing Push API Response Received:", apiResponse.data);
+    return apiResponse.data;
+  } catch (error) {
+    console.error(
+      "🚫 Marketing Push API Call Failed for",
+      lead.phone,
+      ":",
+      error.message,
+    );
+    return {
+      Status: 0,
+      Error: error.response?.data?.Error,
     };
   }
 }
 
 async function processBatch(users) {
-  const promises = users.map((user) => sendToNewAPI(user));
-  const results = await Promise.all(promises);
-
-  for (let i = 0; i < users.length; i++) {
-    const user = users[i];
-    const response = results[i];
-
-    if (!response) {
-      console.log(
-        `ℹ️ Skipping DB update for ${user.phone} (Not sent to punch API).`,
-      );
-      continue;
-    }
-
-    console.log(`📦 Updating DB for ${user.phone} with response:`, response);
+  for (const user of users) {
+    let dedupeResponse = null;
+    let pushResponse = null;
+    const apiResponseEntry = {
+      createdAt: new Date().toISOString(),
+    };
+    const refArrEntries = [];
 
     try {
+      dedupeResponse = await sendToDedupeAPI(user);
+      apiResponseEntry.rupee112Dedupe = dedupeResponse;
+      refArrEntries.push({
+        name: "Rupee112Dedupe",
+        createdAt: new Date().toISOString(),
+      });
+
+      if (
+        dedupeResponse.Status === 2 &&
+        dedupeResponse.Message === "User not found"
+      ) {
+        console.log(
+          `🔍 Dedupe API condition met for ${user.phone}. Hitting Marketing Push API.`,
+        );
+        pushResponse = await sendToMarketingPushAPI(user);
+        apiResponseEntry.marketingPushData = pushResponse;
+        refArrEntries.push({
+          name: "Rupee112Push",
+          createdAt: new Date().toISOString(),
+        });
+      } else {
+        console.log(
+          `❌ Dedupe API condition NOT met for ${user.phone}. Skipping Marketing Push API.`,
+        );
+      }
+
+      console.log(`📦 Updating DB for ${user.phone} with responses:`, {
+        dedupeResponse,
+        pushResponse,
+      });
+
       const updateResponse = await UserDB.updateOne(
         { phone: user.phone },
         {
           $push: {
-            apiResponse: {
-              Status: response.Status,
-              message: response.Message || response.Error || "",
-              createdAt: new Date().toISOString(),
-            },
-            RefArr: {
-              name: "Rupee113",
-              createdAt: new Date().toISOString(),
-            },
+            apiResponse: apiResponseEntry,
+            RefArr: { $each: refArrEntries },
           },
           $unset: { accounts: "" },
         },
@@ -154,22 +159,28 @@ async function processBatch(users) {
 
 async function loop() {
   try {
-    console.log("🔄 Fetching users...");
-    const leads = await UserDB.aggregate([
-      {
-        $match: {
-          "RefArr.name": { $ne: "Rupee113" },
+    let hasMoreLeads = true;
+    while (hasMoreLeads) {
+      console.log("🔄 Fetching users...");
+      const leads = await UserDB.aggregate([
+        {
+          $match: {
+            "RefArr.name": { $ne: "Rupee112Push" },
+          },
         },
-      },
-      { $limit: MAX_LEADS },
-    ]);
+        { $limit: MAX_LEADS },
+      ]);
 
-    if (leads.length === 0) {
-      console.log("🚫 No more leads to process.");
-    } else {
-      await processBatch(leads);
-      processedCount += leads.length;
-      console.log(`✅ Total Processed: ${processedCount}`);
+      if (leads.length === 0) {
+        hasMoreLeads = false;
+        console.log("🚫 No more leads to process.");
+      } else {
+        await processBatch(leads);
+        processedCount += leads.length;
+        console.log(`✅ Total Processed: ${processedCount}`);
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, 2000));
     }
   } catch (error) {
     console.error("🚫 Error in loop:", error.message, error);
@@ -179,4 +190,13 @@ async function loop() {
   }
 }
 
-loop();
+async function main() {
+  try {
+    await loop();
+  } catch (err) {
+    console.error("🚫 MongoDB Connection Error in main:", err);
+    process.exit(1);
+  }
+}
+
+main();
