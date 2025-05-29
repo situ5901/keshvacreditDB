@@ -9,7 +9,6 @@ const DEDUPE_API = "https://api.rupee112fintech.com/marketing-check-dedupe/";
 const PRE_APPROVAL_API = "https://api.rupee112fintech.com/marketing-push-data/";
 
 let processedCount = 0;
-
 const MONGODB_URI = process.env.MONGODB_URIVISH;
 
 mongoose
@@ -81,11 +80,7 @@ async function sendPreApprovalAPI(lead) {
     console.log("✅ Pre-Approval API Response:", response.data);
     return response.data;
   } catch (error) {
-    console.error(
-      "🚫 Pre-Approval API Error:",
-      error.message,
-      error.response?.data,
-    );
+    console.error("🚫 Pre-Approval API Error:", error.message, error.response?.data);
     return {
       Status: 0,
       Error:
@@ -105,7 +100,8 @@ async function processBatch(users) {
     const dedupeRes = await sendDedupeAPI(user);
     let preApprovalRes = null;
 
-    if (dedupeRes.Status === 2 && dedupeRes.message === "User not found") {
+    if (dedupeRes.Status === 2 && dedupeRes.Message === "User not found") {
+      console.log(`➡️ Hitting Pre-Approval API for ${user.phone}`);
       preApprovalRes = await sendPreApprovalAPI(user);
     }
 
@@ -157,7 +153,7 @@ async function loop() {
   try {
     console.log("🔄 Fetching users...");
     const leads = await UserDB.aggregate([
-      { $match: { "RefArr.name": { $ne: "Rupee112" } } },
+      { $match: { "RefArr.name": { $ne: "Rupee112" }, processed: { $ne: true } } },
       { $limit: MAX_LEADS },
     ]);
 
