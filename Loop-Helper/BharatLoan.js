@@ -5,8 +5,8 @@ require("dotenv").config();
 const MONGODB_URIVISH = process.env.MONGODB_URIVISH;
 
 const UserDB = mongoose.model(
-  "userdb",
-  new mongoose.Schema({}, { collection: "userdb", strict: false }),
+  "smcoll",
+  new mongoose.Schema({}, { collection: "smcoll", strict: false }),
 );
 
 const MAX_LEADS = 1000;
