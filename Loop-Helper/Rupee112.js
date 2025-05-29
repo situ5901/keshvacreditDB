@@ -155,7 +155,7 @@ async function Loop() {
       const leads = await UserDB.aggregate([
         {
           $match: {
-            "RefArr.name": { $ne: "Rupee112" }, // Leads not processed yet
+            RefArr: { $ne: "Rupee112" }, // matlab jin ke pass Rupee112 nahi hai
           },
         },
         { $limit: BATCH_SIZE },
