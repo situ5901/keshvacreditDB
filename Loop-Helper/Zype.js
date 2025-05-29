@@ -64,8 +64,6 @@ async function sendToNewAPI(user) {
 
 async function getPreApproval(user) {
   try {
- 
-
     const payload = {
       mobileNumber: String(user.phone),
       email: user.email,
