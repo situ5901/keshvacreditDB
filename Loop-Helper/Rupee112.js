@@ -23,6 +23,7 @@ const Partner_id = "Keshvacredit";
 const loanAmount = "20000"; // must be string
 const MAX_LEADS = 50;
 let processedCount = 0;
+
 function getHeaders() {
   return {
     Username: "KESHVACREDIT_20250421",
@@ -59,19 +60,25 @@ async function sendToDedupeAPI(lead) {
 
 async function sendToMarketingPushAPI(lead) {
   try {
-    const apiRequestBody = {
-      full_name: lead.name,
-      mobile: lead.phone,
-      email: lead.email,
-      pancard: lead.pan,
-      pincode: lead.pincode,
-      income_type: "1",
-      monthly_salary: lead.income,
-      purpose_of_loan: "Other",
+    // Validate required fields before sending
+    if (!lead.name || !lead.phone || !lead.pan || !lead.income) {
+      console.log(`⚠️ Missing required fields for ${lead.phone}. Skipping...`);
+      return { Status: 0, Error: "Missing required fields" };
+    }
 
+    const apiRequestBody = {
+      full_name: lead.name || "",
+      mobile: lead.phone || "",
+      email: lead.email || "",
+      pancard: lead.pan || "",
+      pincode: lead.pincode || "",
+      income_type: "1",
+      monthly_salary: lead.income || "",
+      purpose_of_loan: "Other",
       loan_amount: loanAmount,
       Partner_id: Partner_id,
     };
+
     console.log("📤 Sending Lead Data to Marketing Push API:", apiRequestBody);
     const apiResponse = await axios.post(
       MARKETING_PUSH_API_URL,
@@ -109,7 +116,7 @@ async function processBatch(users) {
       dedupeResponse = await sendToDedupeAPI(user);
       apiResponseEntry.rupee112Dedupe = dedupeResponse;
       refArrEntries.push({
-        name: "Rupee112Dedupe",
+        name: "Rupee112",
         createdAt: new Date().toISOString(),
       });
 
@@ -165,7 +172,7 @@ async function loop() {
       const leads = await UserDB.aggregate([
         {
           $match: {
-            "RefArr.name": { $ne: "Rupee112Push" },
+            "RefArr.name": { $ne: "Rupee112" },
           },
         },
         { $limit: MAX_LEADS },
@@ -189,14 +196,4 @@ async function loop() {
     mongoose.connection.close();
   }
 }
-
-async function main() {
-  try {
-    await loop();
-  } catch (err) {
-    console.error("🚫 MongoDB Connection Error in main:", err);
-    process.exit(1);
-  }
-}
-
-main();
+loop();
