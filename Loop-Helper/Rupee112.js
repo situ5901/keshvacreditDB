@@ -98,8 +98,17 @@ async function processBatch(users) {
       const userDoc = await UserDB.findOne({ phone: user.phone });
       if (!userDoc) {
         console.log(`User with phone ${user.phone} not found in DB.`);
-        return; // Skip or handle error if needed
+        return;
       }
+
+      // Check if already processed (RefArr has {name:"Rupee112"})
+      if (userDoc.RefArr && userDoc.RefArr.some((r) => r.name === "Rupee112")) {
+        console.log(
+          `Skipping user ${user.phone} as already processed with Rupee112.`,
+        );
+        return; // skip API call
+      }
+
       const response = await sendToDedupeAPI(user);
 
       // Prepare update object
@@ -142,6 +151,7 @@ async function processBatch(users) {
       }
 
       await UserDB.updateOne({ phone: user.phone }, updateDoc);
+      console.log(`✅ Processed user ${user.phone} and updated DB.`);
     }),
   );
 
@@ -152,10 +162,12 @@ async function Loop() {
   try {
     while (true) {
       console.log("📦 Fetching leads...");
+
+      // Fix here: match users where RefArr.name != "Rupee112"
       const leads = await UserDB.aggregate([
         {
           $match: {
-            RefArr: { $ne: "Rupee112" }, // matlab jin ke pass Rupee112 nahi hai
+            "RefArr.name": { $ne: "Rupee112" },
           },
         },
         { $limit: BATCH_SIZE },
