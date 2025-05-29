@@ -15,7 +15,7 @@ const UserDB = mongoose.model(
   new mongoose.Schema({}, { collection: "smcoll", strict: false }),
 );
 
-const partnerKey = "p1JZ8ljtVxJfxLs5eS43Z7jJL81lRzDC"; // example
+const partnerKey = "iDWUDj8oljS9XHeHXzsJCGViewdHRUiR"; // example
 const iv = Buffer.alloc(16, 0);
 
 function generateXApiAuth() {
@@ -35,11 +35,11 @@ function getHeaders() {
     "Content-Type": "application/json",
     "X-API-AUTH": generateXApiAuth(),
     "REQ-PRODUCT-ID": "lt-personal-term-loan-reducing",
-    "PARTNER-ID": "dummy-pl",
+    "PARTNER-ID": "keshvacredit",
   };
 }
 
-const API_URL = "https://prod.thearks.in/v1-application/transact";
+const API_URL = "https://loantap.in/v1-application/transact";
 const MAX_LEADS = 1;
 const Partner_id = "Keshvacredit";
 
