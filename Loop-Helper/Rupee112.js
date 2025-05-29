@@ -66,9 +66,10 @@ async function sendToPunshAPI(lead) {
       pincode: lead.pincode || "",
       income_type: "1",
       monthly_salary: lead.income || "",
-      purpose_of_loan: "Other",
+      purpose_of_loan: 1,
       loan_amount: loanAmount,
       Partner_id: Partner_id,
+      customer_lead_id: lead._id || "",
     };
 
     console.log("📤 Sending Lead Data to Marketing Push API:", apiRequestBody);
