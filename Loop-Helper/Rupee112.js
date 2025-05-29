@@ -2,24 +2,23 @@ const axios = require("axios");
 const mongoose = require("mongoose");
 require("dotenv").config();
 
-const MAX_LEADS = 500;
-const loan_amount = "20000";
-const partner_id = "keshvacredit";
-const DEDUPE_API = "https://api.rupee112fintech.com/marketing-check-dedupe/";
-const PRE_APPROVAL_API = "https://api.rupee112fintech.com/marketing-push-data/";
+const MONGODB_URIVISH = process.env.MONGODB_URIVISH;
 
+const MAX_LEADS = 5;
 let processedCount = 0;
+partner_id = "keshvacredit";
+loanAmount = "20000";
+const firstAPI = "https://api.rupee112fintech.com/marketing-check-dedupe/";
+const secondAPI = "https://api.rupee112fintech.com/marketing-push-data/";
 
-const MONGODB_URINEW = process.env.MONGODB_URINEW;
 mongoose
-  .connect(MONGODB_URINEW)
+  .connect(MONGODB_URIVISH)
   .then(() => console.log("✅ MongoDB Connected Successfully"))
   .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
 
-// MongoDB Model
 const UserDB = mongoose.model(
-  "userdb",
-  new mongoose.Schema({}, { collection: "userdb", strict: false }),
+  "smcoll",
+  new mongoose.Schema({}, { collection: "smcoll", strict: false }),
 );
 
 function getHeaders() {
@@ -31,107 +30,116 @@ function getHeaders() {
   };
 }
 
-async function sendDedupeAPI(lead) {
+async function sendToNewAPI(lead) {
   try {
     const apiRequestBody = {
       mobile: lead.phone,
       pancard: lead.pan,
     };
-    console.log("📤 Sending Lead to Dedupe API:", apiRequestBody);
 
-    const response = await axios.post(DEDUPE_API, apiRequestBody, {
+    console.log("📤 Sending Lead to Check API:", apiRequestBody);
+    const checkResponse = await axios.post(firstAPI, apiRequestBody, {
       headers: getHeaders(),
     });
 
-    console.log("✅ Dedupe API Response:", response.data);
-    return response.data;
-  } catch (error) {
-    console.error("🚫 Dedupe API Error:", error.message);
+    const checkData = checkResponse.data;
+    console.log("✅ Check API Response:", checkData);
+
+    let pushData = null;
+
+    if (checkData.Status === 2 && checkData.Message === "User not found") {
+      pushData = await sendToPushAPI(lead);
+    }
+
     return {
-      Status: 0,
-      Error:
-        error.response?.data?.Error ||
-        error.response?.statusText ||
-        "Unknown API error",
+      checkAPI: checkData,
+      pushAPI: pushData,
+    };
+  } catch (error) {
+    console.error("🚫 Check API Error:", error.message);
+    return {
+      checkAPI: {
+        Status: 0,
+        Error:
+          error.response?.data?.Error ||
+          error.response?.statusText ||
+          "Unknown Check API error",
+      },
+      pushAPI: null,
     };
   }
 }
 
-async function sendPreApprovalAPI(lead) {
+async function sendToPushAPI(lead) {
   try {
     const payload = {
-      full_name: lead.name || "Unknown",
-      email: lead.email,
+      full_name: lead.name,
+      email: lead.email || "",
       mobile: lead.phone,
       pancard: lead.pan,
-      pincode: lead.pincode,
-      income_type: lead.income,
-      loan_amount: loan_amount,
+      pincode: lead.pincode || "",
+      income_type: lead.income || "",
+      loan_amount: loanAmount,
       partner_id: partner_id,
     };
 
-    console.log("📤 Sending Lead to Pre-Approval API:", payload);
+    console.log("📤 Sending to Push API:", payload);
 
-    const response = await axios.post(PRE_APPROVAL_API, payload, {
+    const response = await axios.post(secondAPI, payload, {
       headers: getHeaders(),
     });
 
-    console.log("✅ Pre-Approval API Response:", response.data);
+    console.log("✅ Push API Response:", response.data);
     return response.data;
   } catch (error) {
-    console.error("🚫 Pre-Approval API Error:", error.message);
+    console.error("🚫 Push API Failed:", error.message);
     return {
       Status: 0,
       Error:
         error.response?.data?.Error ||
         error.response?.statusText ||
-        "Unknown API error",
+        "Unknown Push API error",
     };
   }
 }
 
 async function processBatch(users) {
-  for (let user of users) {
-    const dedupeRes = await sendDedupeAPI(user);
-    let preApprovalRes = null;
+  const promises = users.map((user) => sendToNewAPI(user));
+  const results = await Promise.all(promises);
 
-    if (dedupeRes.Status === 2 && dedupeRes.message === "User not found") {
-      // Call second API if user not found
-      preApprovalRes = await sendPreApprovalAPI(user);
-    }
+  for (let i = 0; i < users.length; i++) {
+    const user = users[i];
+    const response = results[i];
 
-    // Prepare update
-    const updatePayload = {
-      $push: {
-        apiResponse: {
-          rupee112: dedupeRes,
-          ...(preApprovalRes && { preApproval112: preApprovalRes }),
-          Status: preApprovalRes?.Status || dedupeRes.Status,
-          message:
-            dedupeRes.message ||
-            dedupeRes.Error ||
-            preApprovalRes?.message ||
-            preApprovalRes?.Error ||
-            "",
-          createdAt: new Date().toISOString(),
-        },
-        RefArr: {
-          name: "BharatLoan",
-          createdAt: new Date().toISOString(),
-        },
-      },
-      $unset: { accounts: "" },
-    };
+    console.log(`📦 Updating DB for ${user.phone} with response:`, response);
 
-    // Update MongoDB
     try {
       const updateResponse = await UserDB.updateOne(
         { phone: user.phone },
-        updatePayload,
+        {
+          $push: {
+            apiResponse: {
+              rupee112: response.checkAPI,
+              rupee112Push: response.pushAPI,
+              Status: response.checkAPI.Status,
+              message:
+                response.checkAPI.Message || response.checkAPI.Error || "",
+              createdAt: new Date().toISOString(),
+            },
+            RefArr: {
+              name: "BharatLoan",
+              createdAt: new Date().toISOString(),
+            },
+          },
+          $unset: { accounts: "" },
+        },
       );
-      console.log(`✅ MongoDB Updated for ${user.phone}:`, updateResponse);
-    } catch (err) {
-      console.error(`🚫 Failed to update MongoDB for ${user.phone}:`, err);
+      console.log(`✅ MongoDB updated for ${user.phone}:`, updateResponse);
+    } catch (updateError) {
+      console.error(
+        `🚫 Failed to update MongoDB for ${user.phone}:`,
+        updateError,
+      );
     }
   }
 }
@@ -140,7 +148,11 @@ async function loop() {
   try {
     console.log("🔄 Fetching users...");
     const leads = await UserDB.aggregate([
-      { $match: { "RefArr.name": { $ne: "BharatLoan" } } },
+      {
+        $match: {
+          "RefArr.name": { $ne: "BharatLoan" },
+        },
+      },
       { $limit: MAX_LEADS },
     ]);
 
@@ -152,10 +164,22 @@ async function loop() {
       console.log(`✅ Total Processed: ${processedCount}`);
     }
   } catch (error) {
-    console.error("🚫 Error in loop:", error.message);
+    console.error("🚫 Error in loop:", error.message, error);
   } finally {
     console.log("🔚 Closing MongoDB connection...");
     mongoose.connection.close();
   }
 }
-loop();
+
+async function main() {
+  try {
+    await mongoose.connect(MONGODB_URIVISH);
+    console.log("✅ MongoDB Connected Successfully");
+    await loop();
+  } catch (err) {
+    console.error("🚫 MongoDB Connection Error:", err);
+    process.exit(1);
+  }
+}
+
+main();
