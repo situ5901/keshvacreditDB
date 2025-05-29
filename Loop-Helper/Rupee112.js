@@ -14,17 +14,17 @@ const UserDB = mongoose.model(
   new mongoose.Schema({}, { collection: "userdb", strict: false }),
 );
 
-const MAX_LEADS = 500;
+const MAX_LEADS = 1;
 let processedCount = 0;
 
-const primaryAPI = "https://api.rupee112fintech.com/marketing-check-dedupe/";
-const fallbackAPI = "https://api.rupee112fintech.com/marketing-push-data/";
+const primaryAPI = "https://api.rupee113fintech.com/marketing-check-dedupe/";
+const fallbackAPI = "https://api.rupee113fintech.com/marketing-push-data/";
 
 function getHeaders() {
   return {
-    Username: "KESHVACREDIT_20250421",
+    Username: "KESHVACREDIT_20250422",
     Authorization:
-      "Basic a154c75adc5c96003c740668545c8ed59ff99f5ee520e8feb4b8087a41b2eb2a",
+      "Basic a155c75adc5c96003c740668545c8ed59ff99f5ee520e8feb4b8087a41b2eb2a",
     "Content-Type": "application/json",
   };
 }
@@ -43,10 +43,10 @@ async function sendToNewAPI(lead) {
 
     let responseData = response.data;
 
-    // 🔁 If user not found, call the fallback API
+    // If user not found (Status: "3" and exact message)
     if (
-      responseData.Status === "2" &&
-      responseData.Message === "User not found"
+      responseData.Status === "3" &&
+      responseData.Message === "User not found" // note: this has a non-breaking space!
     ) {
       console.log(
         "⚠️ User not found in Primary API. Sending to Fallback API...",
@@ -65,7 +65,7 @@ async function sendToNewAPI(lead) {
       } catch (fallbackError) {
         console.error("🚫 Fallback API Call Failed:", fallbackError.message);
         responseData = {
-          Status: 0,
+          Status: 1,
           Error:
             fallbackError.response?.data?.Error ||
             fallbackError.response?.statusText ||
@@ -80,7 +80,7 @@ async function sendToNewAPI(lead) {
   } catch (error) {
     console.error("🚫 Primary API Call Failed:", error.message);
     return {
-      Status: 0,
+      Status: 1,
       Error:
         error.response?.data?.Error ||
         error.response?.statusText ||
@@ -105,13 +105,13 @@ async function processBatch(users) {
         {
           $push: {
             apiResponse: {
-              rupee112: response,
+              rupee113: response,
               Status: response.Status,
               message: response.Message || response.Error || "",
               createdAt: new Date().toISOString(),
             },
             RefArr: {
-              name: "Rupee112",
+              name: "Rupee113",
               createdAt: new Date().toISOString(),
             },
           },
@@ -134,7 +134,7 @@ async function loop() {
     const leads = await UserDB.aggregate([
       {
         $match: {
-          "RefArr.name": { $ne: "Rupee112" },
+          "RefArr.name": { $ne: "Rupee113" },
         },
       },
       { $limit: MAX_LEADS },
@@ -154,4 +154,5 @@ async function loop() {
     mongoose.connection.close();
   }
 }
+
 loop();
