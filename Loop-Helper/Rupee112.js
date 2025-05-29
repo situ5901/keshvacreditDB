@@ -2,10 +2,10 @@ const axios = require("axios");
 const mongoose = require("mongoose");
 require("dotenv").config();
 
-const MONGODB_URIVISH = process.env.MONGODB_URIVISH;
+const MONGODB_URINEW = process.env.MONGODB_URINEW;
 
 mongoose
-  .connect(MONGODB_URIVISH)
+  .connect(MONGODB_URINEW)
   .then(() => console.log("✅ MongoDB Connected Successfully"))
   .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
 
@@ -17,8 +17,8 @@ const UserDB = mongoose.model(
 const MAX_LEADS = 15;
 let processedCount = 0;
 
-const primaryAPI = "https://api.rupee113fintech.com/marketing-check-dedupe/";
-const fallbackAPI = "https://api.rupee113fintech.com/marketing-push-data/";
+const dedupe = "https://api.rupee113fintech.com/marketing-check-dedupe/";
+const punchAPIs = "https://api.rupee113fintech.com/marketing-push-data/";
 
 function getHeaders() {
   return {
@@ -36,35 +36,51 @@ async function sendToNewAPI(lead) {
       pancard: lead.pan,
     };
 
-    console.log("📤 Sending Lead Data to Primary API:", apiRequestBody);
-    let response = await axios.post(primaryAPI, apiRequestBody, {
+    console.log(
+      "📤 Sending Lead Data to Primary API (dedupe):",
+      apiRequestBody,
+    );
+    const response = await axios.post(dedupe, apiRequestBody, {
       headers: getHeaders(),
     });
 
-    let responseData = response.data;
+    const responseData = response.data;
 
-    // If user not found (Status: "3" and exact message)
     if (
       responseData.Status === "3" &&
-      responseData.Message === "User not found" // note: this has a non-breaking space!
+      responseData.Message === "User not found" // Watch for non-breaking space!
     ) {
       console.log(
-        "⚠️ User not found in Primary API. Sending to Fallback API...",
+        "✅ Dedupe API: User not found. Sending full payload to Punch API...",
       );
 
+      const loanAmount = 20000;
+      const partner_id = "Keshvacredit";
+
+      const payload = {
+        full_name: lead.name,
+        email: lead.email,
+        mobile: lead.phone,
+        pancard: lead.pan,
+        pincode: lead.pincode,
+        income_type: lead.income,
+        loan_amount: loanAmount,
+        customer_lead_id: partner_id,
+      };
+
       try {
-        const fallbackResponse = await axios.post(fallbackAPI, apiRequestBody, {
+        const fallbackResponse = await axios.post(punchAPIs, payload, {
           headers: getHeaders(),
         });
 
-        console.log("✅ Fallback API Response:", fallbackResponse.data);
-        responseData = {
+        console.log("✅ Punch API Response:", fallbackResponse.data);
+        return {
           ...fallbackResponse.data,
           fallbackUsed: true,
         };
       } catch (fallbackError) {
-        console.error("🚫 Fallback API Call Failed:", fallbackError.message);
-        responseData = {
+        console.error("🚫 Punch API Call Failed:", fallbackError.message);
+        return {
           Status: 1,
           Error:
             fallbackError.response?.data?.Error ||
@@ -73,10 +89,12 @@ async function sendToNewAPI(lead) {
           fallbackUsed: true,
         };
       }
+    } else {
+      console.log(
+        "ℹ️ Dedupe API: User found or not eligible. Skipping fallback.",
+      );
+      return null;
     }
-
-    console.log("✅ Final API Response Received:", responseData);
-    return responseData;
   } catch (error) {
     console.error("🚫 Primary API Call Failed:", error.message);
     return {
@@ -97,6 +115,13 @@ async function processBatch(users) {
     const user = users[i];
     const response = results[i];
 
+    if (!response) {
+      console.log(
+        `ℹ️ Skipping DB update for ${user.phone} (Not sent to punch API).`,
+      );
+      continue;
+    }
+
     console.log(`📦 Updating DB for ${user.phone} with response:`, response);
 
     try {
@@ -105,7 +130,6 @@ async function processBatch(users) {
         {
           $push: {
             apiResponse: {
-              rupee113: response,
               Status: response.Status,
               message: response.Message || response.Error || "",
               createdAt: new Date().toISOString(),
