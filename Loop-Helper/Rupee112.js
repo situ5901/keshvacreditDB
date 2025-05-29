@@ -10,16 +10,16 @@ const PRE_APPROVAL_API = "https://api.rupee112fintech.com/marketing-push-data/";
 
 let processedCount = 0;
 
-const MONGODB_URIVISH = process.env.MONGODB_URIVISH;
+const MONGODB_URINEW = process.env.MONGODB_URINEW;
 mongoose
-  .connect(MONGODB_URIVISH)
+  .connect(MONGODB_URINEW)
   .then(() => console.log("✅ MongoDB Connected Successfully"))
   .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
 
 // MongoDB Model
 const UserDB = mongoose.model(
-  "smcoll",
-  new mongoose.Schema({}, { collection: "smcoll", strict: false }),
+  "userdb",
+  new mongoose.Schema({}, { collection: "userdb", strict: false }),
 );
 
 function getHeaders() {
