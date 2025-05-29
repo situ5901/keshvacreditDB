@@ -4,13 +4,6 @@ require("dotenv").config();
 
 const MONGODB_URIVISH = process.env.MONGODB_URIVISH;
 
-const MAX_LEADS = 5;
-let processedCount = 0;
-partner_id = "keshvacredit";
-loanAmount = "20000";
-const firstAPI = "https://api.rupee112fintech.com/marketing-check-dedupe/";
-const secondAPI = "https://api.rupee112fintech.com/marketing-push-data/";
-
 mongoose
   .connect(MONGODB_URIVISH)
   .then(() => console.log("✅ MongoDB Connected Successfully"))
@@ -20,6 +13,12 @@ const UserDB = mongoose.model(
   "userdb",
   new mongoose.Schema({}, { collection: "userdb", strict: false }),
 );
+
+const MAX_LEADS = 500;
+let processedCount = 0;
+
+const primaryAPI = "https://api.rupee112fintech.com/marketing-check-dedupe/";
+const fallbackAPI = "https://api.rupee112fintech.com/marketing-push-data/";
 
 function getHeaders() {
   return {
@@ -36,69 +35,56 @@ async function sendToNewAPI(lead) {
       mobile: lead.phone,
       pancard: lead.pan,
     };
-    //situ update
-    console.log("📤 Sending Lead to Check API:", apiRequestBody);
-    const checkResponse = await axios.post(firstAPI, apiRequestBody, {
+
+    console.log("📤 Sending Lead Data to Primary API:", apiRequestBody);
+    let response = await axios.post(primaryAPI, apiRequestBody, {
       headers: getHeaders(),
     });
 
-    const checkData = checkResponse.data;
-    console.log("✅ Check API Response:", checkData);
+    let responseData = response.data;
 
-    let pushData = null;
+    // 🔁 If user not found, call the fallback API
+    if (
+      responseData.Status === "2" &&
+      responseData.Message === "User not found"
+    ) {
+      console.log(
+        "⚠️ User not found in Primary API. Sending to Fallback API...",
+      );
 
-    if (checkData.Status === 2 && checkData.Message === "User not found") {
-      pushData = await sendToPushAPI(lead);
+      try {
+        const fallbackResponse = await axios.post(fallbackAPI, apiRequestBody, {
+          headers: getHeaders(),
+        });
+
+        console.log("✅ Fallback API Response:", fallbackResponse.data);
+        responseData = {
+          ...fallbackResponse.data,
+          fallbackUsed: true,
+        };
+      } catch (fallbackError) {
+        console.error("🚫 Fallback API Call Failed:", fallbackError.message);
+        responseData = {
+          Status: 0,
+          Error:
+            fallbackError.response?.data?.Error ||
+            fallbackError.response?.statusText ||
+            "Unknown fallback API error",
+          fallbackUsed: true,
+        };
+      }
     }
 
-    return {
-      checkAPI: checkData,
-      pushAPI: pushData,
-    };
+    console.log("✅ Final API Response Received:", responseData);
+    return responseData;
   } catch (error) {
-    console.error("🚫 Check API Error:", error.message);
-    return {
-      checkAPI: {
-        Status: 0,
-        Error:
-          error.response?.data?.Error ||
-          error.response?.statusText ||
-          "Unknown Check API error",
-      },
-      pushAPI: null,
-    };
-  }
-}
-
-async function sendToPushAPI(lead) {
-  try {
-    const payload = {
-      full_name: lead.name,
-      email: lead.email || "",
-      mobile: lead.phone,
-      pancard: lead.pan,
-      pincode: lead.pincode || "",
-      income_type: lead.income || "",
-      loan_amount: loanAmount,
-      partner_id: partner_id,
-    };
-
-    console.log("📤 Sending to Push API:", payload);
-
-    const response = await axios.post(secondAPI, payload, {
-      headers: getHeaders(),
-    });
-
-    console.log("✅ Push API Response:", response.data);
-    return response.data;
-  } catch (error) {
-    console.error("🚫 Push API Failed:", error.message);
+    console.error("🚫 Primary API Call Failed:", error.message);
     return {
       Status: 0,
       Error:
         error.response?.data?.Error ||
         error.response?.statusText ||
-        "Unknown Push API error",
+        "Unknown API error",
     };
   }
 }
@@ -119,15 +105,13 @@ async function processBatch(users) {
         {
           $push: {
             apiResponse: {
-              rupee112: response.checkAPI,
-              rupee112Push: response.pushAPI,
-              Status: response.checkAPI.Status,
-              message:
-                response.checkAPI.Message || response.checkAPI.Error || "",
+              rupee112: response,
+              Status: response.Status,
+              message: response.Message || response.Error || "",
               createdAt: new Date().toISOString(),
             },
             RefArr: {
-              name: "BharatLoan",
+              name: "Rupee112",
               createdAt: new Date().toISOString(),
             },
           },
@@ -150,7 +134,7 @@ async function loop() {
     const leads = await UserDB.aggregate([
       {
         $match: {
-          "RefArr.name": { $ne: "BharatLoan" },
+          "RefArr.name": { $ne: "Rupee112" },
         },
       },
       { $limit: MAX_LEADS },
@@ -170,16 +154,4 @@ async function loop() {
     mongoose.connection.close();
   }
 }
-
-async function main() {
-  try {
-    await mongoose.connect(MONGODB_URIVISH);
-    console.log("✅ MongoDB Connected Successfully");
-    await loop();
-  } catch (err) {
-    console.error("🚫 MongoDB Connection Error:", err);
-    process.exit(1);
-  }
-}
-
-main();
+loop();
