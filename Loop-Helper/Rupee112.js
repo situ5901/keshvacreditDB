@@ -17,7 +17,7 @@ const UserDB = mongoose.model(
 const DEDUPE_API_URL =
   "https://api.rupee112fintech.com/marketing-check-dedupe/";
 const MARKETING_PUSH_API_URL =
-  "https://api.rupee112fintec.com/marketing-push-data";
+  "https://api.rupee112fintech.com/marketing-push-data";
 
 const Partner_id = "Keshvacredit";
 const loanAmount = "20000"; // must be string
