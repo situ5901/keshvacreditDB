@@ -2,7 +2,7 @@ const axios = require("axios");
 const mongoose = require("mongoose");
 require("dotenv").config();
 
-const MAX_LEADS = 100;
+const MAX_LEADS = 500;
 const LOAN_AMOUNT = "20000";
 const PARTNER_ID = "keshvacredit";
 const DEDUPE_API = "https://api.rupee112fintech.com/marketing-check-dedupe/";
@@ -80,7 +80,11 @@ async function sendPreApprovalAPI(lead) {
     console.log("✅ Pre-Approval API Response:", response.data);
     return response.data;
   } catch (error) {
-    console.error("🚫 Pre-Approval API Error:", error.message, error.response?.data);
+    console.error(
+      "🚫 Pre-Approval API Error:",
+      error.message,
+      error.response?.data,
+    );
     return {
       Status: 0,
       Error:
@@ -153,7 +157,12 @@ async function loop() {
   try {
     console.log("🔄 Fetching users...");
     const leads = await UserDB.aggregate([
-      { $match: { "RefArr.name": { $ne: "Rupee112" }, processed: { $ne: true } } },
+      {
+        $match: {
+          "RefArr.name": { $ne: "Rupee112" },
+          processed: { $ne: true },
+        },
+      },
       { $limit: MAX_LEADS },
     ]);
 
