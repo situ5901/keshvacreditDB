@@ -97,43 +97,47 @@ async function processBatch(users) {
       const userDoc = await UserDB.findOne({ phone: user.phone });
       if (!userDoc) {
         console.log(`User with phone ${user.phone} not found in DB.`);
-        return; // Ya koi error handle kar
+        return; // Skip or handle error if needed
       }
       const response = await sendToDedupeAPI(user);
 
+      // Prepare update object
       let updateDoc = {
         $unset: { accounts: "" },
+        $push: {
+          apiResponse: {
+            Rupee112Response: {},
+            status: "",
+            message: "",
+            createdAt: new Date().toISOString(),
+          },
+        },
+        $addToSet: {
+          RefArr: { name: "Rupee112" }, // Mark this lead processed
+        },
       };
 
       if (response.Status === "2" || response.Message === "User not found") {
-        // Agar user not found hai, toh second API ko hit karo
+        // If user not found in first API, call second API
         const pushResponse = await sendToPunshAPI(user);
 
-        // Sirf second API ka response save karo
-        updateDoc.$push = {
-          apiResponse: {
-            Rupee112Response: {
-              ...pushResponse,
-              Rupee112: true,
-            },
-            status: pushResponse.status || pushResponse.Status,
-            message: pushResponse.message || pushResponse.Error,
-            createdAt: new Date().toISOString(),
-          },
+        updateDoc.$push.apiResponse.Rupee112Response = {
+          ...pushResponse,
+          Rupee112: true,
         };
+        updateDoc.$push.apiResponse.status =
+          pushResponse.status || pushResponse.Status;
+        updateDoc.$push.apiResponse.message =
+          pushResponse.message || pushResponse.Error;
       } else {
-        // Warna sirf first API ka response save karo
-        updateDoc.$push = {
-          apiResponse: {
-            Rupee112Response: {
-              ...response,
-              Rupee112: true,
-            },
-            status: response.status || response.Status,
-            message: response.message || response.Error,
-            createdAt: new Date().toISOString(),
-          },
+        // Otherwise, save first API response only
+        updateDoc.$push.apiResponse.Rupee112Response = {
+          ...response,
+          Rupee112: true,
         };
+        updateDoc.$push.apiResponse.status = response.status || response.Status;
+        updateDoc.$push.apiResponse.message =
+          response.message || response.Error;
       }
 
       await UserDB.updateOne({ phone: user.phone }, updateDoc);
@@ -150,7 +154,7 @@ async function Loop() {
       const leads = await UserDB.aggregate([
         {
           $match: {
-            "RefArr.name": { $ne: "Rupee112" },
+            "RefArr.name": { $ne: "Rupee112" }, // Leads not processed yet
           },
         },
         { $limit: BATCH_SIZE },
