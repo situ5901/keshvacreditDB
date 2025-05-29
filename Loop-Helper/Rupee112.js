@@ -36,7 +36,7 @@ async function sendToNewAPI(lead) {
       mobile: lead.phone,
       pancard: lead.pan,
     };
-
+    //situ update
     console.log("📤 Sending Lead to Check API:", apiRequestBody);
     const checkResponse = await axios.post(firstAPI, apiRequestBody, {
       headers: getHeaders(),
