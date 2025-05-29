@@ -9,7 +9,7 @@ const UserDB = mongoose.model(
   new mongoose.Schema({}, { collection: "userdb", strict: false }),
 );
 
-const MAX_LEADS = 5;
+const MAX_LEADS = 1000;
 let processedCount = 0;
 const newAPI = "https://api.bharatloanfintech.com/marketing-check-dedupe/";
 
@@ -85,30 +85,59 @@ async function processBatch(users) {
   }
 }
 
+// async function loop() {
+//   try {
+//     let hasMoreLeads = true;
+//     while (hasMoreLeads) {
+//       console.log("🔄 Fetching users...");
+//       const leads = await UserDB.aggregate([
+//         {
+//           $match: {
+//             "RefArr.name": { $ne: "Rupee112" },
+//           },
+//         },
+//         { $limit: MAX_LEADS },
+//       ]);
+//
+//       if (leads.length === 0) {
+//         hasMoreLeads = false;
+//         console.log("🚫 No more leads to process.");
+//       } else {
+//         await processBatch(leads);
+//         processedCount += leads.length;
+//         console.log(`✅ Total Processed: ${processedCount}`);
+//       }
+//
+//       if (hasMoreLeads) {
+//         await new Promise((resolve) => setTimeout(resolve, 2000));
+//       }
+//     }
+//   } catch (error) {
+//     console.error("🚫 Error in loop:", error.message, error);
+//   } finally {
+//     console.log("🔚 Closing MongoDB connection...");
+//     mongoose.connection.close();
+//   }
+// }
+
 async function loop() {
   try {
-    let hasMoreLeads = true;
-    while (hasMoreLeads) {
-      console.log("🔄 Fetching users...");
-      const leads = await UserDB.aggregate([
-        {
-          $match: {
-            "RefArr.name": { $ne: "Rupee112" },
-          },
+    console.log("🔄 Fetching users...");
+    const leads = await UserDB.aggregate([
+      {
+        $match: {
+          "RefArr.name": { $ne: "Rupee112" },
         },
-        { $limit: MAX_LEADS },
-      ]);
+      },
+      { $limit: MAX_LEADS }, // 10 leads per batch
+    ]);
 
-      if (leads.length === 0) {
-        hasMoreLeads = false;
-        console.log("🚫 No more leads to process.");
-      } else {
-        await processBatch(leads);
-        processedCount += leads.length;
-        console.log(`✅ Total Processed: ${processedCount}`);
-      }
-
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+    if (leads.length === 0) {
+      console.log("🚫 No more leads to process.");
+    } else {
+      await processBatch(leads);
+      processedCount += leads.length;
+      console.log(`✅ Total Processed: ${processedCount}`);
     }
   } catch (error) {
     console.error("🚫 Error in loop:", error.message, error);
