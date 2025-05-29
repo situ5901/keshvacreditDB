@@ -18,7 +18,7 @@ const DEDUPE_API_URL =
   "https://api.rupee112fintech.com/marketing-check-dedupe/";
 const MARKETING_PUSH_API_URL =
   process.env.MARKETING_PUSH_API_URL ||
-  "https://api.rupee112fintech.com/marketing-push-data/";
+  "https://api.rupee112fintec.com/marketing-push-data";
 
 const Partner_id = "Keshvacredit";
 const loanAmount = "20000"; // must be string
@@ -63,12 +63,13 @@ async function sendToMarketingPushAPI(lead) {
     const apiRequestBody = {
       full_name: lead.name,
       mobile: lead.phone,
-      mobile_verification_flag: "0",
       email: lead.email,
       pancard: lead.pan,
       pincode: lead.pincode,
       income_type: "1",
       monthly_salary: lead.income,
+      purpose_of_loan:"Other",
+
       loan_amount: loanAmount,
       Partner_id: Partner_id,
     };
