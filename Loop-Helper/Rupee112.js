@@ -95,7 +95,6 @@ async function sendToPunshAPI(lead) {
 async function processBatch(users) {
   const results = await Promise.allSettled(
     users.map(async (user) => {
-      // Skip user if already processed
       if (user.RefArr && user.RefArr.some((r) => r.name === "Rupee112")) {
         console.log(
           `Skipping user ${user.phone} as already processed with Rupee112.`,
@@ -110,7 +109,6 @@ async function processBatch(users) {
       }
       const response = await sendToDedupeAPI(user);
 
-      // Prepare update object
       let updateDoc = {
         $unset: { accounts: "" },
         $push: {
@@ -127,7 +125,6 @@ async function processBatch(users) {
       };
 
       if (response.Status === "2" || response.Message === "User not found") {
-        // If user not found in first API, call second API
         const pushResponse = await sendToPunshAPI(user);
 
         updateDoc.$push.apiResponse.Rupee112Response = {
@@ -139,7 +136,6 @@ async function processBatch(users) {
         updateDoc.$push.apiResponse.message =
           pushResponse.message || pushResponse.Error;
       } else {
-        // Otherwise, save first API response only
         updateDoc.$push.apiResponse.Rupee112Response = {
           ...response,
           Rupee112: true,
@@ -176,7 +172,11 @@ async function Loop() {
 
       await processBatch(leads);
 
-      await new Promise((resolve) => setTimeout(resolve, 2000)); // small delay between batches
+      await processBatch(leads);
+      processedCount += leads.length;
+      console.log(`✅ Processed batch of: ${leads.length}`);
+      console.log(`🏁 Total Processed Leads: ${processedCount}`);
+      await new Promise((resolve) => setTimeout(resolve, 1000)); // 1 sec ka delay har batch ke baad
     }
   } catch (error) {
     console.error("❌ Error in loop:", error);
