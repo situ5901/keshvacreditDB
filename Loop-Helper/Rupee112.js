@@ -129,7 +129,6 @@ async function processBatch(users) {
 
         updateDoc.$push.apiResponse.Rupee112 = {
           ...pushResponse,
-          Rupee112: true,
         };
         updateDoc.$push.apiResponse.status =
           pushResponse.status || pushResponse.Status;
@@ -138,7 +137,6 @@ async function processBatch(users) {
       } else {
         updateDoc.$push.apiResponse.Rupee112 = {
           ...response,
-          Rupee112: true,
         };
         updateDoc.$push.apiResponse.status = response.status || response.Status;
         updateDoc.$push.apiResponse.message =
