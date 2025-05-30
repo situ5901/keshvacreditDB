@@ -74,7 +74,7 @@ async function sendToPunshAPI(lead) {
       purpose_of_loan: "3",
       loan_amount: loanAmount,
       Partner_id: Partner_id,
-      customer_lead_id: generate7DigitId,
+      customer_lead_id: generate7DigitId(),
     };
 
     console.log("📤 Sending Lead Data to Marketing Push API:", apiRequestBody);
