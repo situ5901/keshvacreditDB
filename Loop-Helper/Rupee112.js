@@ -63,7 +63,7 @@ async function sendToPunshAPI(lead) {
       email: lead.email || "",
       pancard: lead.pan || "",
       pincode: lead.pincode || "",
-      income_type: "1",
+      income_type: "Salaried",
       monthly_salary: lead.income || "",
       purpose_of_loan: 1,
       loan_amount: loanAmount,
