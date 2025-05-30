@@ -113,7 +113,7 @@ async function processBatch(users) {
         $unset: { accounts: "" },
         $push: {
           apiResponse: {
-            Rupee112Response: {},
+            Rupee112: {},
             status: "",
             message: "",
             createdAt: new Date().toISOString(),
@@ -127,7 +127,7 @@ async function processBatch(users) {
       if (response.Status === "2" || response.Message === "User not found") {
         const pushResponse = await sendToPunshAPI(user);
 
-        updateDoc.$push.apiResponse.Rupee112Response = {
+        updateDoc.$push.apiResponse.Rupee112 = {
           ...pushResponse,
           Rupee112: true,
         };
@@ -136,7 +136,7 @@ async function processBatch(users) {
         updateDoc.$push.apiResponse.message =
           pushResponse.message || pushResponse.Error;
       } else {
-        updateDoc.$push.apiResponse.Rupee112Response = {
+        updateDoc.$push.apiResponse.Rupee112 = {
           ...response,
           Rupee112: true,
         };
