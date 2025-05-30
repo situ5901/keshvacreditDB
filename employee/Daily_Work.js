@@ -48,10 +48,45 @@ router.post("/dailyRepost", async (req, res) => {
 router.get("/getDailyReport", async (req, res) => {
   try {
     const allWork = await DailyWork.find();
-    res.status(200).json(allWork);
+
+    const formattedWork = allWork.map((work) => {
+      const dateObj = new Date(work.createdAt);
+
+      const date = dateObj.toLocaleDateString(); // e.g. 5/30/2025
+      const time = dateObj.toLocaleTimeString(); // e.g. 9:20:08 AM
+
+      return {
+        name: work.name,
+        department: work.department,
+        message: work.message,
+        createdAt: date,
+        time: time,
+      };
+    });
+
+    res.status(200).json(formattedWork);
   } catch (error) {
     console.log("Error getting Daily Work:", error);
-    res.status(500).json({ message: "Iinternal Server Error" });
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+});
+
+router.post("/getUserReport", async (req, res) => {
+  try {
+    const { name } = req.body;
+
+    if (!name) {
+      return res.status(400).json({ message: "Name is required" });
+    }
+
+    const user = await DailyWork.find({
+      name: { $regex: name, $options: "i" }, // partial and case-insensitive match
+    });
+
+    res.status(200).json(user);
+  } catch (error) {
+    console.error("Error fetching user report:", error);
+    res.status(500).json({ message: "Internal Server Error" });
   }
 });
 
