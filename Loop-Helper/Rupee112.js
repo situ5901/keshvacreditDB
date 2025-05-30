@@ -19,7 +19,6 @@ const Partner_id = "Keshvacredit";
 const DEDUPE_API_URL =
   "https://api.rupee112fintech.com/marketing-check-dedupe/";
 const PushAPI_URL = "https://api.rupee112fintech.com/marketing-push-data";
-
 const loanAmount = "20000"; // string
 
 function getHeaders() {
@@ -97,16 +96,17 @@ async function processBatch(users) {
     users.map(async (user) => {
       if (user.RefArr && user.RefArr.some((r) => r.name === "Rupee112")) {
         console.log(
-          `Skipping user ${user.phone} as already processed with Rupee112.`,
+          `⏭️ Skipping user ${user.phone} as already processed with Rupee112.`,
         );
         return;
       }
 
       const userDoc = await UserDB.findOne({ phone: user.phone });
       if (!userDoc) {
-        console.log(`User with phone ${user.phone} not found in DB.`);
-        return; // Skip or handle error if needed
+        console.log(`❌ User with phone ${user.phone} not found in DB.`);
+        return;
       }
+
       const response = await sendToDedupeAPI(user);
 
       let updateDoc = {
@@ -120,7 +120,7 @@ async function processBatch(users) {
           },
         },
         $addToSet: {
-          RefArr: { name: "Rupee112" }, // Mark this lead processed
+          RefArr: { name: "Rupee112" },
         },
       };
 
@@ -153,13 +153,14 @@ async function processBatch(users) {
 }
 
 async function Loop() {
+  let processedCount = 0;
   try {
     while (true) {
       console.log("📦 Fetching leads...");
       const leads = await UserDB.aggregate([
         {
           $match: {
-            "RefArr.name": { $ne: "Rupee112" }, // fixed query here
+            "RefArr.name": { $ne: "Rupee112" }, // skip already processed users
           },
         },
         { $limit: BATCH_SIZE },
@@ -170,13 +171,12 @@ async function Loop() {
         break;
       }
 
-      await processBatch(leads);
-
-      await processBatch(leads);
+      await processBatch(leads); // ✅ Call only once per batch
       processedCount += leads.length;
       console.log(`✅ Processed batch of: ${leads.length}`);
       console.log(`🏁 Total Processed Leads: ${processedCount}`);
-      await new Promise((resolve) => setTimeout(resolve, 1000)); // 1 sec ka delay har batch ke baad
+
+      await new Promise((resolve) => setTimeout(resolve, 1000)); // 1 sec delay
     }
   } catch (error) {
     console.error("❌ Error in loop:", error);
