@@ -1,8 +1,9 @@
 const express = require("express");
 const router = express.Router();
-const sendMail = require("./mailer");
+const { sendMail, ContactMail } = require("./mailer"); // Import both functions
+
 router.post("/leaveMail", async (req, res) => {
-  console.log("Incoming Body:", req.body); // 👈 check what you're receiving
+  console.log("Incoming Body:", req.body);
 
   const {
     firstName,
@@ -39,4 +40,17 @@ router.post("/leaveMail", async (req, res) => {
     res.status(500).send("Failed to send email");
   }
 });
+
+router.post("/contactMail", async (req, res) => {
+  const { name, email, message } = req.body; // fixed typo here
+
+  try {
+    await ContactMail({ name, email, message });
+    res.status(200).send("✅ Thank you! We will contact you shortly");
+  } catch (err) {
+    console.error("❌ Error sending email:", err);
+    res.status(400).send("Error sending email");
+  }
+});
+
 module.exports = router;

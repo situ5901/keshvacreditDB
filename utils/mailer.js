@@ -9,6 +9,7 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+// Function to send leave application email
 const sendMail = async (formData) => {
   const {
     firstName,
@@ -26,7 +27,7 @@ const sendMail = async (formData) => {
 
   const mailOptions = {
     from: `"FormBot 👨‍💻" <${process.env.EMAIL}>`,
-    to: process.env.EMAIL, // send to your own Gmail
+    to: process.env.EMAIL,
     subject: "📩 New Leave Request Received",
     html: `
       <h2>New Leave Application</h2>
@@ -40,11 +41,32 @@ const sendMail = async (formData) => {
       <p><strong>To:</strong> ${toDate}</p>
       <p><strong>Total Days:</strong> ${days}</p>
       <p><strong>Comments:</strong> ${comments}</p>
-      
-`,
+    `,
   };
 
   await transporter.sendMail(mailOptions);
 };
 
-module.exports = sendMail;
+// Function to send contact form message
+const ContactMail = async (formData) => {
+  const { name, email, message } = formData;
+
+  const mailOptions = {
+    from: `"ContactBot 📬" <${process.env.EMAIL}>`,
+    to: process.env.EMAIL,
+    subject: "📩 New Contact Message Received",
+    html: `
+      <h2>New Contact Form Keshvacredit</h2>
+      <p><strong>Name:</strong> ${name}</p>
+      <p><strong>Email:</strong> ${email}</p>
+      <p><strong>Message:</strong><br/>${message}</p>
+    `,
+  };
+
+  await transporter.sendMail(mailOptions);
+};
+
+module.exports = {
+  sendMail,
+  ContactMail,
+};
