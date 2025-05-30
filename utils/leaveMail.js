@@ -46,9 +46,9 @@ router.post("/contactMail", async (req, res) => {
 
   try {
     await ContactMail({ name, email, message });
-    res.status(200).send("✅ Thank you! We will contact you shortly");
+    res.status(200).send("Thank you! We will contact you shortly");
   } catch (err) {
-    console.error("❌ Error sending email:", err);
+    console.error(" Error sending email:", err);
     res.status(400).send("Error sending email");
   }
 });
