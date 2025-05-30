@@ -10,15 +10,15 @@ mongoose
   .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
 
 const UserDB = mongoose.model(
-  "loops",
-  new mongoose.Schema({}, { collection: "loops", strict: false }),
+  "smcoll",
+  new mongoose.Schema({}, { collection: "smcoll", strict: false }),
 );
 
-const BATCH_SIZE = 1;
+const BATCH_SIZE = 100;
 const Partner_id = "Keshvacredit";
 const DEDUPE_API_URL =
-  "https://api.rupee112fintech.com/marketing-check-dedupe/";
-const PushAPI_URL = "https://api.rupee112fintech.com/marketing-push-data";
+  "https://api.bharatloanfintech.com/marketing-check-dedupe";
+const PushAPI_URL = "https://api.bharatloanfintech.com/marketing-push-data";
 const loanAmount = "20000"; // string
 
 function getHeaders() {
@@ -96,7 +96,7 @@ async function processBatch(users) {
 
   const results = await Promise.allSettled(
     users.map(async (user) => {
-      if (user.RefArr && user.RefArr.some((r) => r.name === "BharatLoan")) {
+      if (user.RefArr && user.RefArr.some((r) => r.name === "BhartLoan")) {
         console.log(`⏭️ Skipping user ${user.phone} as already processed.`);
         return;
       }
@@ -113,21 +113,21 @@ async function processBatch(users) {
         $unset: { accounts: "" },
         $push: {
           apiResponse: {
-            BharatLoan: {},
+            BhartLoan: {},
             status: "",
             message: "",
             createdAt: new Date().toISOString(),
           },
         },
         $addToSet: {
-          RefArr: { name: "BharatLoan" },
+          RefArr: { name: "BhartLoan" },
         },
       };
 
       if (response.Status === "2" || response.Message === "User not found") {
         const pushResponse = await sendToPunshAPI(user);
 
-        updateDoc.$push.apiResponse.BharatLoan = { ...pushResponse };
+        updateDoc.$push.apiResponse.BhartLoan = { ...pushResponse };
         updateDoc.$push.apiResponse.status =
           pushResponse.status || pushResponse.Status;
         updateDoc.$push.apiResponse.message =
@@ -141,7 +141,7 @@ async function processBatch(users) {
           successCount += 1;
         }
       } else {
-        updateDoc.$push.apiResponse.BharatLoan = { ...response };
+        updateDoc.$push.apiResponse.BhartLoan = { ...response };
         updateDoc.$push.apiResponse.status = response.status || response.Status;
         updateDoc.$push.apiResponse.message =
           response.message || response.Error;
@@ -164,7 +164,7 @@ async function Loop() {
       const leads = await UserDB.aggregate([
         {
           $match: {
-            "RefArr.name": { $ne: "BharatLoan" },
+            "RefArr.name": { $ne: "BhartLoan" },
           },
         },
         { $limit: BATCH_SIZE },
