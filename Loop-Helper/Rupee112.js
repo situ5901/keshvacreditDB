@@ -92,12 +92,12 @@ async function sendToPunshAPI(lead) {
 }
 
 async function processBatch(users) {
+  let successCount = 0;
+
   const results = await Promise.allSettled(
     users.map(async (user) => {
       if (user.RefArr && user.RefArr.some((r) => r.name === "Rupee112")) {
-        console.log(
-          `⏭️ Skipping user ${user.phone} as already processed with Rupee112.`,
-        );
+        console.log(`⏭️ Skipping user ${user.phone} as already processed.`);
         return;
       }
 
@@ -127,17 +127,21 @@ async function processBatch(users) {
       if (response.Status === "2" || response.Message === "User not found") {
         const pushResponse = await sendToPunshAPI(user);
 
-        updateDoc.$push.apiResponse.Rupee112 = {
-          ...pushResponse,
-        };
+        updateDoc.$push.apiResponse.Rupee112 = { ...pushResponse };
         updateDoc.$push.apiResponse.status =
           pushResponse.status || pushResponse.Status;
         updateDoc.$push.apiResponse.message =
           pushResponse.message || pushResponse.Error;
+
+        // ✅ Count only if push is successful
+        if (
+          pushResponse.Status === 1 &&
+          pushResponse.Message === "Lead Created Successfuly"
+        ) {
+          successCount += 1;
+        }
       } else {
-        updateDoc.$push.apiResponse.Rupee112 = {
-          ...response,
-        };
+        updateDoc.$push.apiResponse.Rupee112 = { ...response };
         updateDoc.$push.apiResponse.status = response.status || response.Status;
         updateDoc.$push.apiResponse.message =
           response.message || response.Error;
@@ -147,18 +151,20 @@ async function processBatch(users) {
     }),
   );
 
-  return results;
+  return successCount;
 }
 
 async function Loop() {
   let processedCount = 0;
+  let successLeads = 0;
+
   try {
     while (true) {
       console.log("📦 Fetching leads...");
       const leads = await UserDB.aggregate([
         {
           $match: {
-            "RefArr.name": { $ne: "Rupee112" }, // skip already processed users
+            "RefArr.name": { $ne: "Rupee112" },
           },
         },
         { $limit: BATCH_SIZE },
@@ -169,12 +175,18 @@ async function Loop() {
         break;
       }
 
-      await processBatch(leads); // ✅ Call only once per batch
+      const batchSuccess = await processBatch(leads);
       processedCount += leads.length;
-      console.log(`✅ Processed batch of: ${leads.length}`);
-      console.log(`🏁 Total Processed Leads: ${processedCount}`);
+      successLeads += batchSuccess;
 
-      await new Promise((resolve) => setTimeout(resolve, 1000)); // 1 sec delay
+      console.log(`✅ Processed batch of: ${leads.length}`);
+      console.log(
+        `🎯 Successfully Created Leads in This Batch: ${batchSuccess}`,
+      );
+      console.log(`🏁 Total Processed Leads: ${processedCount}`);
+      console.log(`🌟 Total Successfully Created Leads: ${successLeads}`);
+
+      await new Promise((resolve) => setImmediate(resolve)); // super-fast no delay
     }
   } catch (error) {
     console.error("❌ Error in loop:", error);
