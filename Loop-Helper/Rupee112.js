@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 const axios = require("axios");
 require("dotenv").config();
-
+const { v4: uuidv4 } = require("uuid");
 const MONGODB_URIVISH = process.env.MONGODB_URIVISH;
 
 mongoose
@@ -28,6 +28,12 @@ function getHeaders() {
     "Content-Type": "application/json",
   };
 }
+
+const generate7DigitId = () => {
+  const uuid = uuidv4();
+  const digits = uuid.replace(/\D/g, "");
+  return digits.slice(0, 7);
+};
 
 async function sendToDedupeAPI(lead) {
   try {
@@ -68,7 +74,7 @@ async function sendToPunshAPI(lead) {
       purpose_of_loan: "3",
       loan_amount: loanAmount,
       Partner_id: Partner_id,
-      customer_lead_id: 59200123082003,
+      customer_lead_id: generate7DigitId,
     };
 
     console.log("📤 Sending Lead Data to Marketing Push API:", apiRequestBody);
