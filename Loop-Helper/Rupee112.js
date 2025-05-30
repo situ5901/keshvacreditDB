@@ -10,8 +10,8 @@ mongoose
   .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
 
 const UserDB = mongoose.model(
-  "loops",
-  new mongoose.Schema({}, { collection: "loops", strict: false }),
+  "smcoll",
+  new mongoose.Schema({}, { collection: "smcoll", strict: false }),
 );
 
 const BATCH_SIZE = 1;
@@ -63,9 +63,9 @@ async function sendToPunshAPI(lead) {
       email: lead.email || "",
       pancard: lead.pan || "",
       pincode: lead.pincode || "",
-      income_type: "Salaried",
+      income_type: "1",
       monthly_salary: lead.income || "",
-      purpose_of_loan: 1,
+      purpose_of_loan: "other",
       loan_amount: loanAmount,
       Partner_id: Partner_id,
       customer_lead_id: lead._id || "",

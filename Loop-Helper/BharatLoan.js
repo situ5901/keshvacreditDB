@@ -1,27 +1,25 @@
-const axios = require("axios");
 const mongoose = require("mongoose");
+const axios = require("axios");
 require("dotenv").config();
 
-const MONGODB_URINEW = process.env.MONGODB_URINEW;
-
-const DEDUPE_API_URL =
-  "https://api.rupee112fintech.com/marketing-check-dedupe/";
-const MARKETING_PUSH_API_URL =
-  process.env.MARKETING_PUSH_API_URL ||
-  "https://api.rupee112fintech.com/marketing-push-data/";
+const MONGODB_URIVISH = process.env.MONGODB_URIVISH;
 
 mongoose
-  .connect(MONGODB_URINEW)
+  .connect(MONGODB_URIVISH)
   .then(() => console.log("✅ MongoDB Connected Successfully"))
   .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
 
 const UserDB = mongoose.model(
-  "userdb",
-  new mongoose.Schema({}, { collection: "userdb", strict: false }),
+  "loops",
+  new mongoose.Schema({}, { collection: "loops", strict: false }),
 );
 
-const MAX_LEADS = 5;
-let processedCount = 0;
+const BATCH_SIZE = 1;
+const Partner_id = "Keshvacredit";
+const DEDUPE_API_URL =
+  "https://api.rupee112fintech.com/marketing-check-dedupe/";
+const PushAPI_URL = "https://api.rupee112fintech.com/marketing-push-data";
+const loanAmount = "20000"; // string
 
 function getHeaders() {
   return {
@@ -33,16 +31,19 @@ function getHeaders() {
 
 async function sendToDedupeAPI(lead) {
   try {
-    const apiRequestBody = {
+    const FirstPayload = {
       mobile: lead.phone,
       pancard: lead.pan,
+      Partner_id: Partner_id,
     };
-    console.log("📤 Sending Lead Data to Dedupe API:", apiRequestBody);
-    const apiResponse = await axios.post(DEDUPE_API_URL, apiRequestBody, {
+    console.log("📤 Sending Lead Data to Dedupe API:", FirstPayload);
+
+    const response = await axios.post(DEDUPE_API_URL, FirstPayload, {
       headers: getHeaders(),
     });
-    console.log("✅ Dedupe API Response Received:", apiResponse.data);
-    return apiResponse.data;
+
+    console.log("✅ Dedupe API Response Received:", response.data);
+    return response.data;
   } catch (error) {
     console.error(
       "🚫 Dedupe API Call Failed for",
@@ -50,147 +51,146 @@ async function sendToDedupeAPI(lead) {
       ":",
       error.message,
     );
-    return {
-      Status: 0,
-      Error:
-        error.response?.data?.Error ||
-        error.response?.statusText ||
-        "Unknown Dedupe API error",
-    };
+    return { Status: 0, Error: error.response?.data?.Error || error.message };
   }
 }
 
-async function sendToMarketingPushAPI(lead) {
+async function sendToPunshAPI(lead) {
   try {
     const apiRequestBody = {
-      full_name: lead.full_name || "",
-      mobile: lead.phone,
-      mobile_verification_flag: "0",
+      full_name: lead.name || "",
+      mobile: lead.phone || "",
       email: lead.email || "",
-      pancard: lead.pan,
+      pancard: lead.pan || "",
       pincode: lead.pincode || "",
-      income_type: lead.income_type || "",
-      purpose_of_loan: lead.purpose_of_loan || "",
-      monthly_salary: lead.monthly_salary || "",
-      loan_amount: lead.loan_amount || "",
-      customer_lead_id: lead.customer_lead_id || `cm-${lead._id.toString()}`,
+      income_type: "1",
+      monthly_salary: lead.income || "",
+      purpose_of_loan: "other",
+      loan_amount: loanAmount,
+      Partner_id: Partner_id,
+      customer_lead_id: lead._id || "",
     };
+
     console.log("📤 Sending Lead Data to Marketing Push API:", apiRequestBody);
-    const apiResponse = await axios.post(
-      MARKETING_PUSH_API_URL,
-      apiRequestBody,
-      {
-        headers: getHeaders(),
-      },
-    );
-    console.log("✅ Marketing Push API Response Received:", apiResponse.data);
-    return apiResponse.data;
-  } catch (error) {
+
+    const response = await axios.post(PushAPI_URL, apiRequestBody, {
+      headers: getHeaders(),
+    });
+
+    console.log("✅ Marketing Push API Response Received:", response.data);
+    return response.data;
+  } catch (err) {
     console.error(
-      "🚫 Marketing Push API Call Failed for",
-      lead.phone,
-      ":",
-      error.message,
+      "❌ PreApproval API Error:",
+      err.response?.data || err.message,
     );
     return {
       Status: 0,
-      Error:
-        error.response?.data?.Error ||
-        error.response?.statusText ||
-        "Unknown Marketing Push API error",
+      Error: err.response?.data?.message || err.message || "Unknown Error",
     };
   }
 }
 
 async function processBatch(users) {
-  const promises = users.map(async (user) => {
-    const dedupeResponse = await sendToDedupeAPI(user);
-    const pushResponse = await sendToMarketingPushAPI(user);
-    return { user, dedupeResponse, pushResponse };
-  });
+  let successCount = 0;
 
-  const results = await Promise.all(promises);
+  const results = await Promise.allSettled(
+    users.map(async (user) => {
+      if (user.RefArr && user.RefArr.some((r) => r.name === "BharatLoan")) {
+        console.log(`⏭️ Skipping user ${user.phone} as already processed.`);
+        return;
+      }
 
-  for (const { user, dedupeResponse, pushResponse } of results) {
-    console.log(`📦 Updating DB for ${user.phone} with responses:`, {
-      dedupeResponse,
-      pushResponse,
-    });
+      const userDoc = await UserDB.findOne({ phone: user.phone });
+      if (!userDoc) {
+        console.log(`❌ User with phone ${user.phone} not found in DB.`);
+        return;
+      }
 
-    try {
-      const updateResponse = await UserDB.updateOne(
-        { phone: user.phone },
-        {
-          $push: {
-            apiResponse: {
-              rupee112Dedupe: dedupeResponse,
-              marketingPushData: pushResponse,
-              createdAt: new Date().toISOString(),
-            },
-            RefArr: [
-              {
-                name: "Rupee112Dedupe",
-                createdAt: new Date().toISOString(),
-              },
-              {
-                name: "Rupee112Push",
-                createdAt: new Date().toISOString(),
-              },
-            ],
+      const response = await sendToDedupeAPI(user);
+
+      let updateDoc = {
+        $unset: { accounts: "" },
+        $push: {
+          apiResponse: {
+            BharatLoan: {},
+            status: "",
+            message: "",
+            createdAt: new Date().toISOString(),
           },
-          $unset: { accounts: "" },
         },
-      );
-      console.log(`✅ MongoDB updated for ${user.phone}:`, updateResponse);
-    } catch (updateError) {
-      console.error(
-        `🚫 Failed to update MongoDB for ${user.phone}:`,
-        updateError,
-      );
-    }
-  }
+        $addToSet: {
+          RefArr: { name: "BharatLoan" },
+        },
+      };
+
+      if (response.Status === "2" || response.Message === "User not found") {
+        const pushResponse = await sendToPunshAPI(user);
+
+        updateDoc.$push.apiResponse.BharatLoan = { ...pushResponse };
+        updateDoc.$push.apiResponse.status =
+          pushResponse.status || pushResponse.Status;
+        updateDoc.$push.apiResponse.message =
+          pushResponse.message || pushResponse.Error;
+
+        // ✅ Count only if push is successful
+        if (
+          pushResponse.Status === 1 &&
+          pushResponse.Message === "Lead Created Successfuly"
+        ) {
+          successCount += 1;
+        }
+      } else {
+        updateDoc.$push.apiResponse.BharatLoan = { ...response };
+        updateDoc.$push.apiResponse.status = response.status || response.Status;
+        updateDoc.$push.apiResponse.message =
+          response.message || response.Error;
+      }
+
+      await UserDB.updateOne({ phone: user.phone }, updateDoc);
+    }),
+  );
+
+  return successCount;
 }
 
-async function loop() {
+async function Loop() {
+  let processedCount = 0;
+  let successLeads = 0;
+
   try {
-    let hasMoreLeads = true;
-    while (hasMoreLeads) {
-      console.log("🔄 Fetching users...");
+    while (true) {
+      console.log("📦 Fetching leads...");
       const leads = await UserDB.aggregate([
         {
           $match: {
-            "RefArr.name": { $ne: "Rupee112Push" },
+            "RefArr.name": { $ne: "BharatLoan" },
           },
         },
-        { $limit: MAX_LEADS },
+        { $limit: BATCH_SIZE },
       ]);
 
-      if (leads.length === 0) {
-        hasMoreLeads = false;
-        console.log("🚫 No more leads to process.");
-      } else {
-        await processBatch(leads);
-        processedCount += leads.length;
-        console.log(`✅ Total Processed: ${processedCount}`);
+      if (!leads.length) {
+        console.log("🎉 All leads processed. Exiting loop.");
+        break;
       }
 
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      const batchSuccess = await processBatch(leads);
+      processedCount += leads.length;
+      successLeads += batchSuccess;
+
+      console.log(`✅ Processed batch of: ${leads.length}`);
+      console.log(
+        `🎯 Successfully Created Leads in This Batch: ${batchSuccess}`,
+      );
+      console.log(`🏁 Total Processed Leads: ${processedCount}`);
+      console.log(`🌟 Total Successfully Created Leads: ${successLeads}`);
+
+      await new Promise((resolve) => setImmediate(resolve)); // super-fast no delay
     }
   } catch (error) {
-    console.error("🚫 Error in loop:", error.message, error);
-  } finally {
-    console.log("🔚 Closing MongoDB connection...");
-    mongoose.connection.close();
+    console.error("❌ Error in loop:", error);
   }
 }
 
-async function main() {
-  try {
-    await loop();
-  } catch (err) {
-    console.error("🚫 MongoDB Connection Error in main:", err);
-    process.exit(1);
-  }
-}
-
-main();
+Loop();
