@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 const axios = require("axios");
 require("dotenv").config();
-
+const { v4: uuidv4 } = require("uuid");
 const MONGODB_URIVISH = process.env.MONGODB_URIVISH;
 
 mongoose
@@ -18,7 +18,7 @@ const BATCH_SIZE = 100;
 const Partner_id = "Keshvacredit";
 const DEDUPE_API_URL =
   "https://api.bharatloanfintech.com/marketing-check-dedupe";
-const PushAPI_URL = "https://api.bharatloanfintech.com/marketing-push-data";
+const PushAPI_URL = "https://api.bharatloanfintech.com/arketing-push-data";
 const loanAmount = "20000"; // string
 
 function getHeaders() {
@@ -28,6 +28,12 @@ function getHeaders() {
     "Content-Type": "application/json",
   };
 }
+
+const generate7DigitId = () => {
+  const uuid = uuidv4();
+  const digits = uuid.replace(/\D/g, "");
+  return digits.slice(0, 7);
+};
 
 async function sendToDedupeAPI(lead) {
   try {
@@ -68,7 +74,7 @@ async function sendToPunshAPI(lead) {
       purpose_of_loan: "3",
       loan_amount: loanAmount,
       Partner_id: Partner_id,
-      customer_lead_id: lead._id || "",
+      customer_lead_id: generate7DigitId(),
     };
 
     console.log("📤 Sending Lead Data to Marketing Push API:", apiRequestBody);
@@ -96,7 +102,7 @@ async function processBatch(users) {
 
   const results = await Promise.allSettled(
     users.map(async (user) => {
-      if (user.RefArr && user.RefArr.some((r) => r.name === "BhartLoan")) {
+      if (user.RefArr && user.RefArr.some((r) => r.name === "BharatLoan")) {
         console.log(`⏭️ Skipping user ${user.phone} as already processed.`);
         return;
       }
@@ -113,21 +119,21 @@ async function processBatch(users) {
         $unset: { accounts: "" },
         $push: {
           apiResponse: {
-            BhartLoan: {},
+            BharatLoan: {},
             status: "",
             message: "",
             createdAt: new Date().toISOString(),
           },
         },
         $addToSet: {
-          RefArr: { name: "BhartLoan" },
+          RefArr: { name: "BharatLoan" },
         },
       };
 
       if (response.Status === "2" || response.Message === "User not found") {
         const pushResponse = await sendToPunshAPI(user);
 
-        updateDoc.$push.apiResponse.BhartLoan = { ...pushResponse };
+        updateDoc.$push.apiResponse.BharatLoan = { ...pushResponse };
         updateDoc.$push.apiResponse.status =
           pushResponse.status || pushResponse.Status;
         updateDoc.$push.apiResponse.message =
@@ -141,7 +147,7 @@ async function processBatch(users) {
           successCount += 1;
         }
       } else {
-        updateDoc.$push.apiResponse.BhartLoan = { ...response };
+        updateDoc.$push.apiResponse.BharatLoan = { ...response };
         updateDoc.$push.apiResponse.status = response.status || response.Status;
         updateDoc.$push.apiResponse.message =
           response.message || response.Error;
@@ -164,7 +170,7 @@ async function Loop() {
       const leads = await UserDB.aggregate([
         {
           $match: {
-            "RefArr.name": { $ne: "BhartLoan" },
+            "RefArr.name": { $ne: "BharatLoan" },
           },
         },
         { $limit: BATCH_SIZE },

@@ -4,77 +4,59 @@ require("dotenv").config();
 
 const MONGODB_URINEW = process.env.MONGODB_URINEW;
 
-// MongoDB connection
 mongoose
   .connect(MONGODB_URINEW)
   .then(() => console.log("✅ MongoDB Connected Successfully"))
   .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
 
 const UserDB = mongoose.model(
-  "userdb",
-  new mongoose.Schema({}, { collection: "userdb", strict: false }),
+  "Test",
+  new mongoose.Schema({}, { collection: "Test", strict: false }),
 );
 
-const newAPI =
-  "https://kamakshimoney.com/loanapply/kamakshimoney_api/lead_gen/api/v1/create_lead";
-const MAX_LEADS = 50;
+const API_URL =
+  "https://www.chintamanifinlease.com/api/chintamanifinleaseDsaPartnerTest";
+const MAX_LEADS = 1;
 const Partner_id = "Keshvacredit";
-const loanAmount = "20000"; // must be string
 
-// Send a single lead to external API
+function getHeaders() {
+  return {
+    "Content-Type": "application/json",
+  };
+}
+
 async function sendToNewAPI(lead) {
-  let response = {};
+  const response = {};
   try {
-    const formattedDob = new Date(lead.dob).toISOString().slice(0, 10);
-
-    // Validate phone number
-    if (!lead.phone || isNaN(lead.phone)) {
-      response.status = "failed";
-      response.message = "Invalid mobile number";
-      return response;
-    }
-
-    const apiRequestBody = {
-      mobile: lead.phone,
-      name: lead.name,
-      email: lead.email,
-      employeeType: lead.employment,
-      dob: formattedDob,
-      pancard: lead.pan,
-      loanAmount: loanAmount,
+    const requestBody = {
+      mobile_number: lead.phone,
+      email_id: lead.email,
+      pan_buss_number: lead.pan,
+      fname: lead.name,
+      current_pincode: lead.pincode,
+      d_o_b: lead.dob,
+      gender: lead.gender,
+      monthly_income: lead.income,
       Partner_id: Partner_id,
     };
 
-    console.log("📤 Sending Lead:", JSON.stringify(apiRequestBody, null, 2));
+    console.log("📤 Sending Lead:", JSON.stringify(requestBody, null, 2));
 
-    const apiResponse = await axios.post(newAPI, apiRequestBody, {
-      headers: {
-        "Content-Type": "application/json",
-        Authorization:
-          "Basic cmFtZmluX2U2NmIxNmE5ZjZiNzQ5YTAzOTBmZWRjM2U4ZjNkZjZmOmI3YjJlZDU1MjM5NjA5NzM5NmQwOWE2N2RkZTI4NjUyMDNjZDMxYjA=",
-      },
+    const apiResponse = await axios.post(API_URL, requestBody, {
+      headers: getHeaders(),
     });
 
-    response.status = apiResponse.data.status;
-    response.message = apiResponse.data.message || "No message from API";
+    response.status = apiResponse.status;
+    response.token = apiResponse.data.token;
+    response.message = apiResponse.data.status;
   } catch (error) {
     response.status = "failed";
-    response.message = error.response?.data?.message;
-
-    if (error.response) {
-      console.error("❌ API Error:", {
-        statusCode: error.response.status,
-        data: error.response.data,
-      });
-    } else {
-      console.error("❌ Axios Error:", error.message);
-    }
+    response.message = error.response?.data?.response_message || error.message;
   }
 
   return response;
 }
 
-// Process a batch of users
 async function processBatch(users) {
   const promises = users.map(async (user) => {
     const existingUser = await UserDB.findOne({ phone: user.phone });
@@ -91,24 +73,32 @@ async function processBatch(users) {
 
   for (let i = 0; i < users.length; i++) {
     const user = users[i];
-    const response = results[i];
+    const result = results[i];
 
-    console.log(`📞 ${user.phone} => 🧾`, response);
+    const value =
+      result.status === "fulfilled"
+        ? result.value
+        : {
+            status: "failed",
+            message: result.reason?.message || "Unknown error",
+          };
+
+    console.log(`📞 ${user.phone} => 🧾`, value);
 
     const updateResponse = await UserDB.updateOne(
       { phone: user.phone },
       {
         $push: {
           apiResponse: {
-            Kamakshi: response.value,
-            message: response.value?.message || "No message",
+            chintamani: value,
             createdAt: new Date().toISOString(),
           },
           RefArr: {
-            name: "kamakshi",
+            name: "chintamani",
             createdAt: new Date().toISOString(),
           },
         },
+        $set: { isSentToAPI: true },
         $unset: { accounts: "" },
       },
     );
@@ -117,7 +107,6 @@ async function processBatch(users) {
   }
 }
 
-// Loop and process all unprocessed leads in batches
 let processedCount = 0;
 
 async function loop() {
@@ -156,5 +145,4 @@ async function loop() {
   }
 }
 
-// Start processing
 loop();

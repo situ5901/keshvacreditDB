@@ -14,7 +14,6 @@ const UserDB = mongoose.model(
   new mongoose.Schema({}, { collection: "userdb", strict: false }),
 );
 
-// 📍 New API Config
 const newAPI = "https://marketing.sotcrm.com/affiliates";
 const MAX_LEADS = 5;
 

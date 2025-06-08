@@ -2,18 +2,19 @@ const mongoose = require("mongoose");
 const axios = require("axios");
 require("dotenv").config();
 const { v4: uuidv4 } = require("uuid");
-const MONGODB_URIVISH = process.env.MONGODB_URIVISH;
+const MONGODB_URINEW = process.env.MONGODB_URINEW;
 
 mongoose
-  .connect(MONGODB_URIVISH)
+  .connect(MONGODB_URINEW)
   .then(() => console.log("✅ MongoDB Connected Successfully"))
   .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
 
 const UserDB = mongoose.model(
-  "smcoll",
-  new mongoose.Schema({}, { collection: "smcoll", strict: false }),
+  "userdb",
+  new mongoose.Schema({}, { collection: "userdb", strict: false }),
 );
 
+const MAX_PROCESS = 10000;
 const BATCH_SIZE = 100;
 const Partner_id = "Keshvacredit";
 const DEDUPE_API_URL =
@@ -165,7 +166,7 @@ async function Loop() {
   let successLeads = 0;
 
   try {
-    while (true) {
+    while (processedCount < MAX_PROCESS) {
       console.log("📦 Fetching leads...");
       const leads = await UserDB.aggregate([
         {
@@ -181,18 +182,28 @@ async function Loop() {
         break;
       }
 
-      const batchSuccess = await processBatch(leads);
-      processedCount += leads.length;
+      const remaining = MAX_PROCESS - processedCount;
+      const batchToProcess = leads.slice(0, remaining);
+
+      // Process batch and get success count
+      const batchSuccess = await processBatch(batchToProcess);
+
+      processedCount += batchToProcess.length;
       successLeads += batchSuccess;
 
-      console.log(`✅ Processed batch of: ${leads.length}`);
+      console.log(`✅ Processed batch of: ${batchToProcess.length}`);
       console.log(
         `🎯 Successfully Created Leads in This Batch: ${batchSuccess}`,
       );
       console.log(`🏁 Total Processed Leads: ${processedCount}`);
       console.log(`🌟 Total Successfully Created Leads: ${successLeads}`);
 
-      await new Promise((resolve) => setImmediate(resolve)); // super-fast no delay
+      if (processedCount >= MAX_PROCESS) {
+        console.log("🎯 Reached processing limit of 10,000 records. Stopping.");
+        break;
+      }
+
+      await new Promise((resolve) => setImmediate(resolve)); // no delay, yield event loop
     }
   } catch (error) {
     console.error("❌ Error in loop:", error);

@@ -1,11 +1,16 @@
 const express = require("express");
 const router = express.Router();
 const { partnerdb, customer } = require("../PartnersAPIs/PartnerSchema");
-
 const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
+const AUTH_KEY = "situ5901kumar";
 
 router.post("/create_apis", async (req, res) => {
   try {
+    const authKey = req.headers["authorization"];
+    if (!authKey || authKey !== AUTH_KEY) {
+      return res.status(401).json({ status: 401, error: "Unauthorized" });
+    }
+
     const {
       name,
       phone,
