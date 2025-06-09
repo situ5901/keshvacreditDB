@@ -79,7 +79,7 @@ router.post("/create_apis", async (req, res) => {
 
     return res.status(201).json({
       status: 201,
-      message: "User information saved successfully in User DB",
+      message: "User details successfully received",
       user: newUser,
     });
   } catch (error) {
