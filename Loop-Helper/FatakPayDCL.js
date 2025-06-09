@@ -115,7 +115,7 @@ async function processBatch(users, token) {
 
     const userDoc = await UserDB.findOne({ phone: user.phone });
 
-    if (userDoc?.RefArr?.some((ref) => ref.name === "FatakPay")) {
+    if (userDoc?.RefArr?.some((ref) => ref.name === "FatakPayDCL")) {
       console.log(`⚠️ Skipping ${user.phone} (already processed)`);
       return;
     }
@@ -132,7 +132,7 @@ async function processBatch(users, token) {
           createdAt: new Date().toISOString(),
         },
         RefArr: {
-          name: "FatakPay",
+          name: "FatakPayDCL",
           createdAt: new Date().toISOString(),
         },
       },
@@ -158,7 +158,7 @@ async function Loop() {
       console.log("\n🔎 Looking for new leads...");
 
       const leads = await UserDB.aggregate([
-        { $match: { "RefArr.name": { $ne: "FatakPay" } } },
+        { $match: { "RefArr.name": { $ne: "FatakPayDCL" } } },
         { $limit: BATCH_SIZE },
       ]);
 
