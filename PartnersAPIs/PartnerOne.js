@@ -4,7 +4,7 @@ const { partnerdb, customer } = require("../PartnersAPIs/PartnerSchema");
 
 const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
 const AUTH_KEY = "situ5901NiIsInR5cCI6IkpXVCJ9";
-const VALID_PARTNER_ID = "Moneyase20situ";
+const VALID_PARTNER_ID = "Moneyase-keshva";
 
 router.post("/create_apis", async (req, res) => {
   try {
