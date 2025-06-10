@@ -1,24 +1,36 @@
 const axios = require("axios");
 const mongoose = require("mongoose");
 require("dotenv").config();
+const path = require("path");
+const xlsx = require("xlsx");
 
-const MONGODB_URINEW = process.env.MONGODB_URINEW;
+const MONGODB_URIVISH = process.env.MONGODB_URIVISH;
 
 mongoose
-  .connect(MONGODB_URINEW)
+  .connect(MONGODB_URIVISH)
   .then(() => console.log("✅ MongoDB Connected Successfully"))
   .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
 
 const UserDB = mongoose.model(
-  "Test",
-  new mongoose.Schema({}, { collection: "Test", strict: false }),
+  "smcoll",
+  new mongoose.Schema({}, { collection: "smcoll", strict: false }),
 );
+
+const PINCODE_FILE_PATH = path.join(__dirname, "..", "xlsx", "pincode.xlsx");
 
 const API_URL =
   "https://www.chintamanifinlease.com/api/chintamanifinleaseDsaPartnerTest";
 const MAX_LEADS = 1;
 const Partner_id = "Keshvacredit";
 
+function loadValidPincodes(filePath) {
+  const workbook = xlsx.readFile(filePath);
+  const sheet = workbook.Sheets[workbook.SheetNames[0]];
+  const data = xlsx.utils.sheet_to_json(sheet);
+  return data.map((row) => String(row.Pincode).trim());
+}
+
+const validPincodes = loadValidPincodes(PINCODE_FILE_PATH);
 function getHeaders() {
   return {
     "Content-Type": "application/json",
@@ -27,6 +39,13 @@ function getHeaders() {
 
 async function sendToNewAPI(lead) {
   const response = {};
+
+  if (!validPincodes.includes(String(lead.pincode).trim())) {
+    response.status = "failed";
+    response.message = `❌ Invalid pincode: ${lead.pincode}`;
+    return response;
+  }
+
   try {
     const requestBody = {
       mobile_number: lead.phone,
