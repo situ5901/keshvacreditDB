@@ -46,6 +46,11 @@ async function sendToNewAPI(lead) {
     return response;
   }
 
+  if (!lead.pincode || String(lead.pincode).trim() === "") {
+    response.status = "failed";
+    response.message = "❌ Pincode is mandatory.";
+    return response;
+  }
   try {
     const requestBody = {
       mobile_number: lead.phone,
