@@ -9,7 +9,7 @@ const userSchema = new mongoose.Schema(
     pan: { type: String, required: true, trim: true },
     pincode: { type: String, required: true, trim: true },
     income: { type: Number, required: true },
-    dob: { type: Date, required: true }, // Date type recommended
+    dob: { type: Date, required: true },
     partner_Id: { type: String, required: true, trim: true },
   },
   { strict: false },
