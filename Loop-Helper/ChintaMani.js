@@ -153,7 +153,6 @@ async function loop() {
         await processBatch(leads);
         processedCount += leads.length;
         console.log(`✅ Total Processed: ${processedCount}`);
-        await new Promise((resolve) => setTimeout(resolve, 1000));
         console.log("⏳ Waiting for 1 second before next batch...");
       }
     }
