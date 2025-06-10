@@ -10,7 +10,7 @@ router.post("/create_apis", async (req, res) => {
     if (!authKey || authKey !== AUTH_KEY) {
       return res.status(401).json({ status: 401, error: "Unauthorized" });
     }
-
+    const PartnerID = "Moneyase20situ";
     const {
       name,
       phone,
@@ -20,7 +20,7 @@ router.post("/create_apis", async (req, res) => {
       pincode,
       income,
       dob,
-      partner_Id,
+      partner_Id = PartnerID,
     } = req.body;
 
     if (
