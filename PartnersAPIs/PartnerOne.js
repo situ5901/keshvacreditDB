@@ -1,8 +1,10 @@
 const express = require("express");
 const router = express.Router();
 const { partnerdb, customer } = require("../PartnersAPIs/PartnerSchema");
+
 const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
 const AUTH_KEY = "situ5901kumar";
+const VALID_PARTNER_ID = "Moneyase20situ";
 
 router.post("/create_apis", async (req, res) => {
   try {
@@ -10,7 +12,7 @@ router.post("/create_apis", async (req, res) => {
     if (!authKey || authKey !== AUTH_KEY) {
       return res.status(401).json({ status: 401, error: "Unauthorized" });
     }
-    const PartnerID = "Moneyase20situ";
+
     const {
       name,
       phone,
@@ -20,7 +22,7 @@ router.post("/create_apis", async (req, res) => {
       pincode,
       income,
       dob,
-      partner_Id = PartnerID,
+      partner_Id,
     } = req.body;
 
     if (
@@ -37,6 +39,12 @@ router.post("/create_apis", async (req, res) => {
       return res
         .status(400)
         .json({ status: 400, error: "Missing required fields" });
+    }
+
+    if (partner_Id !== VALID_PARTNER_ID) {
+      return res
+        .status(403)
+        .json({ status: 403, error: "Invalid partner_Id. Access denied." });
     }
 
     if (!panRegex.test(pan)) {
