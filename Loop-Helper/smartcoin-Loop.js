@@ -168,8 +168,6 @@ async function processBatch(leads) {
         $push: {
           apiResponse: {
             smartcoin: preApprovalResponse,
-            status: preApprovalResponse.status,
-            message: preApprovalResponse.message,
             createdAt: new Date().toISOString(),
           },
           RefArr: {
