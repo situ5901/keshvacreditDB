@@ -2,7 +2,14 @@ const mongoose = require("mongoose");
 const axios = require("axios");
 require("dotenv").config();
 const { v4: uuidv4 } = require("uuid");
+
 const MONGODB_URINEW = process.env.MONGODB_URINEW;
+const BATCH_SIZE = 100;
+const Partner_id = "Keshvacredit";
+const DEDUPE_API_URL =
+  "https://api.bharatloanfintech.com/marketing-check-dedupe/";
+const PushAPI_URL = "https://api.bharatloanfintech.com/marketing-push-data";
+const loanAmount = "20000";
 
 mongoose
   .connect(MONGODB_URINEW)
@@ -14,14 +21,6 @@ const UserDB = mongoose.model(
   new mongoose.Schema({}, { collection: "userdb", strict: false }),
 );
 
-// const MAX_PROCESS = 10000;
-const BATCH_SIZE = 100;
-const Partner_id = "Keshvacredit";
-const DEDUPE_API_URL =
-  "https://api.bharatloanfintech.com/marketing-check-dedupe/";
-const PushAPI_URL = "https://api.bharatloanfintech.com/marketing-push-data";
-const loanAmount = "20000"; // string
-
 function getHeaders() {
   return {
     Username: "KESHVACREDIT_20250421",
@@ -30,39 +29,27 @@ function getHeaders() {
   };
 }
 
-const generate7DigitId = () => {
-  const uuid = uuidv4();
-  const digits = uuid.replace(/\D/g, "");
-  return digits.slice(0, 7);
-};
+const generate7DigitId = () => uuidv4().replace(/\D/g, "").slice(0, 7);
 
 async function sendToDedupeAPI(lead) {
   try {
     const FirstPayload = {
       mobile: lead.phone,
       pancard: lead.pan,
-      Partner_id: Partner_id,
+      Partner_id,
     };
-    console.log("📤 Sending Lead Data to Dedupe API:", FirstPayload);
-
+    console.log("📤 Sending to Dedupe API:", FirstPayload);
     const response = await axios.post(DEDUPE_API_URL, FirstPayload, {
       headers: getHeaders(),
     });
-
-    console.log("✅ Dedupe API Response Received:", response.data);
     return response.data;
   } catch (error) {
-    console.error(
-      "🚫 Dedupe API Call Failed for",
-      lead.phone,
-      ":",
-      error.message,
-    );
+    console.error("🚫 Dedupe API error for", lead.phone, ":", error.message);
     return { Status: 0, Error: error.response?.data?.Error || error.message };
   }
 }
 
-async function sendToPunshAPI(lead) {
+async function sendToPushAPI(lead) {
   try {
     const apiRequestBody = {
       full_name: lead.name || "",
@@ -74,23 +61,17 @@ async function sendToPunshAPI(lead) {
       monthly_salary: lead.income || "",
       purpose_of_loan: "3",
       loan_amount: loanAmount,
-      Partner_id: Partner_id,
+      Partner_id,
       customer_lead_id: generate7DigitId(),
     };
 
-    console.log("📤 Sending Lead Data to Marketing Push API:", apiRequestBody);
-
+    console.log("📤 Sending to Push API:", apiRequestBody);
     const response = await axios.post(PushAPI_URL, apiRequestBody, {
       headers: getHeaders(),
     });
-
-    console.log("✅ Marketing Push API Response Received:", response.data);
     return response.data;
   } catch (err) {
-    console.error(
-      "❌ PreApproval API Error:",
-      err.response?.data || err.message,
-    );
+    console.error("❌ Push API Error:", err.response?.data || err.message);
     return {
       Status: 0,
       Error: err.response?.data?.message || err.message || "Unknown Error",
@@ -103,59 +84,52 @@ async function processBatch(users) {
 
   const results = await Promise.allSettled(
     users.map(async (user) => {
-      if (user.RefArr && user.RefArr.some((r) => r.name === "BharatLoan")) {
-        console.log(`⏭️ Skipping user ${user.phone} as already processed.`);
+      if (user.RefArr?.some((r) => r.name === "BharatLoan")) {
+        console.log(`⏭️ Skipping ${user.phone} (already processed)`);
         return;
       }
 
-      console.log("This is:" + results);
-
       const userDoc = await UserDB.findOne({ phone: user.phone });
       if (!userDoc) {
-        console.log(`❌ User with phone ${user.phone} not found in DB.`);
+        console.log(`❌ No DB record for ${user.phone}`);
         return;
       }
 
       const response = await sendToDedupeAPI(user);
 
-      let updateDoc = {
-        $unset: { accounts: "" },
-        $push: {
-          apiResponse: {
-            BharatLoan: {},
-            status: "",
-            message: "",
-            createdAt: new Date().toISOString(),
-          },
-        },
-        $addToSet: {
-          RefArr: { name: "BharatLoan" },
-        },
+      const apiResponseEntry = {
+        BharatLoan: {},
+        status: "",
+        message: "",
+        createdAt: new Date().toISOString(),
       };
 
       if (response.Status === "2" || response.Message === "User not found") {
-        const pushResponse = await sendToPunshAPI(user);
-
-        updateDoc.$push.apiResponse.BharatLoan = { ...pushResponse };
-        updateDoc.$push.apiResponse.status =
-          pushResponse.status || pushResponse.Status;
-        updateDoc.$push.apiResponse.message =
-          pushResponse.message || pushResponse.Error;
+        const pushResponse = await sendToPushAPI(user);
+        apiResponseEntry.BharatLoan = { ...pushResponse };
+        apiResponseEntry.status = pushResponse.status || pushResponse.Status;
+        apiResponseEntry.message = pushResponse.message || pushResponse.Error;
 
         if (
           pushResponse.Status === 1 &&
           pushResponse.Message === "Lead Created Successfuly"
         ) {
-          successCount += 1;
+          successCount++;
         }
       } else {
-        updateDoc.$push.apiResponse.BharatLoan = { ...response };
-        updateDoc.$push.apiResponse.status = response.status || response.Status;
-        updateDoc.$push.apiResponse.message =
-          response.message || response.Error;
+        apiResponseEntry.BharatLoan = { ...response };
+        apiResponseEntry.status = response.status || response.Status;
+        apiResponseEntry.message = response.message || response.Error;
       }
 
-      await UserDB.updateOne({ phone: user.phone }, updateDoc);
+      await UserDB.updateOne(
+        { phone: user.phone },
+        {
+          $unset: { accounts: "" },
+          $push: { apiResponse: { $each: [apiResponseEntry] } },
+          $addToSet: { RefArr: { name: "BharatLoan" } },
+        },
+      );
     }),
   );
 
@@ -167,46 +141,31 @@ async function Loop() {
   let successLeads = 0;
 
   try {
-    while (processedCount < user.length) {
+    while (true) {
       console.log("📦 Fetching leads...");
       const leads = await UserDB.aggregate([
-        {
-          $match: {
-            "RefArr.name": { $ne: "BharatLoan" },
-          },
-        },
+        { $match: { "RefArr.name": { $ne: "BharatLoan" } } },
         { $limit: BATCH_SIZE },
       ]);
 
       if (!leads.length) {
-        console.log("🎉 All leads processed. Exiting loop.");
+        console.log("🎉 All leads processed. Exiting.");
         break;
       }
 
-      const remaining = user.length - processedCount;
-      const batchToProcess = leads.slice(0, remaining);
-
-      const batchSuccess = await processBatch(batchToProcess);
-
-      processedCount += batchToProcess.length;
+      const batchSuccess = await processBatch(leads);
+      processedCount += leads.length;
       successLeads += batchSuccess;
 
-      console.log(`✅ Processed batch of: ${batchToProcess.length}`);
-      console.log(
-        `🎯 Successfully Created Leads in This Batch: ${batchSuccess}`,
-      );
-      console.log(`🏁 Total Processed Leads: ${processedCount}`);
-      console.log(`🌟 Total Successfully Created Leads: ${successLeads}`);
+      console.log(`✅ Batch Processed: ${leads.length}`);
+      console.log(`🎯 Leads Created This Batch: ${batchSuccess}`);
+      console.log(`🏁 Total Leads Processed: ${processedCount}`);
+      console.log(`🌟 Total Successful Leads: ${successLeads}`);
 
-      if (processedCount >= user.length) {
-        console.log("🎯 Reached processing limit of 10,000 records. Stopping.");
-        break;
-      }
-
-      await new Promise((resolve) => setImmediate(resolve)); // no delay, yield event loop
+      await new Promise((resolve) => setImmediate(resolve)); // yield to event loop
     }
   } catch (error) {
-    console.error("❌ Error in loop:", error);
+    console.error("❌ Loop Error:", error);
   }
 }
 
