@@ -167,7 +167,9 @@ async function processBatch(leads) {
       const updateDoc = {
         $push: {
           apiResponse: {
-            smartcoin: preApprovalResponse,
+            name: "SmartCoin",
+            status: preApprovalResponse.status,
+            message: preApprovalResponse.message,
             createdAt: new Date().toISOString(),
           },
           RefArr: {
