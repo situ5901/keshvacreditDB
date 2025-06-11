@@ -2,10 +2,9 @@ const axios = require("axios");
 const mongoose = require("mongoose");
 require("dotenv").config();
 const path = require("path");
-const xlsx = require("xlsx");
+const xlsx = require("xlsx"); // This will remain, but its usage is commented out.
 
 const MONGODB_URINEW = process.env.MONGODB_URINEW;
-
 mongoose
   .connect(MONGODB_URINEW)
   .then(() => console.log("✅ MongoDB Connected Successfully"))
@@ -16,16 +15,22 @@ const UserDB = mongoose.model(
   new mongoose.Schema({}, { collection: "Test", strict: false }),
 );
 
+// API endpoints
 const TOKEN_API = "https://atlas.whizdm.com/atlas/v1/token";
-const DEDUPE_API = "https://atlas.whizdm.com/atlas/v1/lead/filter/pan";
+const DEDUPE_API = "https://atlas.whizdm.com/atlas/v1/lead/dedupe";
 const LEAD_API = "https://atlas.whizdm.com/atlas/v1/lead";
 const OFFERS_API = "https://atlas.whizdm.com/atlas/v1/offers";
-const JOURNEY_URL_API = "https://atlas.whizdm.com/atlas/v1/journey-url";
+const JOURNEY_URL_API = "https://atlas.whizdm.com/atlas/v1/journey-url/";
+const LEAD_STATUS_API = "https://atlas.whizdm.com/atlas/v1/lead/status/";
+const FINAL_LOAN_DETAILS_API =
+  "https://atlas.whizdm.com/atlas/v1/lead/final-loan-details/";
+
 const PARTNER_CODE = 422;
 const BATCH_SIZE = 1;
+// const PINCODE_FILE_PATH = path.join(__dirname, "..", "xlsx", "mv.xlsx"); // No longer directly used due to commenting out pincode validation
 
-const PINCODE_FILE_PATH = path.join(__dirname, "..", "xlsx", "mv.xlsx");
-
+// Commented out pincode loading and validation as requested
+/*
 function loadValidPincodes(filePath) {
   try {
     const workbook = xlsx.readFile(filePath);
@@ -40,11 +45,11 @@ function loadValidPincodes(filePath) {
     return [];
   }
 }
-
 const validPincodes = loadValidPincodes(PINCODE_FILE_PATH);
-
+*/
 let successCount = 0;
 
+// 2. Token API
 async function getToken() {
   try {
     const response = await axios.post(TOKEN_API, {
@@ -53,6 +58,10 @@ async function getToken() {
       partnerCode: PARTNER_CODE,
     });
     console.log("🔑 Token fetched successfully.");
+    console.log(
+      "🔑 Token API Full Response:",
+      JSON.stringify(response.data, null, 2),
+    ); // Print full response
     return response.data.token;
   } catch (error) {
     console.error(
@@ -65,23 +74,34 @@ async function getToken() {
   }
 }
 
-async function dedupeCheck(pan, token) {
+// 3. Dedupe API - Aligned with curl command
+async function dedupeCheck(token, pan, email, phone) {
   console.log(`🔍 Performing Dedupe Check for PAN: ${pan}`);
   try {
-    const response = await axios.get(`${DEDUPE_API}/${pan}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
+    const response = await axios.post(
+      DEDUPE_API,
+      {
+        panNo: pan,
+        email: email,
+        mobileNo: phone,
       },
-    });
-
+      {
+        headers: {
+          "Content-Type": "application/json", // Explicitly set as in curl
+          token: token,
+          // 'Cookie': 'JSESSIONID=...', // Typically not set manually with axios for every call
+        },
+      },
+    );
     console.log(
       "✅ Dedupe API Full Response:",
       JSON.stringify(response.data, null, 2),
     );
-
     return {
       status: response.data.status,
       message: response.data.message,
+      duplicateFound: response.data.duplicateFound,
+      dedupeStatus: response.data.dedupeStatus,
     };
   } catch (error) {
     console.error(
@@ -93,6 +113,8 @@ async function dedupeCheck(pan, token) {
     return {
       status: "failure",
       message: error.response?.data?.message || error.message,
+      duplicateFound: false,
+      dedupeStatus: "NOT_FOUND",
     };
   }
 }
@@ -128,7 +150,7 @@ async function sendToMoneyView(lead, token) {
     };
   } catch (error) {
     console.error(
-      `❌ Failed to send lead for PAN: ${lead.pan}:`,
+      `❌ Failed to send lead for PAN: ${lead.pan}:`, // Corrected line
       error.response?.data
         ? JSON.stringify(error.response.data)
         : error.message,
@@ -140,6 +162,7 @@ async function sendToMoneyView(lead, token) {
   }
 }
 
+// 5. Get Offers API
 async function getOffers(leadId, token) {
   console.log(`🎁 Fetching offers for Lead ID: ${leadId}`);
   try {
@@ -148,7 +171,6 @@ async function getOffers(leadId, token) {
         token: token,
       },
     });
-
     console.log(
       `✅ Offers fetched successfully for Lead ID ${leadId}:`,
       JSON.stringify(response.data, null, 2),
@@ -171,15 +193,15 @@ async function getOffers(leadId, token) {
   }
 }
 
+// 6. Get Journey URL API
 async function getJourneyUrl(leadId, token) {
   console.log(`🔗 Fetching Journey URL for Lead ID: ${leadId}`);
   try {
-    const response = await axios.get(`${JOURNEY_URL_API}/${leadId}`, {
+    const response = await axios.get(`${JOURNEY_URL_API}${leadId}`, {
       headers: {
         token: token,
       },
     });
-
     console.log(
       `✅ Journey URL fetched successfully for Lead ID ${leadId}:`,
       JSON.stringify(response.data, null, 2),
@@ -202,6 +224,68 @@ async function getJourneyUrl(leadId, token) {
   }
 }
 
+// 7. Lead Status API
+async function getLeadStatus(leadId, token) {
+  console.log(`📊 Fetching status for Lead ID: ${leadId}`);
+  try {
+    const response = await axios.get(`${LEAD_STATUS_API}${leadId}`, {
+      headers: {
+        token: token,
+      },
+    });
+    console.log(
+      `✅ Lead status fetched successfully for Lead ID ${leadId}:`,
+      JSON.stringify(response.data, null, 2),
+    );
+    return {
+      status: "success",
+      data: response.data,
+    };
+  } catch (error) {
+    console.error(
+      `❌ Error fetching lead status for Lead ID ${leadId}:`,
+      error.response?.data
+        ? JSON.stringify(error.response.data)
+        : error.message,
+    );
+    return {
+      status: "failure",
+      message: error.response?.data?.message || error.message,
+    };
+  }
+}
+
+// 8. Final Loan Details API
+async function getFinalLoanDetails(leadId, token) {
+  console.log(`💰 Fetching final loan details for Lead ID: ${leadId}`);
+  try {
+    const response = await axios.get(`${FINAL_LOAN_DETAILS_API}${leadId}`, {
+      headers: {
+        token: token,
+      },
+    });
+    console.log(
+      `✅ Final loan details fetched successfully for Lead ID ${leadId}:`,
+      JSON.stringify(response.data, null, 2),
+    );
+    return {
+      status: "success",
+      data: response.data,
+    };
+  } catch (error) {
+    console.error(
+      `❌ Error fetching final loan details for Lead ID ${leadId}:`,
+      error.response?.data
+        ? JSON.stringify(error.response.data)
+        : error.message,
+    );
+    return {
+      status: "failure",
+      message: error.response?.data?.message || error.message,
+    };
+  }
+}
+
 function isValidPAN(pan) {
   const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
   return panRegex.test(pan);
@@ -210,7 +294,6 @@ function isValidPAN(pan) {
 async function processSingleLead(lead, token) {
   try {
     lead.pan = lead.pan ? String(lead.pan).toUpperCase() : lead.pan;
-
     if (!lead.phone || !lead.name || !lead.dob || !lead.pan || !lead.pincode) {
       console.error(
         `❌ Incomplete essential data for lead: ${lead.phone}. Skipping.`,
@@ -250,6 +333,8 @@ async function processSingleLead(lead, token) {
       return;
     }
 
+    // Commented out pincode validation as requested
+    /*
     if (!validPincodes.includes(String(lead.pincode).trim())) {
       console.error(
         `❌ Invalid pincode: ${lead.pincode} for lead: ${lead.phone}. Skipping.`,
@@ -268,9 +353,9 @@ async function processSingleLead(lead, token) {
       );
       return;
     }
+    */
 
     const userDoc = await UserDB.findOne({ phone: lead.phone });
-
     if (
       userDoc?.RefArr?.some(
         (ref) => ref.name === "MoneyView" || ref.name === "SkippedMoneyView",
@@ -282,32 +367,18 @@ async function processSingleLead(lead, token) {
       return;
     }
 
-    const updatesForNormalization = {};
-    let needNormalizationUpdate = false;
-
-    if (userDoc?.apiResponse && !Array.isArray(userDoc.apiResponse)) {
-      updatesForNormalization.apiResponse = [userDoc.apiResponse];
-      needNormalizationUpdate = true;
-    }
-    if (userDoc?.preApproval && !Array.isArray(userDoc.preApproval)) {
-      updatesForNormalization.preApproval = [userDoc.preApproval];
-      needNormalizationUpdate = true;
-    }
-
-    if (needNormalizationUpdate) {
-      console.log(`ℹ️ Normalizing data structure for lead: ${lead.phone}`);
-      await UserDB.updateOne(
-        { phone: lead.phone },
-        { $set: updatesForNormalization },
-      );
-    }
-
-    const dedupeResult = await dedupeCheck(lead.pan, token);
+    // Perform dedupe check
+    const dedupeResult = await dedupeCheck(
+      token,
+      lead.pan,
+      lead.email,
+      lead.phone,
+    );
     console.log("✅ Dedupe Check Result:", dedupeResult);
 
     if (
       dedupeResult.status === "success" &&
-      dedupeResult.message === "Lead already exists"
+      (dedupeResult.duplicateFound || dedupeResult.dedupeStatus === "FOUND")
     ) {
       console.log(
         `⛔ Lead already exists in MoneyView for PAN: ${lead.pan}. Skipping lead submission.`,
@@ -317,9 +388,11 @@ async function processSingleLead(lead, token) {
         {
           $push: {
             apiResponse: {
-              moneyView: dedupeResult,
-              status: "skipped",
-              message: "Lead already exists in MoneyView",
+              moneyView: {
+                status: "skipped",
+                message: "Lead already exists in MoneyView",
+                dedupeStatus: dedupeResult.dedupeStatus,
+              },
               createdAt: new Date().toISOString(),
             },
             RefArr: {
@@ -333,6 +406,7 @@ async function processSingleLead(lead, token) {
       return;
     }
 
+    // Create lead
     const moneyViewResponse = await sendToMoneyView(lead, token);
     console.log("✅ MoneyView Lead Submission Response:", moneyViewResponse);
 
@@ -349,6 +423,7 @@ async function processSingleLead(lead, token) {
     if (moneyViewResponse.status === "success" && moneyViewResponse.leadId) {
       successCount++;
       console.log("✅ Lead successfully submitted and counted:", lead.phone);
+
       const offersResult = await getOffers(moneyViewResponse.leadId, token);
       if (offersResult.status === "success") {
         updateDoc.$push.apiResponse.moneyView.offers = offersResult.data;
@@ -359,6 +434,7 @@ async function processSingleLead(lead, token) {
         };
       }
 
+      // Get journey URL
       const journeyUrlResult = await getJourneyUrl(
         moneyViewResponse.leadId,
         token,
@@ -371,6 +447,22 @@ async function processSingleLead(lead, token) {
           status: "failed",
           message: journeyUrlResult.message,
         };
+      }
+
+      // Get lead status
+      const statusResult = await getLeadStatus(moneyViewResponse.leadId, token);
+      if (statusResult.status === "success") {
+        updateDoc.$push.apiResponse.moneyView.status = statusResult.data;
+      }
+
+      // Get final loan details
+      const loanDetailsResult = await getFinalLoanDetails(
+        moneyViewResponse.leadId,
+        token,
+      );
+      if (loanDetailsResult.status === "success") {
+        updateDoc.$push.apiResponse.moneyView.finalLoanDetails =
+          loanDetailsResult.data;
       }
 
       updateDoc.$push.RefArr = {
@@ -441,8 +533,8 @@ async function Loop() {
       await Promise.allSettled(
         leads.map((lead) => processSingleLead(lead, token)),
       );
-      totalLeads += leads.length;
 
+      totalLeads += leads.length;
       console.log(`\n📊 Total Leads Processed So Far: ${totalLeads}`);
       console.log(`🏁 Total Successful MoneyView Leads: ${successCount}`);
     }

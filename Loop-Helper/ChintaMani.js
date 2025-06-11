@@ -12,8 +12,8 @@ mongoose
   .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
 
 const UserDB = mongoose.model(
-  "userdb",
-  new mongoose.Schema({}, { collection: "userdb", strict: false }),
+  "Test",
+  new mongoose.Schema({}, { collection: "Test", strict: false }),
 );
 
 const PINCODE_FILE_PATH = path.join(__dirname, "..", "xlsx", "pincode.xlsx");

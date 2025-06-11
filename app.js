@@ -45,7 +45,8 @@ const api = require("./routes/api.js");
 const getAll = require("./routes/allapis.js");
 const leaveSend = require("./utils/leaveMail.js");
 const employee = require("./employee/Daily_Work.js");
-const partner = require("./PartnersAPIs/PartnerOne.js");
+const partner = require("./PartnersAPIs/Creditsea.js");
+
 app.use(`/api${API_VERSION}/auth`, auth);
 app.use(`/api${API_VERSION}/leads`, leads);
 app.use(`/api${API_VERSION}/eligibility`, eligibility);
