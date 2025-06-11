@@ -55,7 +55,6 @@ async function sendToNewAPI(lead) {
     const requestBody = {
       mobile_number: lead.phone,
       email_id: lead.email,
-      pan_buss_number: lead.pan,
       fname: lead.name,
       current_pincode: lead.pincode,
       d_o_b: lead.dob,
