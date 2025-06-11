@@ -14,7 +14,7 @@ const UserDB = mongoose.model(
   new mongoose.Schema({}, { collection: "userdb", strict: false }),
 );
 
-const MAX_PROCESS = 10000;
+// const MAX_PROCESS = 10000;
 const BATCH_SIZE = 100;
 const Partner_id = "Keshvacredit";
 const DEDUPE_API_URL =
@@ -167,7 +167,7 @@ async function Loop() {
   let successLeads = 0;
 
   try {
-    while (processedCount < MAX_PROCESS) {
+    while (processedCount < user.length) {
       console.log("📦 Fetching leads...");
       const leads = await UserDB.aggregate([
         {
@@ -183,7 +183,7 @@ async function Loop() {
         break;
       }
 
-      const remaining = MAX_PROCESS - processedCount;
+      const remaining = user.length - processedCount;
       const batchToProcess = leads.slice(0, remaining);
 
       const batchSuccess = await processBatch(batchToProcess);
@@ -198,7 +198,7 @@ async function Loop() {
       console.log(`🏁 Total Processed Leads: ${processedCount}`);
       console.log(`🌟 Total Successfully Created Leads: ${successLeads}`);
 
-      if (processedCount >= MAX_PROCESS) {
+      if (processedCount >= user.length) {
         console.log("🎯 Reached processing limit of 10,000 records. Stopping.");
         break;
       }
