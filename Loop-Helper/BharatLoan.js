@@ -4,7 +4,7 @@ require("dotenv").config();
 const { v4: uuidv4 } = require("uuid");
 
 const MONGODB_URINEW = process.env.MONGODB_URINEW;
-const BATCH_SIZE = 100;
+const BATCH_SIZE = 10;
 const Partner_id = "Keshvacredit";
 const DEDUPE_API_URL =
   "https://api.bharatloanfintech.com/marketing-check-dedupe/";
