@@ -85,12 +85,14 @@ async function sendToNewAPI(lead) {
 
     const requestBody = { add_application: applicant };
 
-    console.log("📤 Sending Lead:", applicant.mobile_number);
+    console.log("📤 Sending Payload to API:");
+    console.dir(requestBody, { depth: null });
 
     const response = await axios.post(API_URL, requestBody, {
       headers: getHeaders(),
     });
-
+    console.log("📥 API Response:");
+    console.dir(response.data, { depth: null });
     const status = response.data?.add_application?.answer?.status || "unknown";
     const message =
       response.data?.add_application?.answer?.message || "No message";
@@ -136,7 +138,7 @@ async function processBatch(users) {
           $unset: { accounts: "" },
         },
       );
-//situ
+      //situ
       console.log(`✅ Mongo Updated: ${user.phone}`);
       return result;
     }),
