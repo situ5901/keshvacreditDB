@@ -17,7 +17,6 @@ const UserDB = mongoose.model(
 );
 
 const PINCODE_FILE_PATH = path.join(__dirname, "..", "xlsx", "pincode.xlsx");
-
 const API_URL =
   "https://www.chintamanifinlease.com/api/chintamanifinleaseDsaPartnerTest";
 const MAX_LEADS = 1;
@@ -31,6 +30,7 @@ function loadValidPincodes(filePath) {
 }
 
 const validPincodes = loadValidPincodes(PINCODE_FILE_PATH);
+
 function getHeaders() {
   return {
     "Content-Type": "application/json",
@@ -51,6 +51,7 @@ async function sendToNewAPI(lead) {
     response.message = "❌ Pincode is mandatory.";
     return response;
   }
+
   try {
     const requestBody = {
       mobile_number: lead.phone,
@@ -113,12 +114,22 @@ async function processBatch(users) {
       {
         $push: {
           apiResponse: {
-            chintamani: value,
-            createdAt: new Date().toISOString(),
+            $each: [
+              {
+                chintamani: value,
+                createdAt: new Date().toISOString(),
+              },
+            ],
+            $slice: -10,
           },
           RefArr: {
-            name: "chintamani",
-            createdAt: new Date().toISOString(),
+            $each: [
+              {
+                name: "chintamani",
+                createdAt: new Date().toISOString(),
+              },
+            ],
+            $slice: -10,
           },
         },
         $set: { isSentToAPI: true },
@@ -158,6 +169,7 @@ async function loop() {
         processedCount += leads.length;
         console.log(`✅ Total Processed: ${processedCount}`);
         console.log("⏳ Waiting for 1 second before next batch...");
+        await new Promise((resolve) => setTimeout(resolve, 1000));
       }
     }
   } catch (err) {
