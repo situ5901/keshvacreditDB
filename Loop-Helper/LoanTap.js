@@ -11,8 +11,16 @@ mongoose
   .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
 
 const UserDB = mongoose.model(
-  "userdb",
-  new mongoose.Schema({}, { collection: "userdb", strict: false }),
+  "LoanTap",
+  new mongoose.Schema({}, { collection: "LoanTap", strict: false }),
+);
+
+const MetaDB = mongoose.model(
+  "Meta",
+  new mongoose.Schema({
+    key: String,
+    value: mongoose.Schema.Types.Mixed,
+  }),
 );
 
 const partnerKey = "iDWUDj8oljS9XHeHXzsJCGViewdHRUiR"; // example
@@ -44,15 +52,9 @@ const MAX_LEADS = 1;
 const Partner_id = "Keshvacredit";
 
 function convertDobToYYYYMMDD(dob) {
-  if (!dob) {
-    console.warn("⚠️ Missing DOB:", dob);
-    return null;
-  }
+  if (!dob) return null;
   let date = typeof dob === "string" ? new Date(dob) : dob;
-  if (!(date instanceof Date) || isNaN(date.getTime())) {
-    console.warn("⚠️ Invalid date format:", dob);
-    return null;
-  }
+  if (!(date instanceof Date) || isNaN(date.getTime())) return null;
   const year = date.getUTCFullYear();
   const month = String(date.getUTCMonth() + 1).padStart(2, "0");
   const day = String(date.getUTCDate()).padStart(2, "0");
@@ -89,8 +91,6 @@ async function sendToNewAPI(lead) {
       headers: getHeaders(),
     });
 
-    console.log("✅ API Success:", response.data);
-
     const status = response.data?.add_application?.answer?.status || "unknown";
     const message =
       response.data?.add_application?.answer?.message || "No message";
@@ -98,14 +98,14 @@ async function sendToNewAPI(lead) {
     return {
       status,
       message,
-      rawResponse: response.data, // ✅ Full API response
+      rawResponse: response.data,
     };
   } catch (error) {
     console.error("❌ API Error:", error.response?.data || error.message);
     return {
       status: "failed",
       message: error.response?.data?.message || "API error",
-      rawResponse: error.response?.data || null, // ✅ Full error response
+      rawResponse: error.response?.data || null,
     };
   }
 }
@@ -114,7 +114,6 @@ async function sendToNewAPI(lead) {
 async function processBatch(users) {
   const results = await Promise.allSettled(
     users.map(async (user) => {
-      const existingUser = await UserDB.findOne({ phone: user.phone });
       const result = await sendToNewAPI(user);
 
       await UserDB.updateOne(
@@ -146,17 +145,55 @@ async function processBatch(users) {
   return results;
 }
 
-// ✅ Main loop
+// ✅ Daily count helpers
+async function getDailyCount() {
+  const today = new Date().toISOString().split("T")[0];
+  let record = await MetaDB.findOne({ key: "loantap_daily_counter" });
+
+  if (!record || record.value.date !== today) {
+    await MetaDB.updateOne(
+      { key: "loantap_daily_counter" },
+      { $set: { value: { date: today, count: 0 } } },
+      { upsert: true },
+    );
+    return 0;
+  }
+
+  return record.value.count;
+}
+
+async function incrementDailyCount(by = 1) {
+  const today = new Date().toISOString().split("T")[0];
+  await MetaDB.updateOne(
+    { key: "loantap_daily_counter" },
+    {
+      $inc: { "value.count": by },
+      $set: { "value.date": today },
+    },
+    { upsert: true },
+  );
+}
+
+// ✅ Main loop with 10,000 daily limit
 let processedCount = 0;
 async function loop() {
   try {
     let hasMore = true;
+
     while (hasMore) {
+      const currentCount = await getDailyCount();
+
+      if (currentCount >= 10000) {
+        console.log("✅ Daily limit reached (10,000). Waiting for next day...");
+        break;
+      }
+
+      const batchSize = Math.min(MAX_LEADS, 10000 - currentCount);
       console.log("🔍 Fetching leads...");
 
       const leads = await UserDB.aggregate([
         { $match: { "RefArr.name": { $ne: "LoanTap" } } },
-        { $limit: MAX_LEADS },
+        { $limit: batchSize },
       ]);
 
       if (leads.length === 0) {
@@ -164,8 +201,9 @@ async function loop() {
         console.log("🚫 No more leads to process.");
       } else {
         await processBatch(leads);
+        await incrementDailyCount(leads.length);
         processedCount += leads.length;
-        console.log(`📊 Total Processed: ${processedCount}`);
+        console.log(`📊 Total Processed Today: ${currentCount + leads.length}`);
         await new Promise((res) => setTimeout(res, 1000));
       }
     }
