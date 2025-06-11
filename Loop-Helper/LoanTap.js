@@ -61,6 +61,7 @@ function convertDobToYYYYMMDD(dob) {
   return `${year}${month}${day}`;
 }
 
+// ✅ Send data to LoanTap API
 async function sendToNewAPI(lead) {
   try {
     const applicant = {
@@ -84,15 +85,11 @@ async function sendToNewAPI(lead) {
 
     const requestBody = { add_application: applicant };
 
-    console.log("📤 Sending Payload to API:");
-    console.dir(requestBody, { depth: null });
+    console.log("📤 Sending Lead:", applicant.mobile_number);
 
     const response = await axios.post(API_URL, requestBody, {
       headers: getHeaders(),
     });
-
-    console.log("📥 API Response:");
-    console.dir(response.data, { depth: null });
 
     const status = response.data?.add_application?.answer?.status || "unknown";
     const message =
@@ -104,9 +101,7 @@ async function sendToNewAPI(lead) {
       rawResponse: response.data,
     };
   } catch (error) {
-    console.error("❌ API Error Response:");
-    console.dir(error.response?.data || error.message, { depth: null });
-
+    console.error("❌ API Error:", error.response?.data || error.message);
     return {
       status: "failed",
       message: error.response?.data?.message || "API error",
@@ -114,6 +109,7 @@ async function sendToNewAPI(lead) {
     };
   }
 }
+
 // ✅ Process one batch of users
 async function processBatch(users) {
   const results = await Promise.allSettled(
@@ -128,6 +124,7 @@ async function processBatch(users) {
               LoanTap: {
                 message: result.message,
                 status: result.status,
+                fullResponse: result.rawResponse,
                 createdAt: new Date().toISOString(),
               },
             },
