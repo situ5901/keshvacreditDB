@@ -136,7 +136,7 @@ async function processBatch(users) {
           $unset: { accounts: "" },
         },
       );
-
+//situ
       console.log(`✅ Mongo Updated: ${user.phone}`);
       return result;
     }),
