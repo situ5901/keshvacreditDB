@@ -28,12 +28,8 @@ const PARTNER_CODE = 422;
 const BATCH_SIZE = 1;
 let successCount = 0;
 
-// Function to ensure necessary MongoDB indexes exist
 async function ensureIndexes() {
   try {
-    // This index will speed up queries on the 'RefArr.name' field,
-    // especially for the $match operation in the aggregation pipeline.
-    // The '1' indicates an ascending index.
     await UserDB.collection.createIndex({ "RefArr.name": 1 });
     console.log("✅ Index on RefArr.name ensured successfully.");
   } catch (error) {
@@ -506,7 +502,6 @@ async function Loop() {
       await Promise.allSettled(
         leads.map((lead) => processSingleLead(lead, token)),
       );
-
       totalLeads += leads.length;
       console.log(`\n📊 Total Leads Processed So Far: ${totalLeads}`);
       console.log(`🏁 Total Successful MoneyView Leads: ${successCount}`);
@@ -519,5 +514,4 @@ async function Loop() {
     await mongoose.connection.close();
   }
 }
-// This is MoneyView APIs
 Loop();

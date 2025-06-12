@@ -6,13 +6,20 @@ const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
 const AUTH_KEY = "situ5901NiIsInR5cCI6IkpXVCJ9";
 const VALID_PARTNER_ID = "Creditsea-keshva";
 
+router.get("/testdeno", async (req, res) => {
+  res.send("Hello World!");
+});
+
 router.post("/create_apis", async (req, res) => {
   try {
-    const authKey = req.headers["authorization"];
+    // 1️⃣ Validate Authorization Header
+    const authHeader = req.headers["authorization"];
+    const authKey = authHeader?.replace(/^Bearer\s+/i, "");
     if (!authKey || authKey !== AUTH_KEY) {
       return res.status(401).json({ status: 401, error: "Unauthorized" });
     }
 
+    // 2️⃣ Destructure request body
     const {
       name,
       phone,
@@ -25,42 +32,54 @@ router.post("/create_apis", async (req, res) => {
       partner_Id,
     } = req.body;
 
-    if (
-      !name ||
-      !phone ||
-      !email ||
-      !employeeType ||
-      !pan ||
-      !pincode ||
-      !income ||
-      !dob ||
-      !partner_Id
-    ) {
-      return res
-        .status(400)
-        .json({ status: 400, error: "Missing required fields" });
+    // 3️⃣ Validate required fields
+    const requiredFields = {
+      name,
+      phone,
+      email,
+      employeeType,
+      pan,
+      pincode,
+      income,
+      dob,
+      partner_Id,
+    };
+    const missingFields = Object.entries(requiredFields)
+      .filter(([_, value]) => !value)
+      .map(([key]) => key);
+
+    if (missingFields.length > 0) {
+      return res.status(400).json({
+        status: 400,
+        error: `Missing required fields: ${missingFields.join(", ")}`,
+      });
     }
 
+    // 4️⃣ Validate partner ID
     if (partner_Id !== VALID_PARTNER_ID) {
       return res
         .status(403)
         .json({ status: 403, error: "Invalid partner_Id. Access denied." });
     }
 
+    // 5️⃣ Validate PAN format
     if (!panRegex.test(pan)) {
       return res.status(400).json({ status: 400, error: "Invalid PAN format" });
     }
 
-    const userInCustomer = await customer.findOne({ phone, pan });
-    const userInPartnerdb = await partnerdb.findOne({ phone, pan });
+    // 6️⃣ Check if user exists in either `customer` or `partnerdb`
+    const userExists = await Promise.any([
+      customer.findOne({ phone, pan }),
+      partnerdb.findOne({ phone, pan }),
+    ]).catch(() => null); // ignore rejections if none found
 
-    if (userInCustomer || userInPartnerdb) {
-      return res.status(409).json({
-        status: 409,
-        error: "User is already associated with us",
-      });
+    if (userExists) {
+      return res
+        .status(409)
+        .json({ status: 409, error: "User is already associated with us" });
     }
 
+    // 7️⃣ Create and save new user
     const newUser = new partnerdb({
       name,
       phone,
@@ -73,25 +92,23 @@ router.post("/create_apis", async (req, res) => {
       partner_Id,
     });
 
-    try {
-      await newUser.save();
-    } catch (err) {
-      if (err.code === 11000) {
-        return res.status(409).json({
-          status: 409,
-          error: "Duplicate data found. User already exists.",
-        });
-      }
-      throw err;
-    }
+    await newUser.save();
 
     return res.status(201).json({
       status: 201,
       message: "User details received successfully!",
       user: newUser,
     });
-  } catch (error) {
-    console.error("Server error:", error);
+  } catch (err) {
+    // 8️⃣ Handle duplicate key error (unique fields)
+    if (err.code === 11000) {
+      return res.status(409).json({
+        status: 409,
+        error: "Duplicate data found. User already exists.",
+      });
+    }
+
+    console.error("❌ Server Error:", err);
     return res.status(500).json({ status: 500, error: "Server error" });
   }
 });
