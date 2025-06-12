@@ -15,7 +15,6 @@ const UserDB = mongoose.model(
   new mongoose.Schema({}, { collection: "Test", strict: false }),
 );
 
-// API endpoints
 const TOKEN_API = "https://atlas.whizdm.com/atlas/v1/token";
 const DEDUPE_API = "https://atlas.whizdm.com/atlas/v1/lead/dedupe";
 const LEAD_API = "https://atlas.whizdm.com/atlas/v1/lead";
@@ -27,27 +26,20 @@ const FINAL_LOAN_DETAILS_API =
 
 const PARTNER_CODE = 422;
 const BATCH_SIZE = 1;
-// const PINCODE_FILE_PATH = path.join(__dirname, "..", "xlsx", "mv.xlsx"); // No longer directly used due to commenting out pincode validation
+let successCount = 0;
 
-// Commented out pincode loading and validation as requested
-/*
-function loadValidPincodes(filePath) {
+// Function to ensure necessary MongoDB indexes exist
+async function ensureIndexes() {
   try {
-    const workbook = xlsx.readFile(filePath);
-    const sheet = workbook.Sheets[workbook.SheetNames[0]];
-    const data = xlsx.utils.sheet_to_json(sheet);
-    return data.map((row) => String(row.Pincode).trim());
+    // This index will speed up queries on the 'RefArr.name' field,
+    // especially for the $match operation in the aggregation pipeline.
+    // The '1' indicates an ascending index.
+    await UserDB.collection.createIndex({ "RefArr.name": 1 });
+    console.log("✅ Index on RefArr.name ensured successfully.");
   } catch (error) {
-    console.error(
-      `❌ Error loading valid pincodes from ${filePath}:`,
-      error.message,
-    );
-    return [];
+    console.error("🚫 Error ensuring index on RefArr.name:", error.message);
   }
 }
-const validPincodes = loadValidPincodes(PINCODE_FILE_PATH);
-*/
-let successCount = 0;
 
 // 2. Token API
 async function getToken() {
@@ -333,28 +325,6 @@ async function processSingleLead(lead, token) {
       return;
     }
 
-    // Commented out pincode validation as requested
-    /*
-    if (!validPincodes.includes(String(lead.pincode).trim())) {
-      console.error(
-        `❌ Invalid pincode: ${lead.pincode} for lead: ${lead.phone}. Skipping.`,
-      );
-      await UserDB.updateOne(
-        { phone: lead.phone },
-        {
-          $push: {
-            RefArr: {
-              name: "SkippedMoneyView",
-              reason: `Invalid pincode: ${lead.pincode}`,
-              createdAt: new Date().toISOString(),
-            },
-          },
-        },
-      );
-      return;
-    }
-    */
-
     const userDoc = await UserDB.findOne({ phone: lead.phone });
     if (
       userDoc?.RefArr?.some(
@@ -507,6 +477,9 @@ let totalLeads = 0;
 async function Loop() {
   let token = null;
   try {
+    // Ensure indexes are set up before fetching leads
+    await ensureIndexes();
+
     token = await getToken();
     if (!token) {
       console.error("🚫 Could not obtain token. Exiting loop.");
@@ -546,5 +519,5 @@ async function Loop() {
     await mongoose.connection.close();
   }
 }
-//this is MoneyView APIs
+// This is MoneyView APIs
 Loop();
