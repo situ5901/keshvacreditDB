@@ -1,7 +1,10 @@
 const mongoose = require("mongoose");
 const axios = require("axios");
+const path = require("path");
+const xlsx = require("xlsx");
 require("dotenv").config();
 const { v4: uuidv4 } = require("uuid");
+
 const MONGODB_URINEW = process.env.MONGODB_URINEW;
 
 mongoose
@@ -20,7 +23,25 @@ const Partner_id = "Keshvacredit";
 const DEDUPE_API_URL =
   "https://api.rupee112fintech.com/marketing-check-dedupe/";
 const PushAPI_URL = "https://api.rupee112fintech.com/marketing-push-data";
-const loanAmount = "20000"; // string
+const loanAmount = "20000";
+
+const PINCODE_FILE_PATH = path.join(__dirname, "..", "xlsx", "rupee.xlsx");
+
+function loadValidPincodes(filePath) {
+  try {
+    const workbook = xlsx.readFile(filePath);
+    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+    const data = xlsx.utils.sheet_to_json(sheet);
+    return data.map((row) => String(row.Pincode).trim());
+  } catch (error) {
+    console.error(
+      `❌ Error loading valid pincodes from ${filePath}:`,
+      error.message,
+    );
+    return [];
+  }
+}
+const validPincodes = loadValidPincodes(PINCODE_FILE_PATH);
 
 function getHeaders() {
   return {
@@ -108,6 +129,28 @@ async function processBatch(users) {
         return;
       }
 
+      if (
+        !user.pincode ||
+        !validPincodes.includes(String(user.pincode).trim())
+      ) {
+        console.error(
+          `❌ Invalid pincode: ${user.pincode} for user: ${user.phone}. Skipping.`,
+        );
+        await UserDB.updateOne(
+          { phone: user.phone },
+          {
+            $push: {
+              RefArr: {
+                name: "SkippedRupee112",
+                reason: `Invalid pincode: ${user.pincode}`,
+                createdAt: new Date().toISOString(),
+              },
+            },
+          },
+        );
+        return;
+      }
+
       const userDoc = await UserDB.findOne({ phone: user.phone });
       if (!userDoc) {
         console.log(`❌ User with phone ${user.phone} not found in DB.`);
@@ -140,7 +183,6 @@ async function processBatch(users) {
         updateDoc.$push.apiResponse.message =
           pushResponse.message || pushResponse.Error;
 
-        // ✅ Count only if push is successful
         if (
           pushResponse.Status === 1 &&
           pushResponse.Message === "Lead Created Successfuly"
@@ -185,7 +227,6 @@ async function Loop() {
       const remaining = MAX_PROCESS - processedCount;
       const batchToProcess = leads.slice(0, remaining);
 
-      // Process batch and get success count
       const batchSuccess = await processBatch(batchToProcess);
 
       processedCount += batchToProcess.length;
@@ -203,7 +244,7 @@ async function Loop() {
         break;
       }
 
-      await new Promise((resolve) => setImmediate(resolve)); // no delay, yield event loop
+      await new Promise((resolve) => setImmediate(resolve));
     }
   } catch (error) {
     console.error("❌ Error in loop:", error);
