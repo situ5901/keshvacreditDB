@@ -64,7 +64,7 @@ async function sendEligibilityCheck(user, token) {
         user.office_address || "ABC Pvt Ltd, Andheri East, Mumbai",
       emp_code: user.emp_code || "EMP12345",
       type_of_residence: user.type_of_residence || "Owned",
-      company_name: user.company_name || "ABC Pvt Ltd",
+      // company_name: user.company_name || "ABC Pvt Ltd",
       consent: true,
       consent_timestamp: new Date().toISOString(),
     };

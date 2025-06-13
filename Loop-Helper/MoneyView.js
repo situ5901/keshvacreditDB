@@ -1,8 +1,6 @@
 const axios = require("axios");
 const mongoose = require("mongoose");
 require("dotenv").config();
-const path = require("path");
-const xlsx = require("xlsx"); // This will remain, but its usage is commented out.
 
 const MONGODB_URINEW = process.env.MONGODB_URINEW;
 mongoose
@@ -26,16 +24,27 @@ const FINAL_LOAN_DETAILS_API =
 
 const PARTNER_CODE = 422;
 const BATCH_SIZE = 1;
-let successCount = 0;
+// const PINCODE_FILE_PATH = path.join(__dirname, "..", "xlsx", "mv.xlsx"); // No longer directly used due to commenting out pincode validation
 
-async function ensureIndexes() {
+// Commented out pincode loading and validation as requested
+/*
+function loadValidPincodes(filePath) {
   try {
-    await UserDB.collection.createIndex({ "RefArr.name": 1 });
-    console.log("✅ Index on RefArr.name ensured successfully.");
+    const workbook = xlsx.readFile(filePath);
+    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+    const data = xlsx.utils.sheet_to_json(sheet);
+    return data.map((row) => String(row.Pincode).trim());
   } catch (error) {
-    console.error("🚫 Error ensuring index on RefArr.name:", error.message);
+    console.error(
+      `❌ Error loading valid pincodes from ${filePath}:`,
+      error.message,
+    );
+    return [];
   }
 }
+const validPincodes = loadValidPincodes(PINCODE_FILE_PATH);
+*/
+let successCount = 0;
 
 // 2. Token API
 async function getToken() {
@@ -321,6 +330,28 @@ async function processSingleLead(lead, token) {
       return;
     }
 
+    // Commented out pincode validation as requested
+    /*
+    if (!validPincodes.includes(String(lead.pincode).trim())) {
+      console.error(
+        `❌ Invalid pincode: ${lead.pincode} for lead: ${lead.phone}. Skipping.`,
+      );
+      await UserDB.updateOne(
+        { phone: lead.phone },
+        {
+          $push: {
+            RefArr: {
+              name: "SkippedMoneyView",
+              reason: `Invalid pincode: ${lead.pincode}`,
+              createdAt: new Date().toISOString(),
+            },
+          },
+        },
+      );
+      return;
+    }
+    */
+
     const userDoc = await UserDB.findOne({ phone: lead.phone });
     if (
       userDoc?.RefArr?.some(
@@ -473,9 +504,6 @@ let totalLeads = 0;
 async function Loop() {
   let token = null;
   try {
-    // Ensure indexes are set up before fetching leads
-    await ensureIndexes();
-
     token = await getToken();
     if (!token) {
       console.error("🚫 Could not obtain token. Exiting loop.");
@@ -502,6 +530,7 @@ async function Loop() {
       await Promise.allSettled(
         leads.map((lead) => processSingleLead(lead, token)),
       );
+
       totalLeads += leads.length;
       console.log(`\n📊 Total Leads Processed So Far: ${totalLeads}`);
       console.log(`🏁 Total Successful MoneyView Leads: ${successCount}`);
@@ -514,4 +543,5 @@ async function Loop() {
     await mongoose.connection.close();
   }
 }
+//this is MoneyView APIs
 Loop();
