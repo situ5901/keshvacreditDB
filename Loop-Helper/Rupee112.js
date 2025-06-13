@@ -41,6 +41,7 @@ function loadValidPincodes(filePath) {
     return [];
   }
 }
+
 const validPincodes = loadValidPincodes(PINCODE_FILE_PATH);
 
 function getHeaders() {
@@ -56,6 +57,24 @@ const generate7DigitId = () => {
   const digits = uuid.replace(/\D/g, "");
   return digits.slice(0, 7);
 };
+
+function isValidUser(user) {
+  const empType = (user.employmentType || "").toLowerCase().trim();
+
+  if (empType !== "salaried") {
+    return {
+      valid: false,
+      reason: `Invalid employment type: ${user.employmentType}`,
+    };
+  }
+
+  const age = Number(user.age);
+  if (isNaN(age) || age < 25 || age > 50) {
+    return { valid: false, reason: `Invalid age: ${user.age}` };
+  }
+
+  return { valid: true };
+}
 
 async function sendToDedupeAPI(lead) {
   try {
@@ -91,7 +110,7 @@ async function sendToPunshAPI(lead) {
       email: lead.email || "",
       pancard: lead.pan || "",
       pincode: lead.pincode || "",
-      income_type: "1",
+      income_type: "1", // salaried
       monthly_salary: lead.income || "",
       purpose_of_loan: "3",
       loan_amount: loanAmount,
@@ -143,6 +162,24 @@ async function processBatch(users) {
               RefArr: {
                 name: "SkippedRupee112",
                 reason: `Invalid pincode: ${user.pincode}`,
+                createdAt: new Date().toISOString(),
+              },
+            },
+          },
+        );
+        return;
+      }
+
+      const { valid, reason } = isValidUser(user);
+      if (!valid) {
+        console.error(`❌ Skipping user ${user.phone}: ${reason}`);
+        await UserDB.updateOne(
+          { phone: user.phone },
+          {
+            $push: {
+              RefArr: {
+                name: "SkippedRupee112",
+                reason,
                 createdAt: new Date().toISOString(),
               },
             },
