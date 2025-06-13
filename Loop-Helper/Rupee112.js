@@ -241,11 +241,10 @@ async function processBatch(users) {
 }
 
 async function Loop() {
-  let processedCount = 0;
   let successLeads = 0;
 
   try {
-    while (processedCount < MAX_PROCESS) {
+    while (successLeads < MAX_PROCESS) {
       console.log("📦 Fetching leads...");
       const leads = await UserDB.aggregate([
         {
@@ -253,7 +252,7 @@ async function Loop() {
             "RefArr.name": { $ne: "Rupee112" },
           },
         },
-        { $limit: BATCH_SIZE },
+        { $limit: BATCH_SIZE * 2 }, // Fetch more to compensate for invalids
       ]);
 
       if (!leads.length) {
@@ -261,23 +260,33 @@ async function Loop() {
         break;
       }
 
-      const remaining = MAX_PROCESS - processedCount;
-      const batchToProcess = leads.slice(0, remaining);
+      // ✅ Filter valid users before processing
+      const validLeads = leads.filter((user) => {
+        const isValid = isValidUser(user);
+        return (
+          isValid.valid &&
+          user.pincode &&
+          validPincodes.includes(String(user.pincode).trim())
+        );
+      });
+
+      if (!validLeads.length) {
+        console.log("❌ No valid leads in this batch.");
+        break;
+      }
+
+      const remaining = MAX_PROCESS - successLeads;
+      const batchToProcess = validLeads.slice(0, remaining);
 
       const batchSuccess = await processBatch(batchToProcess);
 
-      processedCount += batchToProcess.length;
       successLeads += batchSuccess;
 
-      console.log(`✅ Processed batch of: ${batchToProcess.length}`);
-      console.log(
-        `🎯 Successfully Created Leads in This Batch: ${batchSuccess}`,
-      );
-      console.log(`🏁 Total Processed Leads: ${processedCount}`);
+      console.log(`✅ Processed valid leads: ${batchToProcess.length}`);
       console.log(`🌟 Total Successfully Created Leads: ${successLeads}`);
 
-      if (processedCount >= MAX_PROCESS) {
-        console.log("🎯 Reached processing limit of 10,000 records. Stopping.");
+      if (successLeads >= MAX_PROCESS) {
+        console.log("🎯 Reached 5000 successful leads. Stopping.");
         break;
       }
 
@@ -287,5 +296,4 @@ async function Loop() {
     console.error("❌ Error in loop:", error);
   }
 }
-
 Loop();
