@@ -21,7 +21,7 @@ const DEDUPE_API = "https://atlas.whizdm.com/atlas/v1/lead/filter/pan";
 const LEAD_API = "https://atlas.whizdm.com/atlas/v1/lead";
 const PARTNER_CODE = 422;
 const BATCH_SIZE = 1;
-
+//situ
 const PINCODE_FILE_PATH = path.join(__dirname, "..", "xlsx", "mv.xlsx");
 
 function loadValidPincodes(filePath) {
@@ -29,18 +29,23 @@ function loadValidPincodes(filePath) {
     const workbook = xlsx.readFile(filePath);
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
     const data = xlsx.utils.sheet_to_json(sheet);
-    return data.map((row) => String(row.Pincode).trim());
+    const pins = data.map((row) => {
+      let pin = row.pincode;
+      if (typeof pin === "number") pin = pin.toString().padStart(6, "0");
+      return String(pin).trim();
+    });
+
+    console.log(`✅ Loaded ${pins.length} valid pincodes from Excel`);
+    return new Set(pins);
   } catch (error) {
-    console.error(`Error loading valid pincodes:`, error.message);
-    return [];
+    console.error("❌ Error loading valid pincodes:", error.message);
+    return new Set();
   }
 }
 
-const validPincodes = loadValidPincodes(PINCODE_FILE_PATH);
-if (validPincodes.length === 0) {
-  console.warn(
-    "⚠️ No valid pincodes loaded. All leads with pincodes will be skipped.",
-  );
+const validPincodesSet = loadValidPincodes(PINCODE_FILE_PATH);
+if (validPincodesSet.size === 0) {
+  console.warn("⚠️ No valid pincodes loaded. Skipping all leads.");
 }
 
 let successCount = 0;
@@ -52,14 +57,12 @@ async function getToken() {
       password: "Zb'91O(Nhy",
       partnerCode: PARTNER_CODE,
     };
-
     console.log(
       "\n🔐 [TOKEN REQUEST] =>",
       JSON.stringify(tokenPayload, null, 2),
     );
     const response = await axios.post(TOKEN_API, tokenPayload);
     console.log("✅ [TOKEN RESPONSE] =>", response.data.token, "\n");
-
     return response.data.token;
   } catch (error) {
     console.error(
@@ -81,7 +84,6 @@ async function dedupeCheck(pan, token) {
       JSON.stringify(response.data, null, 2),
       "\n",
     );
-
     return {
       status: response.data.status,
       message: response.data.message,
@@ -118,14 +120,11 @@ async function sendToMoneyView(lead, token) {
     const response = await axios.post(LEAD_API, requestBody, {
       headers: { "Content-Type": "application/json", token },
     });
-
     console.log(
       "📥 [LEAD SUBMISSION RESPONSE] =>",
       JSON.stringify(response.data, null, 2),
       "\n",
     );
-
-    successCount++;
     return { status: "success", data: response.data };
   } catch (error) {
     console.error(
@@ -146,7 +145,8 @@ function isValidPAN(pan) {
 async function processBatch(leads, token) {
   const promises = leads.map(async (lead) => {
     try {
-      lead.pan = lead.pan?.toUpperCase();
+      lead.pan = lead.pan?.toUpperCase().trim();
+      lead.pincode = String(lead.pincode).trim();
 
       if (
         !lead.phone ||
@@ -188,9 +188,10 @@ async function processBatch(leads, token) {
         return;
       }
 
-      if (!validPincodes.includes(String(lead.pincode).trim())) {
-        console.error(`❌ Invalid Pincode: ${lead.pincode}`);
-        console.error(`❌ Invalid Pincode: ${lead.phone}`);
+      if (!validPincodesSet.has(lead.pincode)) {
+        console.error(
+          `❌ Invalid Pincode: ${lead.pincode} for phone: ${lead.phone}`,
+        );
         await UserDB.updateOne(
           { phone: lead.phone },
           {
