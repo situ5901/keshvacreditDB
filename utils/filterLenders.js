@@ -10,7 +10,6 @@ const eligibleLenders = [
     url: "https://www.ramfincorp.com/images/logo.png",
     utm: "https://applyonline.ramfincorp.com/?utm_source=keshvacredit",
   },
-
   {
     name: "Rupee",
     minAge: 21,
@@ -85,6 +84,18 @@ const eligibleLenders = [
     minLoan: 500,
     maxLoan: 100000,
     url: "https://i.postimg.cc/sgkVCJpQ/download.png",
+  },
+
+  {
+    name: "MoneyView",
+    minAge: 21,
+    maxAge: 60,
+    minIncome: 15000,
+    maxIncome: 150000,
+    minLoan: 500,
+    maxLoan: 100000,
+    url: "https://www.bharatloan.com/public/images/brand_logo.png",
+    utm: "https://www.bharatloan.com/apply-now?utm_source=KESHVACREDIT&utm_medium=",
   },
   {
     name: "BharatLoan",

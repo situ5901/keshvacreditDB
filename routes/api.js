@@ -427,4 +427,8 @@ router.post("/zypewebapi", async (req, res) => {
   }
 });
 
+router.get("/MoneyView", async (req, res) => {
+  console.log("MoneyView");
+});
+
 module.exports = router;

@@ -3,14 +3,17 @@ const axios = require("axios");
 const path = require("path");
 const xlsx = require("xlsx");
 require("dotenv").config();
-const { v4: uuidv4 } = require("uuid");
 
 const MONGODB_URINEW = process.env.MONGODB_URINEW;
+if (!MONGODB_URINEW) {
+  console.error("MONGODB_URINEW is not defined in your .env file.");
+  process.exit(1);
+}
 
 mongoose
   .connect(MONGODB_URINEW)
-  .then(() => console.log("✅ MongoDB Connected Successfully"))
-  .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
+  .then(() => console.log("MongoDB Connected Successfully"))
+  .catch((err) => console.error("MongoDB Connection Error:", err));
 
 const UserDB = mongoose.model(
   "userdb",
@@ -35,7 +38,7 @@ function loadValidPincodes(filePath) {
     return data.map((row) => String(row.Pincode).trim());
   } catch (error) {
     console.error(
-      `❌ Error loading valid pincodes from ${filePath}:`,
+      `Error loading valid pincodes from ${filePath}:`,
       error.message,
     );
     return [];
@@ -43,6 +46,11 @@ function loadValidPincodes(filePath) {
 }
 
 const validPincodes = loadValidPincodes(PINCODE_FILE_PATH);
+if (validPincodes.length === 0) {
+  console.warn(
+    "No valid pincodes loaded. All pincode-dependent leads will be skipped.",
+  );
+}
 
 function getHeaders() {
   return {
@@ -52,6 +60,7 @@ function getHeaders() {
   };
 }
 
+const { v4: uuidv4 } = require("uuid");
 const generate7DigitId = () => {
   const uuid = uuidv4();
   const digits = uuid.replace(/\D/g, "");
@@ -60,7 +69,6 @@ const generate7DigitId = () => {
 
 function isValidUser(user) {
   const empType = (user.employmentType || "").toLowerCase().trim();
-
   if (empType !== "salaried") {
     return {
       valid: false,
@@ -83,22 +91,22 @@ async function sendToDedupeAPI(lead) {
       pancard: lead.pan,
       Partner_id: Partner_id,
     };
-    console.log("📤 Sending Lead Data to Dedupe API:", FirstPayload);
-
+    console.log(`Sending Dedupe request for ${lead.phone}`);
     const response = await axios.post(DEDUPE_API_URL, FirstPayload, {
       headers: getHeaders(),
     });
-
-    console.log("✅ Dedupe API Response Received:", response.data);
+    console.log(`Dedupe API Response for ${lead.phone}:`, response.data);
     return response.data;
   } catch (error) {
     console.error(
-      "🚫 Dedupe API Call Failed for",
-      lead.phone,
-      ":",
-      error.message,
+      `Dedupe API Call Failed for ${lead.phone}:`,
+      error.response?.data?.Error || error.message,
     );
-    return { Status: 0, Error: error.response?.data?.Error || error.message };
+    return {
+      Status: 0,
+      Error:
+        error.response?.data?.Error || error.message || "Unknown Dedupe Error",
+    };
   }
 }
 
@@ -110,7 +118,7 @@ async function sendToPunshAPI(lead) {
       email: lead.email || "",
       pancard: lead.pan || "",
       pincode: lead.pincode || "",
-      income_type: "1", // salaried
+      income_type: "1",
       monthly_salary: lead.income || "",
       purpose_of_loan: "3",
       loan_amount: loanAmount,
@@ -118,22 +126,25 @@ async function sendToPunshAPI(lead) {
       customer_lead_id: generate7DigitId(),
     };
 
-    console.log("📤 Sending Lead Data to Marketing Push API:", apiRequestBody);
-
+    console.log(`Sending Push request for ${lead.phone}`);
     const response = await axios.post(PushAPI_URL, apiRequestBody, {
       headers: getHeaders(),
     });
 
-    console.log("✅ Marketing Push API Response Received:", response.data);
+    console.log(
+      `Marketing Push API Response for ${lead.phone}:`,
+      response.data,
+    );
     return response.data;
   } catch (err) {
     console.error(
-      "❌ PreApproval API Error:",
+      `Marketing Push API Error for ${lead.phone}:`,
       err.response?.data || err.message,
     );
     return {
       Status: 0,
-      Error: err.response?.data?.message || err.message || "Unknown Error",
+      Error:
+        err.response?.data?.message || err.message || "Unknown Push API Error",
     };
   }
 }
@@ -141,99 +152,111 @@ async function sendToPunshAPI(lead) {
 async function processBatch(users) {
   let successCount = 0;
 
-  const results = await Promise.allSettled(
+  await Promise.allSettled(
     users.map(async (user) => {
-      if (user.RefArr && user.RefArr.some((r) => r.name === "Rupee112")) {
-        console.log(`⏭️ Skipping user ${user.phone} as already processed.`);
-        return;
-      }
+      try {
+        if (user.RefArr && user.RefArr.some((r) => r.name === "Rupee112")) {
+          console.log(`Skipping user ${user.phone}`);
+          return;
+        }
 
-      if (
-        !user.pincode ||
-        !validPincodes.includes(String(user.pincode).trim())
-      ) {
-        console.error(
-          `❌ Invalid pincode: ${user.pincode} for user: ${user.phone}. Skipping.`,
-        );
-        await UserDB.updateOne(
-          { phone: user.phone },
-          {
-            $push: {
-              RefArr: {
-                name: "SkippedRupee112",
-                reason: `Invalid pincode: ${user.pincode}`,
-                createdAt: new Date().toISOString(),
+        const pincodeTrimmed = String(user.pincode || "").trim();
+        if (!pincodeTrimmed || !validPincodes.includes(pincodeTrimmed)) {
+          const reason = `Invalid or missing pincode: ${user.pincode}`;
+          await UserDB.updateOne(
+            { phone: user.phone },
+            {
+              $push: {
+                RefArr: {
+                  name: "SkippedRupee112",
+                  reason: reason,
+                  createdAt: new Date().toISOString(),
+                },
               },
             },
-          },
-        );
-        return;
-      }
+          );
+          return;
+        }
 
-      const { valid, reason } = isValidUser(user);
-      if (!valid) {
-        console.error(`❌ Skipping user ${user.phone}: ${reason}`);
-        await UserDB.updateOne(
-          { phone: user.phone },
-          {
-            $push: {
-              RefArr: {
-                name: "SkippedRupee112",
-                reason,
-                createdAt: new Date().toISOString(),
+        const { valid, reason } = isValidUser(user);
+        if (!valid) {
+          await UserDB.updateOne(
+            { phone: user.phone },
+            {
+              $push: {
+                RefArr: {
+                  name: "SkippedRupee112",
+                  reason: reason,
+                  createdAt: new Date().toISOString(),
+                },
               },
             },
+          );
+          return;
+        }
+
+        const userDoc = await UserDB.findOne({ phone: user.phone });
+        if (!userDoc) {
+          return;
+        }
+
+        const dedupeResponse = await sendToDedupeAPI(user);
+
+        let updateDoc = {
+          $unset: { accounts: "" },
+          $push: {
+            apiResponse: {
+              Rupee112: {},
+              status: "",
+              message: "",
+              createdAt: new Date().toISOString(),
+            },
           },
-        );
-        return;
-      }
-
-      const userDoc = await UserDB.findOne({ phone: user.phone });
-      if (!userDoc) {
-        console.log(`❌ User with phone ${user.phone} not found in DB.`);
-        return;
-      }
-
-      const response = await sendToDedupeAPI(user);
-
-      let updateDoc = {
-        $unset: { accounts: "" },
-        $push: {
-          apiResponse: {
-            Rupee112: {},
-            status: "",
-            message: "",
-            createdAt: new Date().toISOString(),
+          $addToSet: {
+            RefArr: { name: "Rupee112" },
           },
-        },
-        $addToSet: {
-          RefArr: { name: "Rupee112" },
-        },
-      };
-
-      if (response.Status === "2" || response.Message === "User not found") {
-        const pushResponse = await sendToPunshAPI(user);
-
-        updateDoc.$push.apiResponse.Rupee112 = { ...pushResponse };
-        updateDoc.$push.apiResponse.status =
-          pushResponse.status || pushResponse.Status;
-        updateDoc.$push.apiResponse.message =
-          pushResponse.message || pushResponse.Error;
+        };
 
         if (
-          pushResponse.Status === 1 &&
-          pushResponse.Message === "Lead Created Successfuly"
+          dedupeResponse.Status === "2" ||
+          dedupeResponse.Message === "User not found"
         ) {
-          successCount += 1;
-        }
-      } else {
-        updateDoc.$push.apiResponse.Rupee112 = { ...response };
-        updateDoc.$push.apiResponse.status = response.status || response.Status;
-        updateDoc.$push.apiResponse.message =
-          response.message || response.Error;
-      }
+          const pushResponse = await sendToPunshAPI(user);
+          updateDoc.$push.apiResponse.Rupee112 = { ...pushResponse };
+          updateDoc.$push.apiResponse.status =
+            pushResponse.status || pushResponse.Status;
+          updateDoc.$push.apiResponse.message =
+            pushResponse.message || pushResponse.Error;
 
-      await UserDB.updateOne({ phone: user.phone }, updateDoc);
+          if (
+            pushResponse.Status === 1 &&
+            pushResponse.Message === "Lead Created Successfuly"
+          ) {
+            successCount += 1;
+          }
+        } else {
+          updateDoc.$push.apiResponse.Rupee112 = { ...dedupeResponse };
+          updateDoc.$push.apiResponse.status =
+            dedupeResponse.status || dedupeResponse.Status;
+          updateDoc.$push.apiResponse.message =
+            dedupeResponse.message || dedupeResponse.Error;
+        }
+
+        await UserDB.updateOne({ phone: user.phone }, updateDoc);
+      } catch (error) {
+        await UserDB.updateOne(
+          { phone: user.phone },
+          {
+            $push: {
+              RefArr: {
+                name: "SkippedRupee112Error",
+                reason: `Unexpected error: ${error.message}`,
+                createdAt: new Date().toISOString(),
+              },
+            },
+          },
+        );
+      }
     }),
   );
 
@@ -245,55 +268,52 @@ async function Loop() {
 
   try {
     while (successLeads < MAX_PROCESS) {
-      console.log("📦 Fetching leads...");
       const leads = await UserDB.aggregate([
         {
           $match: {
             "RefArr.name": { $ne: "Rupee112" },
           },
         },
-        { $limit: BATCH_SIZE * 2 }, // Fetch more to compensate for invalids
+        { $limit: BATCH_SIZE * 2 },
       ]);
 
-      if (!leads.length) {
-        console.log("🎉 All leads processed. Exiting loop.");
-        break;
-      }
+      if (!leads.length) break;
 
-      // ✅ Filter valid users before processing
       const validLeads = leads.filter((user) => {
-        const isValid = isValidUser(user);
-        return (
-          isValid.valid &&
-          user.pincode &&
-          validPincodes.includes(String(user.pincode).trim())
-        );
+        const userValidity = isValidUser(user);
+        const pincodeTrimmed = String(user.pincode || "").trim();
+        const isPincodeValid =
+          pincodeTrimmed && validPincodes.includes(pincodeTrimmed);
+        return userValidity.valid && isPincodeValid;
       });
 
       if (!validLeads.length) {
-        console.log("❌ No valid leads in this batch.");
-        break;
+        if (leads.length < BATCH_SIZE * 2) break;
+        await new Promise((resolve) => setImmediate(resolve));
+        continue;
       }
 
-      const remaining = MAX_PROCESS - successLeads;
-      const batchToProcess = validLeads.slice(0, remaining);
+      const remainingSlots = MAX_PROCESS - successLeads;
+      const batchToProcess = validLeads.slice(
+        0,
+        Math.min(validLeads.length, remainingSlots),
+      );
+
+      if (batchToProcess.length === 0) break;
 
       const batchSuccess = await processBatch(batchToProcess);
-
       successLeads += batchSuccess;
 
-      console.log(`✅ Processed valid leads: ${batchToProcess.length}`);
-      console.log(`🌟 Total Successfully Created Leads: ${successLeads}`);
-
-      if (successLeads >= MAX_PROCESS) {
-        console.log("🎯 Reached 5000 successful leads. Stopping.");
-        break;
-      }
+      if (successLeads >= MAX_PROCESS) break;
 
       await new Promise((resolve) => setImmediate(resolve));
     }
   } catch (error) {
-    console.error("❌ Error in loop:", error);
+    console.error("Unhandled error in loop:", error);
+  } finally {
+    console.log("Disconnecting MongoDB.");
+    mongoose.disconnect();
   }
 }
+
 Loop();
