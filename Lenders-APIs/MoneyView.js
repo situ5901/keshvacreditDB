@@ -2,10 +2,74 @@ require("dotenv").config();
 const express = require("express");
 const router = express.Router();
 const axios = require("axios");
+const Userdb = require("../Lenders-APIs/PartnerSchema.js");
 
 router.post("/moneyview/lead", async (req, res) => {
+  const { MV_USERNAME, MV_PASSWORD, MV_PARTNER_CODE } = process.env;
+
+  const {
+    pan,
+    email,
+    mobile,
+    gender,
+    employmentType,
+    declaredIncome,
+    employerName,
+    dateOfBirth,
+    incomeMode,
+    educationLevel,
+    pincode,
+    city,
+    addressLine1,
+    addressLine2,
+    state,
+    annualFamilyIncome,
+    name,
+    loanPurpose,
+    maritalStatus,
+  } = req.body;
+
+  const leadData = {
+    pan,
+    email,
+    mobile,
+    gender,
+    employmentType,
+    declaredIncome,
+    employerName,
+    dateOfBirth,
+    partnerRef: "2021020632",
+    incomeMode,
+    educationLevel,
+    pincode,
+    city,
+    addressLine1,
+    addressLine2,
+    state,
+    annualFamilyIncome,
+    name,
+    loanPurpose,
+    maritalStatus,
+    moneyView: true, // explicitly set to true
+    token: null,
+    leadId: null,
+    dedupe: null,
+    lead: null,
+    offers: null,
+    journeyUrl: null,
+  };
+
   try {
-    const { MV_USERNAME, MV_PASSWORD, MV_PARTNER_CODE } = process.env;
+    const duplicate = await Userdb.findOne({
+      $or: [{ mobile }, { email }, { pan }],
+    });
+
+    if (duplicate) {
+      return res.status(409).json({
+        status: false,
+        msg: "Duplicate data already exists in the database.",
+      });
+    }
 
     const tokenRes = await axios.post(
       "https://atlas.whizdm.com/atlas/v1/token",
@@ -18,37 +82,9 @@ router.post("/moneyview/lead", async (req, res) => {
     );
 
     const token = tokenRes.data?.data?.token || tokenRes.data?.token;
-    if (!token) {
-      return res.status(400).json({
-        success: false,
-        msg: "Token not found in response",
-        rawResponse: tokenRes.data,
-      });
-    }
+    leadData.token = token;
 
-    const {
-      pan,
-      email,
-      mobile,
-      gender,
-      employmentType,
-      declaredIncome,
-      employerName,
-      dateOfBirth,
-      partnerRef,
-      incomeMode,
-      educationLevel,
-      pincode,
-      city,
-      addressLine1,
-      addressLine2,
-      state,
-      annualFamilyIncome,
-      name,
-      loanPurpose,
-      maritalStatus,
-    } = req.body;
-
+    // 2. Dedupe Check
     const dedupeRes = await axios.post(
       "https://atlas.whizdm.com/atlas/v1/lead/dedupe",
       {
@@ -56,22 +92,11 @@ router.post("/moneyview/lead", async (req, res) => {
         email: email,
         mobileNo: mobile,
       },
-      {
-        headers: {
-          "Content-Type": "application/json",
-          token,
-        },
-      },
+      { headers: { "Content-Type": "application/json", token } },
     );
+    leadData.dedupe = dedupeRes.data;
 
-    if (dedupeRes.data?.duplicateFound === true) {
-      return res.json({
-        success: false,
-        msg: dedupeRes.data?.message,
-        dedupe: dedupeRes.data,
-      });
-    }
-
+    // 3. Create Lead
     const leadRes = await axios.post(
       "https://atlas.whizdm.com/atlas/v1/lead",
       {
@@ -83,11 +108,12 @@ router.post("/moneyview/lead", async (req, res) => {
         bureauPermission: 1,
         employerName,
         dateOfBirth,
-        partnerRef,
+        partnerRef: "2021020632",
         incomeMode,
         educationLevel,
         phone: mobile,
         sourceType: "source",
+        moneyView: true,
         addressList: [
           {
             pincode,
@@ -104,62 +130,56 @@ router.post("/moneyview/lead", async (req, res) => {
         pan,
         maritalStatus,
       },
-      {
-        headers: {
-          "Content-Type": "application/json",
-          token,
-        },
-      },
+      { headers: { "Content-Type": "application/json", token } },
     );
 
-    const leadId =
+    leadData.lead = leadRes.data;
+    leadData.leadId =
       leadRes.data?.data?.leadId ||
       leadRes.data?.leadId ||
       leadRes.data?.data?.id;
 
-    if (!leadId) {
-      return res.status(400).json({
+    // 4. Offers + Journey URL
+    const [offerRes, statusRes] = await Promise.all([
+      axios.get(`https://atlas.whizdm.com/atlas/v1/offers/${leadData.leadId}`, {
+        headers: { "Content-Type": "application/json", token },
+      }),
+      axios.get(
+        `https://atlas.whizdm.com/atlas/v1/journey-url/${leadData.leadId}`,
+        {
+          headers: { "Content-Type": "application/json", token },
+        },
+      ),
+    ]);
+
+    leadData.offers = offerRes.data;
+    leadData.journeyUrl = statusRes.data;
+  } catch (err) {
+    console.error("⚠️ API Error:", err?.response?.data || err.message);
+  }
+
+  try {
+    await Userdb.create(leadData);
+    return res.status(200).json({
+      success: true,
+      msg: "Submission successful — data stored securely.",
+      savedData: leadData,
+    });
+  } catch (dbError) {
+    console.error("❌ MongoDB Error:", dbError.message);
+
+    if (dbError.code === 11000) {
+      return res.status(409).json({
         success: false,
-        msg: "Lead ID not found from Lead API response",
-        rawLeadResponse: leadRes.data,
+        msg: "This customer is already registered. No duplicate entries allowed.",
+        error: dbError.keyValue,
       });
     }
 
-    const offerRes = await axios.get(
-      `https://atlas.whizdm.com/atlas/v1/offers/${leadId}`,
-      {
-        headers: {
-          "Content-Type": "application/json",
-          token,
-        },
-      },
-    );
-
-    const statusRes = await axios.get(
-      `https://atlas.whizdm.com/atlas/v1/journey-url/${leadId}`,
-      {
-        headers: {
-          "Content-Type": "application/json",
-          token,
-        },
-      },
-    );
-
-    res.json({
-      success: true,
-      token,
-      leadId,
-      dedupe: dedupeRes.data,
-      lead: leadRes.data,
-      offers: offerRes.data,
-      journeyUrl: statusRes.data,
-    });
-  } catch (err) {
-    console.error("❌ Error:", err.response?.data || err.message);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
-      error: err.message,
-      raw: err.response?.data || null,
+      msg: "Failed to save data to MongoDB",
+      error: dbError.message,
     });
   }
 });
