@@ -61,7 +61,8 @@ const eligibleLenders = [
     minAge: 21,
     maxAge: 50,
     minIncome: 20000,
-    url: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRKwaRh-gK3h-15zdaN4ek-_lGArWiCigwCsA&s",
+    url: "https://www.kamakshimoney.com/index_files/finpath-loan-logo.svg",
+    utm: "no data",
   },
   {
     name: "LoanTap",
