@@ -64,6 +64,14 @@ router.post("/moneyview/lead", async (req, res) => {
       },
     );
 
+    if (dedupeRes.data?.duplicateFound === true) {
+      return res.json({
+        success: false,
+        msg: dedupeRes.data?.message,
+        dedupe: dedupeRes.data,
+      });
+    }
+
     const leadRes = await axios.post(
       "https://atlas.whizdm.com/atlas/v1/lead",
       {
