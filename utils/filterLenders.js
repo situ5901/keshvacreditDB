@@ -5,8 +5,6 @@ const eligibleLenders = [
     maxAge: 55,
     minIncome: 15000,
     maxIncome: 30000,
-    minLoan: 500,
-    maxLoan: 80000,
     url: "https://www.ramfincorp.com/images/logo.png",
     utm: "https://applyonline.ramfincorp.com/?utm_source=keshvacredit",
   },
@@ -16,8 +14,6 @@ const eligibleLenders = [
     maxAge: 55,
     minIncome: 15000,
     maxIncome: 30000,
-    minLoan: 500,
-    maxLoan: 80000,
     url: "https://www.rupee112.com/public/images/brand_logo.png",
     utm: "https://www.rupee112.com/apply-now?utm_source=KESHVACREDIT&utm_medium=",
   },
@@ -27,8 +23,6 @@ const eligibleLenders = [
     maxAge: 55,
     minIncome: 15000,
     maxIncome: 50000,
-    minLoan: 500,
-    maxLoan: 100000,
     url: "https://www.getzype.com/wp-content/uploads/2024/08/Group-852775729.webp",
     utm: "https://zype.sng.link/Ajygt/1ba7?_dl=com.zype.mobile&_smtype=3",
   },
@@ -38,8 +32,6 @@ const eligibleLenders = [
     maxAge: 35,
     minIncome: 18000,
     maxIncome: 40000,
-    minLoan: 500,
-    maxLoan: 90000,
     url: "https://cashkuber.com/assets/images/assets/fatakpay.png",
     utm: "https://web.fatakpay.com/authentication/login?utm_source=558_POVVE&utm_medium=",
   },
@@ -49,8 +41,6 @@ const eligibleLenders = [
     maxAge: 60,
     minIncome: 10000,
     maxIncome: 20000,
-    minLoan: 500,
-    maxLoan: 75000,
     url: "https://mir-s3-cdn-cf.behance.net/project_modules/source/302bf6105854045.5f82a86549930.png",
     utm: "https://web.mpokket.in/?utm_source=keshvacredit&utm_medium=keshvacredit",
   },
@@ -60,8 +50,6 @@ const eligibleLenders = [
     maxAge: 58,
     minIncome: 15000,
     maxIncome: 100000,
-    minLoan: 500,
-    maxLoan: 100000,
     url: "https://framerusercontent.com/images/csl8apTjCrYTK5Qi20a4osUIHw.png?scale-down-to=512",
     utm: "https://app.olyv.co.in/?utm_source=KeshvaCredit_Web&utm_campaign=KeshvaCredit_1",
   },
@@ -71,7 +59,7 @@ const eligibleLenders = [
     maxAge: 50,
     minIncome: 20000,
     maxIncome: 2000,
-    minLoan: 500,
+
     maxLoan: 80000,
     url: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRKwaRh-gK3h-15zdaN4ek-_lGArWiCigwCsA&s",
   },
@@ -81,8 +69,7 @@ const eligibleLenders = [
     maxAge: 60,
     minIncome: 15000,
     maxIncome: 150000,
-    minLoan: 500,
-    maxLoan: 100000,
+
     url: "https://i.postimg.cc/sgkVCJpQ/download.png",
   },
 
@@ -92,10 +79,8 @@ const eligibleLenders = [
     maxAge: 60,
     minIncome: 15000,
     maxIncome: 150000,
-    minLoan: 500,
-    maxLoan: 100000,
-    url: "https://www.bharatloan.com/public/images/brand_logo.png",
-    utm: "https://www.bharatloan.com/apply-now?utm_source=KESHVACREDIT&utm_medium=",
+    url: "https://moneyview.in/images/mv-green-logo-v3Compressed.svg",
+    utm: "no data",
   },
   {
     name: "BharatLoan",
@@ -103,8 +88,6 @@ const eligibleLenders = [
     maxAge: 60,
     minIncome: 15000,
     maxIncome: 150000,
-    minLoan: 500,
-    maxLoan: 100000,
     url: "https://www.bharatloan.com/public/images/brand_logo.png",
     utm: "https://www.bharatloan.com/apply-now?utm_source=KESHVACREDIT&utm_medium=",
   },
@@ -114,10 +97,55 @@ const eligibleLenders = [
     maxAge: 60,
     minIncome: 15000,
     maxIncome: 150000,
-    minLoan: 500,
-    maxLoan: 100000,
     url: "https://myflot.com/_next/image?url=%2F_next%2Fstatic%2Fmedia%2FlogoImage.176890a7.png&w=384&q=75",
     utm: "https://myflot.com/?utm_source=Keshvacredit&utm_medium=%7B_medium%7D&utm_campaign=%7B_campaign%7D",
+  },
+  {
+    name: "chintamanifinlease",
+    minAge: 21,
+    maxAge: 60,
+    minIncome: 15000,
+    maxIncome: 150000,
+
+    url: "https://www.chintamanifinlease.com/",
+    utm: "https://myflot.com/?utm_source=Keshvacredit&utm_medium=%7B_medium%7D&utm_campaign=%7B_campaign%7D",
+  },
+  {
+    name: "instantmudra",
+    minAge: 21,
+    maxAge: 60,
+    minIncome: 15000,
+    maxIncome: 150000,
+    url: "https://www.instantmudra.com/images/logo_official.png",
+    utm: "no data",
+  },
+  {
+    name: "clickmyloan",
+    minAge: 21,
+    maxAge: 60,
+    minIncome: 15000,
+    maxIncome: 150000,
+    url: "https://clickmyloan.com/images/logo.png",
+    utm: "no data",
+  },
+
+  {
+    name: "lendingclub",
+    minAge: 21,
+    maxAge: 60,
+    minIncome: 15000,
+    maxIncome: 150000,
+    url: "https://www.lendingclub.com/",
+    utm: "no data",
+  },
+  {
+    name: "Moneyview",
+    minAge: 21,
+    maxAge: 60,
+    minIncome: 15000,
+    maxIncome: 150000,
+    url: "https://www.lendingclub.com/",
+    utm: "no data",
   },
 ];
 async function filterLenders(age, income, loan) {
@@ -127,9 +155,7 @@ async function filterLenders(age, income, loan) {
     if (
       lender.minAge <= age &&
       lender.maxAge >= age &&
-      lender.minIncome <= income &&
-      lender.minLoan <= loan &&
-      lender.maxLoan >= loan
+      lender.minIncome <= income
     ) {
       acc.push({
         name: lender.name,
