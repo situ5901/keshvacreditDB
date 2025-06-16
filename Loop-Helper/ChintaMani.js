@@ -31,6 +31,7 @@ function loadValidPincodes(filePath) {
 }
 
 const validPincodes = loadValidPincodes(PINCODE_FILE_PATH);
+
 function getHeaders() {
   return {
     "Content-Type": "application/json",
@@ -40,17 +41,18 @@ function getHeaders() {
 async function sendToNewAPI(lead) {
   const response = {};
 
+  if (!lead.pincode || String(lead.pincode).trim() === "") {
+    response.status = "failed";
+    response.message = "❌ Pincode is mandatory.";
+    return response;
+  }
+
   if (!validPincodes.includes(String(lead.pincode).trim())) {
     response.status = "failed";
     response.message = `❌ Invalid pincode: ${lead.pincode}`;
     return response;
   }
 
-  if (!lead.pincode || String(lead.pincode).trim() === "") {
-    response.status = "failed";
-    response.message = "❌ Pincode is mandatory.";
-    return response;
-  }
   try {
     const requestBody = {
       mobile_number: lead.phone,
@@ -142,9 +144,7 @@ async function loop() {
       const leads = await UserDB.aggregate([
         {
           $match: {
-            processed: { $ne: true },
-            "RefArr.name": { $ne: "kamakshi" },
-            isSentToAPI: { $ne: true },
+            "RefArr.name": { $ne: "chintamani" },
           },
         },
         { $limit: MAX_LEADS },
@@ -158,6 +158,7 @@ async function loop() {
         processedCount += leads.length;
         console.log(`✅ Total Processed: ${processedCount}`);
         console.log("⏳ Waiting for 1 second before next batch...");
+        await new Promise((res) => setTimeout(res, 1000));
       }
     }
   } catch (err) {
