@@ -162,70 +162,34 @@ async function fetchJourneyUrl(leadId, token) {
 
 async function sendToMoneyView(lead, token) {
   const requestBody = {
-    partnerCode: PARTNER_CODE,
+    partnerCode: 422,
     partnerRef: "keshvacredit",
-    phone: lead.phone,
-    pan: lead.pan.trim(),
     name: lead.name.trim(),
     gender: lead.gender.toLowerCase(),
-    dateofbirth: lead.dob,
-    pincode: lead.pincode,
-    employmenttype: lead.employment,
-    declaredincome: lead.income,
-
+    phone: lead.phone.toString(),
+    pan: lead.pan.trim().toUpperCase(),
+    dateOfBirth: lead.dob,
     bureauPermission: true,
-    incomeMode: "online",
-    educationLevel: "GRADUATION",
     addressList: [
       {
-        addressLine1: "123 Main Street",
-        addressLine2: "Landmark Building",
-        city: "Mumbai",
-        state: "Maharashtra",
-        pincode: "400001",
+        pincode: lead.pincode,
+        residenceType: "rented",
         addressType: "current",
-        residenceType: "owned",
       },
     ],
-    motherName: "Suman Sharma",
-    fatherName: "Vikram Sharma",
-    employerName: "TCS",
-    loanPurpose: "Home Renovation",
-    alternatePhone: "9988776655",
-    maritalStatus: "Married",
-    yearsOfExperience: 5,
-    annualFamilyIncome: "800000",
-    consent: {
-      consentDecision: true,
-      deviceTimeStamp: "2025-06-16T10:15:30.000Z",
-      metaData: {
-        latitude: "19.0760",
-        longitude: "72.8777",
-        deviceIpAddress: "192.168.1.10",
+    declaredIncome: parseInt(lead.income),
+    employment: !lead.employment
+      ? "Salaried"
+      : lead.employment === "Self-employed"
+        ? "Self Employed"
+        : lead.employment,
+    incomeMode: "online",
+    emailList: [
+      {
+        email: lead.email,
+        type: "primary_device",
       },
-    },
-    consentDetails: {
-      deviceTimeStamp: "2025-06-16T10:15:30.000Z",
-      metadata: {
-        latitude: "19.0760",
-        longitude: "72.8777",
-        deviceIpAddress: "192.168.1.10",
-      },
-      consentDataList: [
-        {
-          productConsentType: "BUREAU_PULL",
-          consentValue: "GIVEN",
-          consentText: "User consented to bureau pull.",
-          consentID: "CP001",
-        },
-        {
-          productConsentType: "WHATSAPP_CONSENT",
-          consentValue: "GIVEN",
-          consentText: "User consented to receive updates on WhatsApp.",
-          consentID: "CP002",
-        },
-      ],
-    },
+    ],
   };
 
   console.log(
@@ -478,24 +442,18 @@ async function Loop() {
   }
 
   while (true) {
-    if (totalLeads >= MAX_LEADS) {
-      console.log(`✅ Reached max limit of ${MAX_LEADS} leads. Stopping.`);
-      break;
-    }
-
     console.log("\n📦 Fetching next batch...");
-    const remainingLimit = MAX_LEADS - totalLeads;
     const leads = await UserDB.aggregate([
       {
         $match: {
           "RefArr.name": { $nin: ["MoneyView", "SkippedMoneyView"] },
         },
       },
-      { $limit: Math.min(BATCH_SIZE, remainingLimit) },
+      { $limit: BATCH_SIZE },
     ]);
 
-    if (leads.length === 0) {
-      console.log("✅ All leads processed or no remaining unprocessed leads.");
+    if (leads.length <= MAX_LEADS) {
+      console.log("✅ All leads processed.");
       break;
     }
 
