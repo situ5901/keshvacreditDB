@@ -27,7 +27,7 @@ function loadValidPincodes(filePath) {
   const workbook = xlsx.readFile(filePath);
   const sheet = workbook.Sheets[workbook.SheetNames[0]];
   const data = xlsx.utils.sheet_to_json(sheet);
-  return data.map((row) => String(row.Pincode).trim());
+  return data.map((row) => String(row.PINCODE).trim());
 }
 
 const validPincodes = loadValidPincodes(PINCODE_FILE_PATH);
