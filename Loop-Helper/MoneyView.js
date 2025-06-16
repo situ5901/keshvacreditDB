@@ -442,6 +442,11 @@ async function Loop() {
   }
 
   while (true) {
+    if (totalLeads >= MAX_LEADS) {
+      console.log(`✅ Processed ${MAX_LEADS} leads. Exiting loop.`);
+      break;
+    }
+
     console.log("\n📦 Fetching next batch...");
     const leads = await UserDB.aggregate([
       {
@@ -452,13 +457,14 @@ async function Loop() {
       { $limit: BATCH_SIZE },
     ]);
 
-    if (leads.length <= MAX_LEADS) {
+    if (leads.length === 0) {
       console.log("✅ All leads processed.");
       break;
     }
 
     await processBatch(leads, token);
     totalLeads += leads.length;
+
     console.log(
       `📊 Total Processed: ${totalLeads}, ✅ Successful: ${successCount}`,
     );
