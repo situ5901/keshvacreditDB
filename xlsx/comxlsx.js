@@ -17,4 +17,4 @@ function readXlsxFile(relativePath) {
   }
 }
 
-module.exports = router;
+module.exports = readXlsxFile;

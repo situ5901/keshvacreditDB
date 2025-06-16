@@ -1,7 +1,6 @@
 const mongoose = require("mongoose");
 const axios = require("axios");
-const path = require("path");
-const xlsx = require("xlsx");
+const readXlsxFile = require("../utils/readXlsxFile");
 require("dotenv").config();
 
 const MONGODB_URINEW = process.env.MONGODB_URINEW;
@@ -19,7 +18,7 @@ const UserDB = mongoose.model(
   "userdb",
   new mongoose.Schema({}, { collection: "userdb", strict: false }),
 );
-
+//situ update
 const MAX_PROCESS = 10000;
 const BATCH_SIZE = 100;
 const Partner_id = "Keshvacredit";
@@ -28,24 +27,8 @@ const DEDUPE_API_URL =
 const PushAPI_URL = "https://api.rupee112fintech.com/marketing-push-data";
 const loanAmount = "20000";
 
-const PINCODE_FILE_PATH = path.join(__dirname, "..", "xlsx", "rupee.xlsx");
-
-function loadValidPincodes(filePath) {
-  try {
-    const workbook = xlsx.readFile(filePath);
-    const sheet = workbook.Sheets[workbook.SheetNames[0]];
-    const data = xlsx.utils.sheet_to_json(sheet);
-    return data.map((row) => String(row.Pincode).trim());
-  } catch (error) {
-    console.error(
-      `Error loading valid pincodes from ${filePath}:`,
-      error.message,
-    );
-    return [];
-  }
-}
-
-const validPincodes = loadValidPincodes(PINCODE_FILE_PATH);
+const validPincodeRows = readXlsxFile("xlsx/rupee.xlsx");
+const validPincodes = validPincodeRows.map((row) => String(row.Pincode).trim());
 if (validPincodes.length === 0) {
   console.warn(
     "No valid pincodes loaded. All pincode-dependent leads will be skipped.",
@@ -89,7 +72,7 @@ async function sendToDedupeAPI(lead) {
     const FirstPayload = {
       mobile: lead.phone,
       pancard: lead.pan,
-      Partner_id: Partner_id,
+      Partner_id,
     };
     console.log(`Sending Dedupe request for ${lead.phone}`);
     const response = await axios.post(DEDUPE_API_URL, FirstPayload, {
@@ -122,7 +105,7 @@ async function sendToPunshAPI(lead) {
       monthly_salary: lead.income || "",
       purpose_of_loan: "3",
       loan_amount: loanAmount,
-      Partner_id: Partner_id,
+      Partner_id,
       customer_lead_id: generate7DigitId(),
     };
 
@@ -169,7 +152,7 @@ async function processBatch(users) {
               $push: {
                 RefArr: {
                   name: "SkippedRupee112",
-                  reason: reason,
+                  reason,
                   createdAt: new Date().toISOString(),
                 },
               },
@@ -186,7 +169,7 @@ async function processBatch(users) {
               $push: {
                 RefArr: {
                   name: "SkippedRupee112",
-                  reason: reason,
+                  reason,
                   createdAt: new Date().toISOString(),
                 },
               },
@@ -196,9 +179,7 @@ async function processBatch(users) {
         }
 
         const userDoc = await UserDB.findOne({ phone: user.phone });
-        if (!userDoc) {
-          return;
-        }
+        if (!userDoc) return;
 
         const dedupeResponse = await sendToDedupeAPI(user);
 
