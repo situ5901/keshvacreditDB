@@ -26,7 +26,7 @@ const eligibleLenders = [
   {
     name: "FatakPay",
     minAge: 18,
-    maxAge: 35,
+    maxAge: 59,
     minIncome: 18000,
     url: "https://cashkuber.com/assets/images/assets/fatakpay.png",
     utm: "https://web.fatakpay.com/authentication/login?utm_source=558_POVVE&utm_medium=",
