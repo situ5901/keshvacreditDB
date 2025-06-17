@@ -9,7 +9,7 @@ const chalkAnimation = require("chalk-animation"); // lolcat style
 const User = require("./models/user.model");
 
 const API_VERSION = process.env.API_VERSION || "/v1";
-const MONGODB_URI = process.env.MONGODB_URINEW;
+const MONGODB_URI = process.env.MONGODB_URIVISH;
 const PORT = process.env.PORT || 5000;
 
 const app = express();
