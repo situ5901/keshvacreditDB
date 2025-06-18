@@ -16,13 +16,13 @@ const UserDB = mongoose.model(
   new mongoose.Schema({}, { collection: "smcoll", strict: false }),
 );
 
-const Healthcheck_API = "https://growth-01.stg.whizdm.com/atlas/v1/health";
-const TOKEN_API = "https://growth-01.stg.whizdm.com/atlas/v1/token";
-const DEDUPE_API = "https://growth-01.stg.whizdm.com/atlas/v1/dedupe";
-const LEAD_API = "https://growth-01.stg.whizdm.com/atlas/v1/lead";
-const OFFERS_API = "https://growth-01.stg.whizdm.com/atlas/v1/offers";
-const JOURNEY_URL_API = "https://growth-01.stg.whizdm.com/atlas/v1/journey-url";
-const MAX_LEADS = 1000;
+const Healthcheck_API = "https://atlas.whizdm.com/atlas/v1/health";
+const TOKEN_API = "https://atlas.whizdm.com/atlas/v1/token";
+const DEDUPE_API = "https://atlas.whizdm.com/atlas/v1/lead/dedupe";
+const LEAD_API = "https://atlas.whizdm.com/atlas/v1/lead";
+const OFFERS_API = "https://atlas.whizdm.com/atlas/v1/offers";
+const JOURNEY_URL_API = "https://atlas.whizdm.com/atlas/v1/journey-url";
+const MAX_LEADS = 150000;
 const PARTNER_CODE = 422;
 const BATCH_SIZE = 1;
 const PINCODE_FILE_PATH = path.join(__dirname, "..", "xlsx", "mv.xlsx");
@@ -57,11 +57,7 @@ async function getToken() {
   try {
     const healthChecek = await axios.get(Healthcheck_API);
     if (healthChecek.status === 200) {
-      console.log(
-        "\x1b[42m\x1b[30m%s\x1b[0m",
-        " ✅  HEALTHCHECK PASSED ",
-        "➡️  API is up and running",
-      );
+      console.log("✅ Healthcheck API is up and running");
     } else {
       console.error("❌ Healthcheck API is not up and running");
     }
@@ -96,7 +92,7 @@ async function dedupeCheck(lead, token) {
   };
 
   try {
-    // 🔍 Check if required fields are present
+    // 🔍 Check if required fields are150000sent
     if (!lead.pan || !lead.phone || !lead.email) {
       console.error("❌ Missing required fields in lead object:", {
         panNo: lead.pan,
@@ -208,28 +204,62 @@ async function sendToMoneyView(lead, token) {
     pan: lead.pan.trim().toUpperCase(),
     dateOfBirth: lead.dob,
     bureauPermission: true,
-    addressList: [
-      {
-        pincode: lead.pincode,
-        residenceType: "rented",
-        addressType: "current",
-      },
-    ],
-    declaredIncome: parseInt(lead.income),
-    employment: !lead.employment
+    employmentType: !lead.employment
       ? "Salaried"
       : lead.employment === "Self-employed"
         ? "Self Employed"
         : lead.employment,
     incomeMode: "online",
+    declaredIncome: parseInt(lead.income),
+    educationLevel: "GRADUATION", // default
+    maritalStatus: "Married", // default
+
+    addressList: [
+      {
+        addressLine1: "NA", // optional static
+        pincode: lead.pincode,
+        residenceType: "rented", // static or from lead
+        addressType: "current",
+        city: lead.city,
+        state: lead.state,
+      },
+    ],
+
     emailList: [
       {
         email: lead.email,
-        type: "primary_device",
+        type: "primary_user", // API expects this instead of "primary_device"
       },
     ],
-  };
 
+    loanPurpose: "Travel", // or override with dynamic lead.loanPurpose
+
+    consent: {
+      consentDecision: true,
+      deviceTimeStamp: new Date().toISOString(),
+      metaData: {
+        latitude: "12.9716", // default, or use geolocation
+        longitude: "77.5946",
+        deviceIpAddress: "192.168.0.1", // optional static or get from client
+      },
+    },
+
+    consentDetails: {
+      consentDataList: [
+        {
+          productConsentType: "BUREAU_PULL",
+          consentValue: "GIVEN",
+          consentText: "I consent to bureau pull.",
+        },
+      ],
+      deviceTimeStamp: new Date().toISOString(),
+      metadata: {
+        latitude: "12.9716",
+        longitude: "77.5946",
+        deviceIpAddress: "192.168.0.1",
+      },
+    },
+  };
   console.log(
     "\n📤 [LEAD SUBMISSION REQUEST] =>",
     JSON.stringify(requestBody, null, 2),
