@@ -28,7 +28,7 @@ function validateUser(user) {
     reasons: [],
   };
 
-  if (user.income >= 50000) {
+  if (user.income <= 50000) {
     result.passed = false;
     result.reasons.push("Income should be less than ₹50,000");
   }
