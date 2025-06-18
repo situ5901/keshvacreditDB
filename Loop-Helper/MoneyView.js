@@ -16,12 +16,11 @@ const UserDB = mongoose.model(
   new mongoose.Schema({}, { collection: "smcoll", strict: false }),
 );
 
-const helthAPI = "https://growth-01.stg.whizdm.com/atlas/v1/health";
 const TOKEN_API = "https://growth-01.stg.whizdm.com/atlas/v1/token";
-const DEDUPE_API = "https://growth-01.stg.whizdm.com/atlas/v1/lead/dedupe";
+const DEDUPE_API = "https://growth-01.stg.whizdm.com/atlas/v1/lead/filter/pan";
 const LEAD_API = "https://growth-01.stg.whizdm.com/atlas/v1/lead";
 const OFFERS_API = "https://growth-01.stg.whizdm.com/atlas/v1/offers";
-const JOURNEY_URL_API = "https://atlas.whizdm.com/atlas/v1/journey-url";
+const JOURNEY_URL_API = "https://growth-01.stg.whizdm.com/atlas/v1/journey-url";
 const MAX_LEADS = 1000;
 const PARTNER_CODE = 422;
 const BATCH_SIZE = 1;
@@ -48,14 +47,22 @@ function loadValidPincodes(filePath) {
 
 const validPincodesSet = loadValidPincodes(PINCODE_FILE_PATH);
 if (validPincodesSet.size === 0) {
-  console.log("⚠️ No valid pincodes loaded. Skipping all leads.");
+  console.warn("⚠️ No valid pincodes loaded. Skipping all leads.");
 }
 
 let successCount = 0;
 
 async function getToken() {
   try {
-    const resp = await axios.get(helthAPI, console.log(resp.data));
+    const HealthCheck = await axios.get(
+      "https://growth-01.stg.whizdm.com/atlas/v1/healthcheck",
+    );
+    if (HealthCheck.status !== 200) {
+      console.error("❌ Health Check Failed. Exiting.");
+    } else {
+      console.log("✅ Health Check Passed.");
+    }
+
     const tokenPayload = {
       userName: "keshvacredit",
       password: "Zb'91O(Nhy",
@@ -77,30 +84,47 @@ async function getToken() {
   }
 }
 
-async function dedupeCheck(user, token) {
+async function dedupeCheck(lead, token) {
   let dedupeResponse = {
     status: "failure",
     message: "Unknown error during dedupe",
   };
 
   try {
+    // 🔍 Check if required fields are present
+    if (!lead.pan || !lead.phone || !lead.email) {
+      console.error("❌ Missing required fields in lead object:", {
+        panNo: lead.pan,
+        mobileNo: lead.phone,
+        email: lead.email,
+      });
+      dedupeResponse.message = "Missing pan, phone, or email in lead object";
+      return dedupeResponse;
+    }
+
+    // ✅ Prepare payload as expected by the API
     const payload = {
-      panNo: user.pan,
-      mobileNo: user.phone,
-      email: user.email,
+      panNO: lead.pan, // Field must match curl: panNO
+      mobileNo: lead.phone, // Field must match curl: mobileNo
+      email: lead.email, // Same
     };
 
     console.log(`\n🧾 [DEDUPE REQUEST] =>`, payload);
 
-    const response = await axios.post(`${DEDUPE_API}`, payload, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
+    // ✅ Make API request
+    const response = await axios.post(
+      `https://atlas.whizdm.com/atlas/v1/lead/dedupe`,
+      payload,
+      {
+        headers: {
+          token: token, // curl is using token in header (not Bearer format)
+          "Content-Type": "application/json",
+        },
       },
-    });
+    );
 
     console.log(
-      "[✅ DEDUPE RESPONSE] =>",
+      "✅ [DEDUPE RESPONSE] =>",
       JSON.stringify(response.data, null, 2),
       "\n",
     );
@@ -240,13 +264,11 @@ async function sendToMoneyView(lead, token) {
       if (offersResult.status === "success" && offersResult.data) {
         journeyUrlResult = await fetchJourneyUrl(leadId, token);
       } else {
-        console.warn(
-          "⚠️ Offers API call failed or returned no data. Skipping Journey URL API call..",
-        );
+        console.warn("NO Lead Receivd");
       }
     } else {
       console.warn(
-        "⚠️ No leadId received from lead submission. Skipping offers and Journey URL API calls.",
+        "⚠️ No leadId received from lead submission. Skipping offers and Journey URL APII calls.",
       );
     }
 
@@ -357,7 +379,7 @@ async function processBatch(leads, token) {
         return;
       }
 
-      const dedupeResult = await dedupeCheck(lead.pan, token);
+      const dedupeResult = await dedupeCheck(lead, token);
       apiResponsesToSave.moneyViewDedupe = dedupeResult.data;
 
       if (
