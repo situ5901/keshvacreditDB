@@ -16,12 +16,12 @@ const UserDB = mongoose.model(
   new mongoose.Schema({}, { collection: "smcoll", strict: false }),
 );
 
-const Healthcheck_API = "https://atlas.whizdm.com/atlas/v1/health";
-const TOKEN_API = "https://atlas.whizdm.com/atlas/v1/token";
-const DEDUPE_API = "https://atlas.whizdm.com/atlas/v1/lead/dedupe";
-const LEAD_API = "https://atlas.whizdm.com/atlas/v1/lead";
-const OFFERS_API = "https://atlas.whizdm.com/atlas/v1/offers";
-const JOURNEY_URL_API = "https://atlas.whizdm.com/atlas/v1/journey-url";
+const Healthcheck_API = "https://growth-01.stg.whizdm.com/atlas/v1/health";
+const TOKEN_API = "https://growth-01.stg.whizdm.com/atlas/v1/token";
+const DEDUPE_API = "https://growth-01.stg.whizdm.com/atlas/v1/dedupe";
+const LEAD_API = "https://growth-01.stg.whizdm.com/atlas/v1/lead";
+const OFFERS_API = "https://growth-01.stg.whizdm.com/atlas/v1/offers";
+const JOURNEY_URL_API = "https://growth-01.stg.whizdm.com/atlas/v1/journey-url";
 const MAX_LEADS = 1000;
 const PARTNER_CODE = 422;
 const BATCH_SIZE = 1;
@@ -56,20 +56,23 @@ let successCount = 0;
 async function getToken() {
   try {
     const healthChecek = await axios.get(Healthcheck_API);
-    if ((Healthcheck_API, status === 200)) {
-      cosole.log("✅ Healthcheck API is up and running");
+    if (healthChecek.status === 200) {
+      console.log("✅ Healthcheck API is up and running");
     } else {
       console.error("❌ Healthcheck API is not up and running");
     }
+
     const tokenPayload = {
       userName: "keshvacredit",
       password: "Zb'91O(Nhy",
       partnerCode: PARTNER_CODE,
     };
+
     console.log(
       "\n🔐 [TOKEN REQUEST] =>",
       JSON.stringify(tokenPayload, null, 2),
     );
+
     const response = await axios.post(TOKEN_API, tokenPayload);
     console.log("✅ [TOKEN RESPONSE] =>", response.data.token, "\n");
     return response.data.token;
@@ -110,16 +113,12 @@ async function dedupeCheck(lead, token) {
     console.log(`\n🧾 [DEDUPE REQUEST] =>`, payload);
 
     // ✅ Make API request
-    const response = await axios.post(
-      `https://atlas.whizdm.com/atlas/v1/lead/dedupe`,
-      payload,
-      {
-        headers: {
-          token: token, // curl is using token in header (not Bearer format)
-          "Content-Type": "application/json",
-        },
+    const response = await axios.post(DEDUPE_API, payload, {
+      headers: {
+        token: token, // curl is using token in header (not Bearer format)
+        "Content-Type": "application/json",
       },
-    );
+    });
 
     console.log(
       "✅ [DEDUPE RESPONSE] =>",
