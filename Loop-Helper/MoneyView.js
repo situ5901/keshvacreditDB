@@ -16,8 +16,9 @@ const UserDB = mongoose.model(
   new mongoose.Schema({}, { collection: "smcoll", strict: false }),
 );
 
+const helthAPI = "https://growth-01.stg.whizdm.com/atlas/v1/health";
 const TOKEN_API = "https://growth-01.stg.whizdm.com/atlas/v1/token";
-const DEDUPE_API = "https://growth-01.stg.whizdm.com/atlas/v1/lead/filter/pan";
+const DEDUPE_API = "https://growth-01.stg.whizdm.com/atlas/v1/lead/dedupe";
 const LEAD_API = "https://growth-01.stg.whizdm.com/atlas/v1/lead";
 const OFFERS_API = "https://growth-01.stg.whizdm.com/atlas/v1/offers";
 const JOURNEY_URL_API = "https://atlas.whizdm.com/atlas/v1/journey-url";
@@ -47,13 +48,14 @@ function loadValidPincodes(filePath) {
 
 const validPincodesSet = loadValidPincodes(PINCODE_FILE_PATH);
 if (validPincodesSet.size === 0) {
-  console.warn("⚠️ No valid pincodes loaded. Skipping all leads.");
+  console.log("⚠️ No valid pincodes loaded. Skipping all leads.");
 }
 
 let successCount = 0;
 
 async function getToken() {
   try {
+    const resp = await axios.get(helthAPI, console.log(resp.data));
     const tokenPayload = {
       userName: "keshvacredit",
       password: "Zb'91O(Nhy",
@@ -97,7 +99,11 @@ async function dedupeCheck(user, token) {
       },
     });
 
-    console.log("[✅ DEDUPE RESPONSE] =>", JSON.stringify(response.data, null, 2), "\n");
+    console.log(
+      "[✅ DEDUPE RESPONSE] =>",
+      JSON.stringify(response.data, null, 2),
+      "\n",
+    );
 
     dedupeResponse = {
       status: response.data.status || "success",
@@ -161,7 +167,7 @@ async function fetchJourneyUrl(leadId, token) {
       `❌ Error fetching journey URL for Lead ID ${leadId}:`,
       error.response?.data || error.message,
     );
-    journeyUrlResponse.message = error.response?.data?.message || error.message;        
+    journeyUrlResponse.message = error.response?.data?.message || error.message;
     journeyUrlResponse.data = error.response?.data || null;
   }
   return journeyUrlResponse;
@@ -235,14 +241,12 @@ async function sendToMoneyView(lead, token) {
         journeyUrlResult = await fetchJourneyUrl(leadId, token);
       } else {
         console.warn(
-          "⚠️ Offers API call failed or returned no data. Skipping Journey URL API call..
-",
+          "⚠️ Offers API call failed or returned no data. Skipping Journey URL API call..",
         );
       }
     } else {
       console.warn(
-        "⚠️ No leadId received from lead submission. Skipping offers and Journey URL APII
- calls.",
+        "⚠️ No leadId received from lead submission. Skipping offers and Journey URL API calls.",
       );
     }
 
@@ -402,7 +406,7 @@ ourney URL.`,
         console.log(`✅ ${finalMessage}: ${lead.phone}`);
       } else {
         finalStatus = "failed";
-        finalMessage = moneyViewAllResponses.message || "API processing failed";        
+        finalMessage = moneyViewAllResponses.message || "API processing failed";
         console.log(`⛔ ${finalMessage} for ${lead.phone}`);
       }
     } catch (err) {
