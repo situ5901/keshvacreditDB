@@ -16,8 +16,9 @@ const UserDB = mongoose.model(
   new mongoose.Schema({}, { collection: "smcoll", strict: false }),
 );
 
+const HealthCheckAPI = "https://growth-01.stg.whizdm.com/atlas/v1/health";
 const TOKEN_API = "https://growth-01.stg.whizdm.com/atlas/v1/token";
-const DEDUPE_API = "https://growth-01.stg.whizdm.com/atlas/v1/lead/filter/pan";
+const DEDUPE_API = "https://growth-01.stg.whizdm.com/atlas/v1/lead/dedupe";
 const LEAD_API = "https://growth-01.stg.whizdm.com/atlas/v1/lead";
 const OFFERS_API = "https://growth-01.stg.whizdm.com/atlas/v1/offers";
 const JOURNEY_URL_API = "https://growth-01.stg.whizdm.com/atlas/v1/journey-url";
@@ -54,15 +55,12 @@ let successCount = 0;
 
 async function getToken() {
   try {
-    const HealthCheck = await axios.get(
-      "https://growth-01.stg.whizdm.com/atlas/v1/healthcheck",
-    );
-    if (HealthCheck.status !== 200) {
-      console.error("❌ Health Check Failed. Exiting.");
+    const resp = await axios.get(HealthCheckAPI);
+    if (HealthCheckAPI.status === 200) {
+      console.log("✅ Health check API is up and running");
     } else {
-      console.log("✅ Health Check Passed.");
+      console.error("❌ Health check API is not up and running");
     }
-
     const tokenPayload = {
       userName: "keshvacredit",
       password: "Zb'91O(Nhy",
