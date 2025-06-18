@@ -56,20 +56,24 @@ let successCount = 0;
 async function getToken() {
   try {
     const resp = await axios.get(HealthCheckAPI);
-    if (HealthCheckAPI.status === 200) {
+
+    if (resp.status === 200) {
       console.log("✅ Health check API is up and running");
     } else {
       console.error("❌ Health check API is not up and running");
     }
+
     const tokenPayload = {
       userName: "keshvacredit",
       password: "Zb'91O(Nhy",
       partnerCode: PARTNER_CODE,
     };
+
     console.log(
       "\n🔐 [TOKEN REQUEST] =>",
       JSON.stringify(tokenPayload, null, 2),
     );
+
     const response = await axios.post(TOKEN_API, tokenPayload);
     console.log("✅ [TOKEN RESPONSE] =>", response.data.token, "\n");
     return response.data.token;
