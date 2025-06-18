@@ -16,11 +16,11 @@ const UserDB = mongoose.model(
   new mongoose.Schema({}, { collection: "smcoll", strict: false }),
 );
 
-const TOKEN_API = "https://atlas.whizdm.com/atlas/v1/token";
-const DEDUPE_API = "https://atlas.whizdm.com/atlas/v1/lead/filter/pan";
-const LEAD_API = "https://atlas.whizdm.com/atlas/v1/lead";
-const OFFERS_API = "https://atlas.whizdm.com/atlas/v1/offers";
-const JOURNEY_URL_API = "https://atlas.whizdm.com/atlas/v1/journey-url";
+const TOKEN_API = "https://growth-01.stg.whizdm.com/atlas/v1/token";
+const DEDUPE_API = "https://growth-01.stg.whizdm.com/atlas/v1/lead/filter/pan";
+const LEAD_API = "https://growth-01.stg.whizdm.com/atlas/v1/lead";
+const OFFERS_API = "https://growth-01.stg.whizdm.com/atlas/v1/offers";
+const JOURNEY_URL_API = "https://growth-01.stg.whizdm.com/atlas/v1/journey-url";
 const MAX_LEADS = 1000;
 const PARTNER_CODE = 422;
 const BATCH_SIZE = 1;
