@@ -22,22 +22,46 @@ const ELIGIBILITY_API =
 const PRE_APPROVAL_API =
   "https://prod.zype.co.in/attribution-service/api/v1/underwriting/preApprovalOffer";
 
-function isValidUser(user) {
-  const salary = Number(user.income);
-  const tradelinePL = Number(user.personalLoanAmount || 0);
-  const creditCardLimit = Number(user.creditCardLimit || 0);
-  const location = user.location?.toLowerCase() || "";
-  const employerCategory = String(user.employerCategory || "").toUpperCase();
+function validateUser(user) {
+  const result = {
+    passed: true,
+    reasons: [],
+  };
 
-  if (salary < 50000) return { valid: false, reason: "Income below 50k" };
-  if (tradelinePL <= 100000 && creditCardLimit <= 100000)
-    return { valid: false, reason: "No serious tradeline" };
-  if (location !== "tier a")
-    return { valid: false, reason: "Location not Tier A" };
-  if (!["A", "B", "C"].includes(employerCategory))
-    return { valid: false, reason: "Invalid Employer Category" };
+  if (user.income <= 50000) {
+    result.passed = false;
+    result.reasons.push("Income should be greater than ₹50,000");
+  }
 
-  return { valid: true };
+  const tierAStates = [
+    "Delhi",
+    "Mumbai",
+    "Bangalore",
+    "Chennai",
+    "Kolkata",
+    "Hyderabad",
+    "Pune",
+  ];
+
+  if (!tierAStates.includes(user.state)) {
+    result.passed = false;
+    result.reasons.push("Invalid Location");
+  }
+
+  const employmentMap = {
+    salaried: "A",
+    "self-employed": "B",
+    none: "C",
+  };
+
+  const rawEmployment = user.employment?.toString().trim().toLowerCase();
+  const empCode = employmentMap[rawEmployment];
+
+  if (!["A", "B", "C"].includes(empCode)) {
+    result.passed = false;
+    result.reasons.push("Invalid Employer Category");
+  }
+  return result;
 }
 
 async function processIncome(user) {
@@ -139,30 +163,37 @@ async function processBatch(users) {
         await UserDB.updateOne({ phone: user.phone }, { $set: updates });
       }
 
-      const validation = isValidUser(user);
-      if (!validation.valid) {
-        console.log(`⛔ Skipping user ${user.phone} - ${validation.reason}`);
-        await UserDB.updateOne(
-          { phone: user.phone },
-          {
-            $push: {
-              RefArr: {
-                name: "ZypeValidation",
-                reason: validation.reason,
-                createdAt: new Date().toISOString(),
-              },
+      const validation = validateUser(user);
+
+      // ✅ Save validation result in apiResponse and RefArr
+      await UserDB.updateOne(
+        { phone: user.phone },
+        {
+          $push: {
+            apiResponse: {
+              ZypeValidation: true,
+              validationStatus: validation.passed ? "PASSED" : "FAILED",
+              message: validation.reasons.join(", ") || "Validation Passed",
+              createdAt: new Date().toISOString(),
             },
-            $unset: { accounts: "" },
+            RefArr: {
+              name: "ZypeVali",
+              type: "Validation",
+              status: validation.passed ? "PASSED" : "FAILED",
+              createdAt: new Date().toISOString(),
+            },
           },
+        },
+      );
+
+      if (!validation.passed) {
+        console.log(
+          `⛔ Skipping API for ${user.phone} due to validation failure: ${validation.reasons.join(", ")}`,
         );
         return;
       }
 
       const response = await sendToNewAPI(user);
-      console.log(
-        `📋 User: ${user.phone}, Eligibility API Response:`,
-        response,
-      );
 
       const updateDoc = {
         $push: {
@@ -176,7 +207,9 @@ async function processBatch(users) {
             createdAt: new Date().toISOString(),
           },
           RefArr: {
-            name: "ZypeValidation",
+            name: "ZypeVali",
+            type: "Eligibility",
+            status: response.status,
             createdAt: new Date().toISOString(),
           },
         },
@@ -185,11 +218,6 @@ async function processBatch(users) {
 
       if (response.status === "ACCEPT") {
         const preApproval = await getPreApproval(user);
-        console.log(
-          `📋 User: ${user.phone}, PreApproval API Response:`,
-          preApproval,
-        );
-
         updateDoc.$push.apiResponse = {
           ZypeResponse: preApproval,
           status: preApproval.status,
@@ -197,8 +225,6 @@ async function processBatch(users) {
           message: preApproval.message,
           createdAt: new Date().toISOString(),
         };
-      } else {
-        console.log(`⛔ No PreApproval — Status: ${response.status}`);
       }
 
       await UserDB.updateOne({ phone: user.phone }, updateDoc);
@@ -209,7 +235,7 @@ async function processBatch(users) {
     if (result.status === "rejected") {
       console.error(`Error processing user at index ${index}:`, result.reason);
     } else {
-      console.log(`✅ Successfully processed user at index ${index}`);
+      console.log(`Successfully processed user at index ${index}`);
     }
   });
 }
@@ -224,7 +250,7 @@ async function Loop() {
       const leads = await UserDB.aggregate([
         {
           $match: {
-            "RefArr.name": { $ne: "ZypeValidation" },
+            "RefArr.name": { $ne: "ZypeVali" },
           },
         },
         { $limit: BATCH_SIZE },
