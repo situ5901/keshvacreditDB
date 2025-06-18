@@ -57,7 +57,11 @@ async function getToken() {
   try {
     const healthChecek = await axios.get(Healthcheck_API);
     if (healthChecek.status === 200) {
-      console.log("✅ Healthcheck API is up and running");
+      console.log(
+        "\x1b[42m\x1b[30m%s\x1b[0m",
+        " ✅  HEALTHCHECK PASSED ",
+        "➡️  API is up and running",
+      );
     } else {
       console.error("❌ Healthcheck API is not up and running");
     }
