@@ -16,6 +16,7 @@ const UserDB = mongoose.model(
   new mongoose.Schema({}, { collection: "smcoll", strict: false }),
 );
 
+const HEALTH_CHECK_API = "https://growth-01.stg.whizdm.com/atlas/v1/health";
 const TOKEN_API = "https://growth-01.stg.whizdm.com/atlas/v1/token";
 const DEDUPE_API = "https://growth-01.stg.whizdm.com/atlas/v1/lead/filter/pan";
 const LEAD_API = "https://growth-01.stg.whizdm.com/atlas/v1/lead";
@@ -63,6 +64,10 @@ async function getToken() {
       "\n🔐 [TOKEN REQUEST] =>",
       JSON.stringify(tokenPayload, null, 2),
     );
+
+    const healthCheck = await axios.get(HEALTH_CHECK_API);
+    console.log(healthCheck);
+
     const response = await axios.post(TOKEN_API, tokenPayload);
     console.log("✅ [TOKEN RESPONSE] =>", response.data.token, "\n");
     return response.data.token;
