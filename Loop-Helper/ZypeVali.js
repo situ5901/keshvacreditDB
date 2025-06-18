@@ -28,9 +28,9 @@ function validateUser(user) {
     reasons: [],
   };
 
-  if (user.income <= 50000) {
+  if (user.income >= 50000) {
     result.passed = false;
-    result.reasons.push("Income should be greater than ₹50,000");
+    result.reasons.push("Income should be less than ₹50,000");
   }
 
   const tierAStates = [
@@ -61,6 +61,7 @@ function validateUser(user) {
     result.passed = false;
     result.reasons.push("Invalid Employer Category");
   }
+
   return result;
 }
 
@@ -85,19 +86,12 @@ async function sendToNewAPI(user) {
       partnerId: PartnerID,
     };
 
-    console.log("📤 Sending Eligibility Payload:", payload);
-
     const response = await axios.post(ELIGIBILITY_API, payload, {
       headers: { "Content-Type": "application/json" },
     });
 
-    console.log("✅ Eligibility Response:", response.data);
     return response.data;
   } catch (err) {
-    console.error(
-      "❌ Eligibility API Error:",
-      err.response?.data || err.message,
-    );
     return {
       status: "FAILED",
       message: err.response?.data?.message || err.message || "Unknown Error",
@@ -122,19 +116,12 @@ async function getPreApproval(user) {
       bureauData: JSON.stringify({ score: 765, reportDate: "2024-03-20" }),
     };
 
-    console.log("📤 Sending PreApproval Payload:", payload);
-
     const response = await axios.post(PRE_APPROVAL_API, payload, {
       headers: { "Content-Type": "application/json" },
     });
 
-    console.log("✅ PreApproval Response:", response.data);
     return response.data;
   } catch (err) {
-    console.error(
-      "❌ PreApproval API Error:",
-      err.response?.data || err.message,
-    );
     return {
       status: "FAILED",
       message: err.response?.data?.message || err.message || "Unknown Error",
@@ -165,7 +152,6 @@ async function processBatch(users) {
 
       const validation = validateUser(user);
 
-      // ✅ Save validation result in apiResponse and RefArr
       await UserDB.updateOne(
         { phone: user.phone },
         {
@@ -198,12 +184,12 @@ async function processBatch(users) {
       const updateDoc = {
         $push: {
           apiResponse: {
-            ZypeResponse: {
+            ZypeValiResponse: {
               ...response,
               Zype: true,
             },
             status: response.status,
-            amount: response.amount,
+            amount: response.amount || null,
             createdAt: new Date().toISOString(),
           },
           RefArr: {
@@ -219,7 +205,7 @@ async function processBatch(users) {
       if (response.status === "ACCEPT") {
         const preApproval = await getPreApproval(user);
         updateDoc.$push.apiResponse = {
-          ZypeResponse: preApproval,
+          ZypeValiResponse: preApproval,
           status: preApproval.status,
           amount: preApproval.amount,
           message: preApproval.message,
@@ -235,7 +221,7 @@ async function processBatch(users) {
     if (result.status === "rejected") {
       console.error(`Error processing user at index ${index}:`, result.reason);
     } else {
-      console.log(`Successfully processed user at index ${index}`);
+      console.log(`✅ Successfully processed user at index ${index}`);
     }
   });
 }
@@ -245,8 +231,6 @@ let processedCount = 0;
 async function Loop() {
   try {
     while (processedCount < MAX_PROCESS) {
-      console.log("📦 Fetching leads...");
-
       const leads = await UserDB.aggregate([
         {
           $match: {
@@ -257,8 +241,7 @@ async function Loop() {
       ]);
 
       if (leads.length === 0) {
-        console.log("✅ No more leads left. Waiting for new data...");
-        await new Promise((resolve) => setTimeout(resolve, 10000));
+        console.log("✅ No more leads. Waiting...");
         continue;
       }
 
@@ -272,11 +255,9 @@ async function Loop() {
       console.log(`🏁 Total Processed Leads: ${processedCount}`);
 
       if (processedCount >= MAX_PROCESS) {
-        console.log("🎯 Reached processing limit of 50,000 records. Stopping.");
+        console.log("🎯 Reached processing limit. Stopping.");
         break;
       }
-
-      await new Promise((resolve) => setTimeout(resolve, 1000));
     }
   } catch (error) {
     console.error("❌ Error occurred:", error.message);
