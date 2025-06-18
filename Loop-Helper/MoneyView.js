@@ -55,12 +55,22 @@ let successCount = 0;
 
 async function getToken() {
   try {
-    const resp = await axios.get(HealthCheckAPI);
-
-    if (resp.status === 200) {
-      console.log("✅ Health check API is up and running");
-    } else {
-      console.error("❌ Health check API is not up and running");
+    let resp;
+    try {
+      resp = await axios.get(HealthCheckAPI);
+      if (resp.status === 200) {
+        console.log("✅ Health check API is up and running");
+      } else {
+        console.error(
+          "❌ Health check API is not up and running. Status:",
+          resp.status,
+        );
+      }
+    } catch (healthError) {
+      console.error(
+        "❌ Error during Health check API call:",
+        healthError.message,
+      );
     }
 
     const tokenPayload = {
@@ -75,8 +85,13 @@ async function getToken() {
     );
 
     const response = await axios.post(TOKEN_API, tokenPayload);
-    console.log("✅ [TOKEN RESPONSE] =>", response.data.token, "\n");
-    return response.data.token;
+    if (response.data && response.data.token) {
+      console.log("✅ [TOKEN RESPONSE] =>", response.data.token, "\n");
+      return response.data.token;
+    } else {
+      console.error("❌ Token not found in response data:", response.data);
+      return null;
+    }
   } catch (error) {
     console.error(
       "❌ Error fetching token:",
@@ -93,7 +108,6 @@ async function dedupeCheck(lead, token) {
   };
 
   try {
-    // 🔍 Check if required fields are present
     if (!lead.pan || !lead.phone || !lead.email) {
       console.error("❌ Missing required fields in lead object:", {
         panNo: lead.pan,
@@ -104,26 +118,20 @@ async function dedupeCheck(lead, token) {
       return dedupeResponse;
     }
 
-    // ✅ Prepare payload as expected by the API
     const payload = {
-      panNO: lead.pan, // Field must match curl: panNO
-      mobileNo: lead.phone, // Field must match curl: mobileNo
-      email: lead.email, // Same
+      panNO: lead.pan,
+      mobileNo: lead.phone,
+      email: lead.email,
     };
 
     console.log(`\n🧾 [DEDUPE REQUEST] =>`, payload);
 
-    // ✅ Make API request
-    const response = await axios.post(
-      `https://atlas.whizdm.com/atlas/v1/lead/dedupe`,
-      payload,
-      {
-        headers: {
-          token: token, // curl is using token in header (not Bearer format)
-          "Content-Type": "application/json",
-        },
+    const response = await axios.post(DEDUPE_API, payload, {
+      headers: {
+        token: token,
+        "Content-Type": "application/json",
       },
-    );
+    });
 
     console.log(
       "✅ [DEDUPE RESPONSE] =>",
@@ -266,11 +274,13 @@ async function sendToMoneyView(lead, token) {
       if (offersResult.status === "success" && offersResult.data) {
         journeyUrlResult = await fetchJourneyUrl(leadId, token);
       } else {
-        console.warn("NO Lead Receivd");
+        console.warn(
+          "No valid offers received for lead, skipping journey URL.",
+        );
       }
     } else {
       console.warn(
-        "⚠️ No leadId received from lead submission. Skipping offers and Journey URL APII calls.",
+        "⚠️ No leadId received from lead submission. Skipping offers and Journey URL API calls.",
       );
     }
 
@@ -391,8 +401,7 @@ async function processBatch(leads, token) {
         finalStatus = "skipped";
         finalMessage = "Duplicate lead found in MV (dedupe)";
         console.log(
-          `⛔ ${finalMessage} for ${lead.phone}. Skipping lead submission, offers, and j
-ourney URL.`,
+          `⛔ ${finalMessage} for ${lead.phone}. Skipping lead submission, offers, and journey URL.`,
         );
         await UserDB.updateOne(
           { phone: lead.phone },
@@ -458,6 +467,8 @@ ourney URL.`,
         $push: {
           apiResponse: {
             ...apiResponsesToSave,
+            status: finalStatus,
+            message: finalMessage,
             createdAt: new Date().toISOString(),
           },
           RefArr: { name: "MoneyView", createdAt: new Date().toISOString() },
@@ -476,6 +487,7 @@ async function Loop() {
   let token = await getToken();
   if (!token) {
     console.error("❌ No token. Exiting.");
+    await mongoose.connection.close();
     return;
   }
 
@@ -498,6 +510,18 @@ async function Loop() {
     if (leads.length === 0) {
       console.log("✅ All leads processed.");
       break;
+    }
+
+    if (totalLeads % 100 === 0 && totalLeads !== 0) {
+      console.log("Refreshing token...");
+      const newToken = await getToken();
+      if (newToken) {
+        token = newToken;
+      } else {
+        console.error(
+          "❌ Failed to refresh token. Continuing with old token (if any) or exiting.",
+        );
+      }
     }
 
     await processBatch(leads, token);
