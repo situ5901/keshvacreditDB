@@ -16,9 +16,9 @@ const UserDB = mongoose.model(
   new mongoose.Schema({}, { collection: "smcoll", strict: false }),
 );
 
-const HealthCheckAPI = "https://growth-01.stg.whizdm.com/atlas/v1/health";
+const Healthcheck_API = "https://growth-01.stg.whizdm.com/atlas/v1/health";
 const TOKEN_API = "https://growth-01.stg.whizdm.com/atlas/v1/token";
-const DEDUPE_API = "https://growth-01.stg.whizdm.com/atlas/v1/lead/dedupe";
+const DEDUPE_API = "https://growth-01.stg.whizdm.com/atlas/v1/dedupe";
 const LEAD_API = "https://growth-01.stg.whizdm.com/atlas/v1/lead";
 const OFFERS_API = "https://growth-01.stg.whizdm.com/atlas/v1/offers";
 const JOURNEY_URL_API = "https://growth-01.stg.whizdm.com/atlas/v1/journey-url";
@@ -55,43 +55,24 @@ let successCount = 0;
 
 async function getToken() {
   try {
-    let resp;
-    try {
-      resp = await axios.get(HealthCheckAPI);
-      if (resp.status === 200) {
-        console.log("✅ Health check API is up and running");
-      } else {
-        console.error(
-          "❌ Health check API is not up and running. Status:",
-          resp.status,
-        );
-      }
-    } catch (healthError) {
-      console.error(
-        "❌ Error during Health check API call:",
-        healthError.message,
-      );
+    const healthChecek = await axios.get(Healthcheck_API);
+    if ((Healthcheck_API, status === 200)) {
+      cosole.log("✅ Healthcheck API is up and running");
+    } else {
+      console.error("❌ Healthcheck API is not up and running");
     }
-
     const tokenPayload = {
       userName: "keshvacredit",
       password: "Zb'91O(Nhy",
       partnerCode: PARTNER_CODE,
     };
-
     console.log(
       "\n🔐 [TOKEN REQUEST] =>",
       JSON.stringify(tokenPayload, null, 2),
     );
-
     const response = await axios.post(TOKEN_API, tokenPayload);
-    if (response.data && response.data.token) {
-      console.log("✅ [TOKEN RESPONSE] =>", response.data.token, "\n");
-      return response.data.token;
-    } else {
-      console.error("❌ Token not found in response data:", response.data);
-      return null;
-    }
+    console.log("✅ [TOKEN RESPONSE] =>", response.data.token, "\n");
+    return response.data.token;
   } catch (error) {
     console.error(
       "❌ Error fetching token:",
@@ -108,6 +89,7 @@ async function dedupeCheck(lead, token) {
   };
 
   try {
+    // 🔍 Check if required fields are present
     if (!lead.pan || !lead.phone || !lead.email) {
       console.error("❌ Missing required fields in lead object:", {
         panNo: lead.pan,
@@ -118,20 +100,26 @@ async function dedupeCheck(lead, token) {
       return dedupeResponse;
     }
 
+    // ✅ Prepare payload as expected by the API
     const payload = {
-      panNO: lead.pan,
-      mobileNo: lead.phone,
-      email: lead.email,
+      panNO: lead.pan, // Field must match curl: panNO
+      mobileNo: lead.phone, // Field must match curl: mobileNo
+      email: lead.email, // Same
     };
 
     console.log(`\n🧾 [DEDUPE REQUEST] =>`, payload);
 
-    const response = await axios.post(DEDUPE_API, payload, {
-      headers: {
-        token: token,
-        "Content-Type": "application/json",
+    // ✅ Make API request
+    const response = await axios.post(
+      `https://growth-01.stg.whizdm.com/atlas/v1/lead/dedupe`,
+      payload,
+      {
+        headers: {
+          token: token, // curl is using token in header (not Bearer format)
+          "Content-Type": "application/json",
+        },
       },
-    });
+    );
 
     console.log(
       "✅ [DEDUPE RESPONSE] =>",
@@ -274,13 +262,11 @@ async function sendToMoneyView(lead, token) {
       if (offersResult.status === "success" && offersResult.data) {
         journeyUrlResult = await fetchJourneyUrl(leadId, token);
       } else {
-        console.warn(
-          "No valid offers received for lead, skipping journey URL.",
-        );
+        console.warn("NO Lead Receivd");
       }
     } else {
       console.warn(
-        "⚠️ No leadId received from lead submission. Skipping offers and Journey URL API calls.",
+        "⚠️ No leadId received from lead submission. Skipping offers and Journey URL APII calls.",
       );
     }
 
@@ -401,7 +387,8 @@ async function processBatch(leads, token) {
         finalStatus = "skipped";
         finalMessage = "Duplicate lead found in MV (dedupe)";
         console.log(
-          `⛔ ${finalMessage} for ${lead.phone}. Skipping lead submission, offers, and journey URL.`,
+          `⛔ ${finalMessage} for ${lead.phone}. Skipping lead submission, offers, and j
+ourney URL.`,
         );
         await UserDB.updateOne(
           { phone: lead.phone },
@@ -467,8 +454,6 @@ async function processBatch(leads, token) {
         $push: {
           apiResponse: {
             ...apiResponsesToSave,
-            status: finalStatus,
-            message: finalMessage,
             createdAt: new Date().toISOString(),
           },
           RefArr: { name: "MoneyView", createdAt: new Date().toISOString() },
@@ -487,7 +472,6 @@ async function Loop() {
   let token = await getToken();
   if (!token) {
     console.error("❌ No token. Exiting.");
-    await mongoose.connection.close();
     return;
   }
 
@@ -510,18 +494,6 @@ async function Loop() {
     if (leads.length === 0) {
       console.log("✅ All leads processed.");
       break;
-    }
-
-    if (totalLeads % 100 === 0 && totalLeads !== 0) {
-      console.log("Refreshing token...");
-      const newToken = await getToken();
-      if (newToken) {
-        token = newToken;
-      } else {
-        console.error(
-          "❌ Failed to refresh token. Continuing with old token (if any) or exiting.",
-        );
-      }
     }
 
     await processBatch(leads, token);
