@@ -18,7 +18,7 @@ const UserDB = mongoose.model(
 
 const Healthcheck_API = "https://growth-01.stg.whizdm.com/atlas/v1/health";
 const TOKEN_API = "https://growth-01.stg.whizdm.com/atlas/v1/token";
-const DEDUPE_API = "https://growth-01.stg.whizdm.com/atlas/v1/dedupe";
+const DEDUPE_API = "https://growth-01.stg.whizdm.com/atlas/v1/lead/dedupe";
 const LEAD_API = "https://growth-01.stg.whizdm.com/atlas/v1/lead";
 const OFFERS_API = "https://growth-01.stg.whizdm.com/atlas/v1/offers";
 const JOURNEY_URL_API = "https://growth-01.stg.whizdm.com/atlas/v1/journey-url";
