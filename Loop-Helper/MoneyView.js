@@ -58,19 +58,40 @@ async function getToken() {
     const tokenPayload = {
       userName: "keshvacredit",
       password: "Zb'91O(Nhy",
-      partnerCode: PARTNER_CODE,
+      partnerCode: PARTNER_CODE, // Ensure PARTNER_CODE is defined
     };
+
     console.log(
-      "\n🔐 [TOKEN REQUEST] =>",
+      "\n🔐 [TOKEN REQUEST PAYLOAD] =>",
       JSON.stringify(tokenPayload, null, 2),
     );
 
-    const healthCheck = await axios.get(HEALTH_CHECK_API);
-    console.log(healthCheck);
+    if (!PARTNER_CODE) {
+      console.error("❌ PARTNER_CODE is undefined");
+      return null;
+    }
 
+    try {
+      const healthCheck = await axios.get(HEALTH_CHECK_API);
+      console.log("✅ [HEALTH CHECK SUCCESS] =>", healthCheck.data);
+    } catch (healthError) {
+      console.error(
+        "❌ [HEALTH CHECK FAILED] =>",
+        healthError.response?.data || healthError.message,
+      );
+      return null;
+    }
+
+    // 3. Request token
     const response = await axios.post(TOKEN_API, tokenPayload);
-    console.log("✅ [TOKEN RESPONSE] =>", response.data.token, "\n");
-    return response.data.token;
+
+    if (response?.data?.token) {
+      console.log("✅ [TOKEN RECEIVED] =>", response.data.token, "\n");
+      return response.data.token;
+    } else {
+      console.error("❌ [TOKEN RESPONSE MALFORMED] =>", response.data);
+      return null;
+    }
   } catch (error) {
     console.error(
       "❌ Error fetching token:",
