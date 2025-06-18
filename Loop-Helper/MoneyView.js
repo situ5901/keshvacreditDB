@@ -16,12 +16,11 @@ const UserDB = mongoose.model(
   new mongoose.Schema({}, { collection: "smcoll", strict: false }),
 );
 
-const HEALTH_CHECK_API = "https://growth-01.stg.whizdm.com/atlas/v1/health";
 const TOKEN_API = "https://growth-01.stg.whizdm.com/atlas/v1/token";
 const DEDUPE_API = "https://growth-01.stg.whizdm.com/atlas/v1/lead/filter/pan";
 const LEAD_API = "https://growth-01.stg.whizdm.com/atlas/v1/lead";
 const OFFERS_API = "https://growth-01.stg.whizdm.com/atlas/v1/offers";
-const JOURNEY_URL_API = "https://growth-01.stg.whizdm.com/atlas/v1/journey-url";
+const JOURNEY_URL_API = "https://atlas.whizdm.com/atlas/v1/journey-url";
 const MAX_LEADS = 1000;
 const PARTNER_CODE = 422;
 const BATCH_SIZE = 1;
@@ -58,40 +57,15 @@ async function getToken() {
     const tokenPayload = {
       userName: "keshvacredit",
       password: "Zb'91O(Nhy",
-      partnerCode: PARTNER_CODE, // Ensure PARTNER_CODE is defined
+      partnerCode: PARTNER_CODE,
     };
-
     console.log(
-      "\n🔐 [TOKEN REQUEST PAYLOAD] =>",
+      "\n🔐 [TOKEN REQUEST] =>",
       JSON.stringify(tokenPayload, null, 2),
     );
-
-    if (!PARTNER_CODE) {
-      console.error("❌ PARTNER_CODE is undefined");
-      return null;
-    }
-
-    try {
-      const healthCheck = await axios.get(HEALTH_CHECK_API);
-      console.log("✅ [HEALTH CHECK SUCCESS] =>", healthCheck.data);
-    } catch (healthError) {
-      console.error(
-        "❌ [HEALTH CHECK FAILED] =>",
-        healthError.response?.data || healthError.message,
-      );
-      return null;
-    }
-
-    // 3. Request token
     const response = await axios.post(TOKEN_API, tokenPayload);
-
-    if (response?.data?.token) {
-      console.log("✅ [TOKEN RECEIVED] =>", response.data.token, "\n");
-      return response.data.token;
-    } else {
-      console.error("❌ [TOKEN RESPONSE MALFORMED] =>", response.data);
-      return null;
-    }
+    console.log("✅ [TOKEN RESPONSE] =>", response.data.token, "\n");
+    return response.data.token;
   } catch (error) {
     console.error(
       "❌ Error fetching token:",
@@ -101,34 +75,41 @@ async function getToken() {
   }
 }
 
-async function dedupeCheck(pan, token) {
+async function dedupeCheck(user, token) {
   let dedupeResponse = {
     status: "failure",
     message: "Unknown error during dedupe",
   };
+
   try {
-    console.log(`\n🧾 [DEDUPE REQUEST] PAN => ${pan}`);
-    const response = await axios.get(`${DEDUPE_API}/${pan}`, {
-      headers: { Authorization: `Bearer ${token}` },
+    const payload = {
+      panNo: user.pan,
+      mobileNo: user.phone,
+      email: user.email,
+    };
+
+    console.log(`\n🧾 [DEDUPE REQUEST] =>`, payload);
+
+    const response = await axios.post(`${DEDUPE_API}`, payload, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
     });
-    console.log(
-      "[DEDUPE RESPONSE] =>",
-      JSON.stringify(response.data, null, 2),
-      "\n",
-    );
+
+    console.log("[✅ DEDUPE RESPONSE] =>", JSON.stringify(response.data, null, 2), "\n");
+
     dedupeResponse = {
-      status: response.data.status,
-      message: response.data.message,
+      status: response.data.status || "success",
+      message: response.data.message || "Dedupe check completed",
       data: response.data,
     };
   } catch (error) {
-    console.error(
-      `❌ Dedupe Error for PAN ${pan}:`,
-      error.response?.data || error.message,
-    );
+    console.error(`❌ Dedupe Error:`, error.response?.data || error.message);
     dedupeResponse.message = error.response?.data?.message || error.message;
     dedupeResponse.data = error.response?.data || null;
   }
+
   return dedupeResponse;
 }
 
@@ -180,7 +161,7 @@ async function fetchJourneyUrl(leadId, token) {
       `❌ Error fetching journey URL for Lead ID ${leadId}:`,
       error.response?.data || error.message,
     );
-    journeyUrlResponse.message = error.response?.data?.message || error.message;
+    journeyUrlResponse.message = error.response?.data?.message || error.message;        
     journeyUrlResponse.data = error.response?.data || null;
   }
   return journeyUrlResponse;
@@ -254,12 +235,14 @@ async function sendToMoneyView(lead, token) {
         journeyUrlResult = await fetchJourneyUrl(leadId, token);
       } else {
         console.warn(
-          "⚠️ Offers API call failed or returned no data. Skipping Journey URL API call.",
+          "⚠️ Offers API call failed or returned no data. Skipping Journey URL API call..
+",
         );
       }
     } else {
       console.warn(
-        "⚠️ No leadId received from lead submission. Skipping offers and Journey URL API calls.",
+        "⚠️ No leadId received from lead submission. Skipping offers and Journey URL APII
+ calls.",
       );
     }
 
@@ -380,7 +363,8 @@ async function processBatch(leads, token) {
         finalStatus = "skipped";
         finalMessage = "Duplicate lead found in MV (dedupe)";
         console.log(
-          `⛔ ${finalMessage} for ${lead.phone}. Skipping lead submission, offers, and journey URL.`,
+          `⛔ ${finalMessage} for ${lead.phone}. Skipping lead submission, offers, and j
+ourney URL.`,
         );
         await UserDB.updateOne(
           { phone: lead.phone },
@@ -418,7 +402,7 @@ async function processBatch(leads, token) {
         console.log(`✅ ${finalMessage}: ${lead.phone}`);
       } else {
         finalStatus = "failed";
-        finalMessage = moneyViewAllResponses.message || "API processing failed";
+        finalMessage = moneyViewAllResponses.message || "API processing failed";        
         console.log(`⛔ ${finalMessage} for ${lead.phone}`);
       }
     } catch (err) {
