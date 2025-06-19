@@ -26,7 +26,7 @@ const MAX_LEADS = 150000;
 const PARTNER_CODE = 422;
 const BATCH_SIZE = 10;
 const PINCODE_FILE_PATH = path.join(__dirname, "..", "xlsx", "mv.xlsx");
-
+// situ demo
 function loadValidPincodes(filePath) {
   try {
     const workbook = xlsx.readFile(filePath);
