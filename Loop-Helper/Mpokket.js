@@ -110,8 +110,6 @@ async function processBatch(users) {
 
     const mpokketBase = {
       ...response,
-      requestId: response?.data?.requestId || null,
-      Mpokket: true,
     };
 
     const updateDoc = {
