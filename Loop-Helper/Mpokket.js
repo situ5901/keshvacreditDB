@@ -133,15 +133,11 @@ async function processBatch(users) {
     if (response.status_code === "1205") {
       const preApproval = await getPreApproval(user);
 
-      // Add preApproval only if it's present and success
       if (preApproval && preApproval.success) {
         mpokketBase.preApproval = preApproval; // dynamically add preApproval
 
         updateDoc.$push.apiResponse = {
           MpokketResponse: mpokketBase, // now with preApproval
-          status_code: preApproval?.status_code || response.status_code,
-          message: preApproval?.message || response.message,
-          createdAt: new Date().toISOString(),
         };
       }
     } else {
