@@ -10,8 +10,8 @@ mongoose
   .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
 
 const UserDB = mongoose.model(
-  "smcoll",
-  new mongoose.Schema({}, { collection: "smcoll", strict: false }),
+  "loops",
+  new mongoose.Schema({}, { collection: "loops", strict: false }),
 );
 
 const BATCH_SIZE = 100;
@@ -20,11 +20,6 @@ const dedupeAPI = "https://api.mpkt.in/acquisition-affiliate/v1/dedupe/check";
 const CreateUserAPI = "https://api.mpkt.in/acquisition-affiliate/v1/user";
 const API_KEY = "2A331F81163D447C9B5941910D2BD";
 
-// const dedupeAPI =
-//   "https://stg-api.mpkt.in/acquisition-affiliate/v1/dedupe/check";
-// const CreateUserAPI = "https://stg-api.mpkt.in/acquisition-affiliate/v1/user";
-//
-// const API_KEY = "B6AB0D38B1B44BFC9F38789037D8D";
 async function sendToNewAPI(user) {
   try {
     const email = user?.email ? user.email.toString() : "";
