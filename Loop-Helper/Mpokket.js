@@ -102,72 +102,20 @@ async function processBatch(users) {
   const promises = users.map(async (user) => {
     const userDoc = await UserDB.findOne({ phone: user.phone });
 
-    if (userDoc) {
-      const updates = {};
-      let needUpdate = false;
+    if (response.status_code === "1205") {
+      const preApproval = await getPreApproval(user);
 
-      if (userDoc.apiResponse && !Array.isArray(userDoc.apiResponse)) {
-        updates.apiResponse = [userDoc.apiResponse];
-        needUpdate = true;
-      }
-
-      if (userDoc.preApproval && !Array.isArray(userDoc.preApproval)) {
-        updates.preApproval = [userDoc.preApproval];
-        needUpdate = true;
-      }
-
-      if (needUpdate) {
-        await UserDB.updateOne({ phone: user.phone }, { $set: updates });
-      }
-
-      const response = await sendToNewAPI(user);
-
-      const updateDoc = {
-        $push: {
-          apiResponse: {
-            MpokketResponse: {
-              ...response,
-              requestId: response?.data?.requestId || null, // ✅ Include requestId at top level
-              Mpokket: true,
-            },
-            status_code: response.status_code,
-            message: response.message,
-            createdAt: new Date().toISOString(),
-          },
-          RefArr: {
-            name: "Mpokket",
-            createdAt: new Date().toISOString(),
-          },
+      updateDoc.$push.apiResponse = {
+        MpokketResponse: {
+          ...response,
+          preApproval: preApproval, // ✅ Nested preApproval in same object
+          requestId: response?.data?.requestId || null,
+          Mpokket: true,
         },
-        $unset: { accounts: "" },
+        status_code: preApproval?.status_code || response.status_code,
+        message: preApproval?.message || response.message,
+        createdAt: new Date().toISOString(),
       };
-
-      if (response.status_code === "1205") {
-        const preApproval = await getPreApproval(user);
-
-        // Replace the push with full merged object including preApproval response
-        updateDoc.$push.apiResponse = {
-          MpokketResponse: {
-            ...response,
-            requestId: response?.data?.requestId || null,
-            Mpokket: true,
-          },
-          preApprovalResponse: preApproval, // ✅ Save full PreApproval response
-          status: preApproval?.status || "SUCCESS",
-          message: preApproval?.message || "Pre-approval completed",
-          createdAt: new Date().toISOString(),
-        };
-      } else {
-        console.log(`⛔ No PreApproval — Status Code: ${response.status_code}`);
-      }
-
-      await UserDB.updateOne({ phone: user.phone }, updateDoc);
-      await UserDB.updateOne(
-        { phone: user.phone },
-        { $set: { processed: true } },
-      );
-
-      console.log("✅ Lead processed successfully:", user.phone);
     }
   });
 
