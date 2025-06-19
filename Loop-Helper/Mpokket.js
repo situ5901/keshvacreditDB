@@ -108,14 +108,16 @@ async function processBatch(users) {
 
     const response = await sendToNewAPI(user);
 
+    const mpokketBase = {
+      ...response,
+      requestId: response?.data?.requestId || null,
+      Mpokket: true,
+    };
+
     const updateDoc = {
       $push: {
         apiResponse: {
-          MpokketResponse: {
-            ...response,
-            requestId: response?.data?.requestId || null,
-            Mpokket: true,
-          },
+          MpokketResponse: mpokketBase, // initially without preApproval
           status_code: response.status_code,
           message: response.message,
           createdAt: new Date().toISOString(),
@@ -128,22 +130,20 @@ async function processBatch(users) {
       $unset: { accounts: "" },
     };
 
-    // ✅ If eligible, do PreApproval
     if (response.status_code === "1205") {
       const preApproval = await getPreApproval(user);
 
-      // Overwrite updateDoc.$push.apiResponse
-      updateDoc.$push.apiResponse = {
-        MpokketResponse: {
-          ...response,
-          requestId: response?.data?.requestId || null,
-          Mpokket: true,
-          preApproval: preApproval, // ✅ Nested full response
-        },
-        status_code: preApproval?.status_code || response.status_code,
-        message: preApproval?.message || response.message,
-        createdAt: new Date().toISOString(),
-      };
+      // Add preApproval only if it's present and success
+      if (preApproval && preApproval.success) {
+        mpokketBase.preApproval = preApproval; // dynamically add preApproval
+
+        updateDoc.$push.apiResponse = {
+          MpokketResponse: mpokketBase, // now with preApproval
+          status_code: preApproval?.status_code || response.status_code,
+          message: preApproval?.message || response.message,
+          createdAt: new Date().toISOString(),
+        };
+      }
     } else {
       console.log(`⛔ No PreApproval — Status Code: ${response.status_code}`);
     }
