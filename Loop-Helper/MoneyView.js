@@ -85,6 +85,10 @@ async function getToken() {
   }
 }
 
+function isValidPAN(pan) {
+  return /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(pan);
+}
+
 async function dedupeCheck(lead, token) {
   let dedupeResponse = {
     status: "failure",
@@ -140,60 +144,6 @@ async function dedupeCheck(lead, token) {
   return dedupeResponse;
 }
 
-async function fetchOffers(leadId, token) {
-  let offersResponse = {
-    status: "failure",
-    message: "Unknown error fetching offers",
-  };
-  try {
-    console.log(`\n💰 [OFFERS REQUEST] Lead ID => ${leadId}`);
-    const response = await axios.get(`${OFFERS_API}/${leadId}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    console.log(
-      "[OFFERS RESPONSE] =>",
-      JSON.stringify(response.data, null, 2),
-      "\n",
-    );
-    offersResponse = { status: "success", data: response.data };
-  } catch (error) {
-    console.error(
-      `❌ Error fetching offers for Lead ID ${leadId}:`,
-      error.response?.data || error.message,
-    );
-    offersResponse.message = error.response?.data?.message || error.message;
-    offersResponse.data = error.response?.data || null;
-  }
-  return offersResponse;
-}
-
-async function fetchJourneyUrl(leadId, token) {
-  let journeyUrlResponse = {
-    status: "failure",
-    message: "Unknown error fetching journey URL",
-  };
-  try {
-    console.log(`\n🔗 [JOURNEY URL REQUEST] Lead ID => ${leadId}`);
-    const response = await axios.get(`${JOURNEY_URL_API}/${leadId}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    console.log(
-      "[JOURNEY URL RESPONSE] =>",
-      JSON.stringify(response.data, null, 2),
-      "\n",
-    );
-    journeyUrlResponse = { status: "success", data: response.data };
-  } catch (error) {
-    console.error(
-      `❌ Error fetching journey URL for Lead ID ${leadId}:`,
-      error.response?.data || error.message,
-    );
-    journeyUrlResponse.message = error.response?.data?.message || error.message;
-    journeyUrlResponse.data = error.response?.data || null;
-  }
-  return journeyUrlResponse;
-}
-
 async function sendToMoneyView(lead, token) {
   const requestBody = {
     partnerCode: 422,
@@ -224,7 +174,6 @@ async function sendToMoneyView(lead, token) {
         state: lead.state,
       },
     ],
-
     emailList: [
       {
         email: lead.email,
@@ -329,8 +278,58 @@ async function sendToMoneyView(lead, token) {
   }
 }
 
-function isValidPAN(pan) {
-  return /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(pan);
+async function fetchOffers(leadId, token) {
+  let offersResponse = {
+    status: "failure",
+    message: "Unknown error fetching offers",
+  };
+  try {
+    console.log(`\n💰 [OFFERS REQUEST] Lead ID => ${leadId}`);
+    const response = await axios.get(`${OFFERS_API}/${leadId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    console.log(
+      "[OFFERS RESPONSE] =>",
+      JSON.stringify(response.data, null, 2),
+      "\n",
+    );
+    offersResponse = { status: "success", data: response.data };
+  } catch (error) {
+    console.error(
+      `❌ Error fetching offers for Lead ID ${leadId}:`,
+      error.response?.data || error.message,
+    );
+    offersResponse.message = error.response?.data?.message || error.message;
+    offersResponse.data = error.response?.data || null;
+  }
+  return offersResponse;
+}
+
+async function fetchJourneyUrl(leadId, token) {
+  let journeyUrlResponse = {
+    status: "failure",
+    message: "Unknown error fetching journey URL",
+  };
+  try {
+    console.log(`\n🔗 [JOURNEY URL REQUEST] Lead ID => ${leadId}`);
+    const response = await axios.get(`${JOURNEY_URL_API}/${leadId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    console.log(
+      "[JOURNEY URL RESPONSE] =>",
+      JSON.stringify(response.data, null, 2),
+      "\n",
+    );
+    journeyUrlResponse = { status: "success", data: response.data };
+  } catch (error) {
+    console.error(
+      `❌ Error fetching journey URL for Lead ID ${leadId}:`,
+      error.response?.data || error.message,
+    );
+    journeyUrlResponse.message = error.response?.data?.message || error.message;
+    journeyUrlResponse.data = error.response?.data || null;
+  }
+  return journeyUrlResponse;
 }
 
 async function processBatch(leads, token) {
@@ -420,8 +419,7 @@ async function processBatch(leads, token) {
         finalStatus = "skipped";
         finalMessage = "Duplicate lead found in MV (dedupe)";
         console.log(
-          `⛔ ${finalMessage} for ${lead.phone}. Skipping lead submission, offers, and j
-ourney URL.`,
+          `⛔ ${finalMessage} for ${lead.phone}. Skipping lead submission, offers, and journey URL.`,
         );
         await UserDB.updateOne(
           { phone: lead.phone },
