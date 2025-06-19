@@ -47,7 +47,7 @@ async function sendToNewAPI(user) {
       },
     });
 
-    console.log("✅ Eligibility Response:", response.data);
+    console.log("✅ Eligibility API Response:", response.data);
     return response.data;
   } catch (err) {
     console.error(
@@ -83,7 +83,7 @@ async function getPreApproval(user) {
       },
     });
 
-    console.log("✅ PreApproval Response:", response.data);
+    console.log("✅ PreApproval API Response:", response.data);
     return response.data;
   } catch (err) {
     console.error(
@@ -97,36 +97,74 @@ async function getPreApproval(user) {
   }
 }
 
-// Function to process users without waiting
 async function processBatch(users) {
   const promises = users.map(async (user) => {
     const userDoc = await UserDB.findOne({ phone: user.phone });
 
+    if (!userDoc) {
+      console.log("❌ No matching user found in DB for phone:", user.phone);
+      return;
+    }
+
+    const response = await sendToNewAPI(user);
+
+    const updateDoc = {
+      $push: {
+        apiResponse: {
+          MpokketResponse: {
+            ...response,
+            requestId: response?.data?.requestId || null,
+            Mpokket: true,
+          },
+          status_code: response.status_code,
+          message: response.message,
+          createdAt: new Date().toISOString(),
+        },
+        RefArr: {
+          name: "Mpokket",
+          createdAt: new Date().toISOString(),
+        },
+      },
+      $unset: { accounts: "" },
+    };
+
+    // ✅ If eligible, do PreApproval
     if (response.status_code === "1205") {
       const preApproval = await getPreApproval(user);
 
+      // Overwrite updateDoc.$push.apiResponse
       updateDoc.$push.apiResponse = {
         MpokketResponse: {
           ...response,
-          preApproval: preApproval, // ✅ Nested preApproval in same object
           requestId: response?.data?.requestId || null,
           Mpokket: true,
+          preApproval: preApproval, // ✅ Nested full response
         },
         status_code: preApproval?.status_code || response.status_code,
         message: preApproval?.message || response.message,
         createdAt: new Date().toISOString(),
       };
+    } else {
+      console.log(`⛔ No PreApproval — Status Code: ${response.status_code}`);
     }
+
+    await UserDB.updateOne({ phone: user.phone }, updateDoc);
+    await UserDB.updateOne(
+      { phone: user.phone },
+      { $set: { processed: true } },
+    );
+
+    console.log("✅ Lead processed and saved in DB for:", user.phone);
   });
 
-  // Run all in parallel and wait for all to complete
   await Promise.allSettled(promises);
 }
+
 let totalcount = 0;
 async function startProcessing() {
   try {
     while (true) {
-      console.log("📦 Fetching leads...");
+      console.log("📦 Fetching unprocessed leads...");
 
       const leads = await UserDB.aggregate([
         {
@@ -139,18 +177,18 @@ async function startProcessing() {
       ]);
 
       if (leads.length === 0) {
-        console.log("⏸️ No leads found.");
-        break; // No more leads, stop processing
+        console.log("⏸️ No more leads to process.");
+        break;
       }
 
-      await processBatch(leads); // Process all leads at once
+      await processBatch(leads);
       totalcount += leads.length;
-      console.log(`🎉 Processed ${totalcount} leads successfully!`);
+      console.log(`🎉 Total Processed: ${totalcount}`);
     }
   } catch (error) {
     console.error("❌ Error occurred:", error.message);
   } finally {
-    console.log("🔌 Closing DB connection...");
+    console.log("🔌 Closing MongoDB connection...");
     mongoose.connection.close();
   }
 }
