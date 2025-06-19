@@ -186,11 +186,6 @@ async function sendToMoneyView(lead, token) {
     consent: {
       consentDecision: true,
       deviceTimeStamp: new Date().toISOString(),
-      metaData: {
-        latitude: "12.9716", // default, or use geolocation
-        longitude: "77.5946",
-        deviceIpAddress: "192.168.0.1", // optional static or get from client
-      },
     },
 
     consentDetails: {
@@ -202,11 +197,6 @@ async function sendToMoneyView(lead, token) {
         },
       ],
       deviceTimeStamp: new Date().toISOString(),
-      metadata: {
-        latitude: "12.9716",
-        longitude: "77.5946",
-        deviceIpAddress: "192.168.0.1",
-      },
     },
   };
   console.log(
