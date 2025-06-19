@@ -14,7 +14,7 @@ const UserDB = mongoose.model(
   new mongoose.Schema({}, { collection: "loops", strict: false }),
 );
 
-const BATCH_SIZE = 100;
+const BATCH_SIZE = 1;
 const PartnerID = "Keshvacredit";
 const dedupeAPI = "https://api.mpkt.in/acquisition-affiliate/v1/dedupe/check";
 const CreateUserAPI = "https://api.mpkt.in/acquisition-affiliate/v1/user";
@@ -127,7 +127,7 @@ async function processBatch(users) {
           apiResponse: {
             MpokketResponse: {
               ...response,
-              requestId: response?.data?.requestId || null,
+              requestId: response?.data?.requestId || null, // ✅ Include requestId at top level
               Mpokket: true,
             },
             status_code: response.status_code,
@@ -144,19 +144,23 @@ async function processBatch(users) {
 
       if (response.status_code === "1205") {
         const preApproval = await getPreApproval(user);
+
+        // Replace the push with full merged object including preApproval response
         updateDoc.$push.apiResponse = {
           MpokketResponse: {
             ...response,
             requestId: response?.data?.requestId || null,
             Mpokket: true,
           },
-          status: preApproval.status,
-          message: preApproval.message,
+          preApprovalResponse: preApproval, // ✅ Save full PreApproval response
+          status: preApproval?.status || "SUCCESS",
+          message: preApproval?.message || "Pre-approval completed",
           createdAt: new Date().toISOString(),
         };
       } else {
         console.log(`⛔ No PreApproval — Status Code: ${response.status_code}`);
       }
+
       await UserDB.updateOne({ phone: user.phone }, updateDoc);
       await UserDB.updateOne(
         { phone: user.phone },
@@ -167,7 +171,7 @@ async function processBatch(users) {
     }
   });
 
-  // Using Promise.all to process all users concurrently (without waiting)
+  // Run all in parallel and wait for all to complete
   await Promise.allSettled(promises);
 }
 let totalcount = 0;
