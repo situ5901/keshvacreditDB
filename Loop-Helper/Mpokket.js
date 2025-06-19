@@ -127,6 +127,7 @@ async function processBatch(users) {
           apiResponse: {
             MpokketResponse: {
               ...response,
+              requestId: response?.data?.requestId || null,
               Mpokket: true,
             },
             status_code: response.status_code,
@@ -146,6 +147,7 @@ async function processBatch(users) {
         updateDoc.$push.apiResponse = {
           MpokketResponse: {
             ...response,
+            requestId: response?.data?.requestId || null,
             Mpokket: true,
           },
           status: preApproval.status,
