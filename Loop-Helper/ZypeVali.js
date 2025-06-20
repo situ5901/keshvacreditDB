@@ -171,70 +171,86 @@ async function processBatch(users) {
         await UserDB.updateOne({ phone: user.phone }, { $set: updates });
       }
 
+      // Step 1: Validate
       const validation = validateUser(user);
+      const validationStatus = validation.passed ? "PASSED" : "FAILED";
+      const validationMessage =
+        validation.reasons.join(", ") || "Validation Passed";
+
+      // Step 2: Agar validation fail ho
+      if (!validation.passed) {
+        const combinedLog = {
+          ZypeValidation: true,
+          validationStatus,
+          message: validationMessage,
+          status: validationStatus,
+          createdAt: new Date().toISOString(),
+        };
+
+        await UserDB.updateOne(
+          { phone: user.phone },
+          {
+            $push: {
+              apiResponse: combinedLog,
+              RefArr: { name: "ZypeVali" },
+            },
+          },
+        );
+
+        console.log(
+          `⛔ Skipping API for ${user.phone} due to validation failure: ${validationMessage}`,
+        );
+        return;
+      }
+
+      // Step 3: Eligibility API
+      const response = await sendToNewAPI(user);
+
+      const combinedLog = {
+        ZypeValidation: true,
+        validationStatus,
+        message: validationMessage,
+        status: response.status,
+        ZypeValiResponse: {
+          ...response,
+          Zype: true,
+        },
+        createdAt: new Date().toISOString(),
+      };
 
       await UserDB.updateOne(
         { phone: user.phone },
         {
           $push: {
-            apiResponse: {
-              ZypeValidation: true,
-              validationStatus: validation.passed ? "PASSED" : "FAILED",
-              message: validation.reasons.join(", ") || "Validation Passed",
-              createdAt: new Date().toISOString(),
-            },
-            RefArr: {
-              name: "ZypeVali",
-              type: "Validation",
-              status: validation.passed ? "PASSED" : "FAILED",
-              createdAt: new Date().toISOString(),
-            },
+            apiResponse: combinedLog,
+            RefArr: { name: "ZypeVali" },
           },
+          $unset: { accounts: "" },
         },
       );
 
-      if (!validation.passed) {
-        console.log(
-          `⛔ Skipping API for ${user.phone} due to validation failure: ${validation.reasons.join(", ")}`,
-        );
-        return;
-      }
-
-      const response = await sendToNewAPI(user);
-
-      const updateDoc = {
-        $push: {
-          apiResponse: {
-            ZypeValiResponse: {
-              ...response,
-              Zype: true,
-            },
-            status: response.status,
-            amount: response.amount || null,
-            createdAt: new Date().toISOString(),
-          },
-          RefArr: {
-            name: "ZypeVali",
-            type: "Eligibility",
-            status: response.status,
-            createdAt: new Date().toISOString(),
-          },
-        },
-        $unset: { accounts: "" },
-      };
-
+      // Step 4: Pre-Approval if ACCEPTED
       if (response.status === "ACCEPT") {
         const preApproval = await getPreApproval(user);
-        updateDoc.$push.apiResponse = {
+
+        const preApprovalLog = {
           ZypeValiResponse: preApproval,
           status: preApproval.status,
           amount: preApproval.amount,
           message: preApproval.message,
           createdAt: new Date().toISOString(),
         };
-      }
 
-      await UserDB.updateOne({ phone: user.phone }, updateDoc);
+        await UserDB.updateOne(
+          { phone: user.phone },
+          {
+            $push: {
+              apiResponse: preApprovalLog,
+              RefArr: { name: "ZypeVali" },
+            },
+          },
+        );
+      }
     }),
   );
 
@@ -266,7 +282,7 @@ async function Loop() {
 
       if (leads.length === 0) {
         console.log("✅ No more leads. Waiting...");
-        continue;
+        break;
       }
 
       const remaining = MAX_PROCESS - processedCount;
