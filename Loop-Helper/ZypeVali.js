@@ -15,7 +15,7 @@ const UserDB = mongoose.model(
 );
 
 const MAX_PROCESS = 50000;
-const BATCH_SIZE = 100;
+const BATCH_SIZE = 1;
 const Campaign_name = "Keshvacredit_3";
 const PartnerID = "92a87d42-ca67-49c8-a004-79dc8f86fc44";
 const ELIGIBILITY_API =
@@ -88,12 +88,20 @@ async function sendToNewAPI(user) {
       campaignName: Campaign_name,
     };
 
+    console.log("\n📤 Sending Eligibility Payload:", payload);
+
     const response = await axios.post(ELIGIBILITY_API, payload, {
       headers: { "Content-Type": "application/json" },
     });
 
+    console.log("✅ Eligibility API Response:", response.data);
+
     return response.data;
   } catch (err) {
+    console.log(
+      "❌ Eligibility API Error Response:",
+      err.response?.data || err.message,
+    );
     return {
       status: "FAILED",
       message: err.response?.data?.message || err.message || "Unknown Error",
@@ -119,12 +127,20 @@ async function getPreApproval(user) {
       bureauData: JSON.stringify({ score: 765, reportDate: "2024-03-20" }),
     };
 
+    console.log("\n📤 Sending Pre-Approval Payload:", payload);
+
     const response = await axios.post(PRE_APPROVAL_API, payload, {
       headers: { "Content-Type": "application/json" },
     });
 
+    console.log("✅ Pre-Approval API Response:", response.data);
+
     return response.data;
   } catch (err) {
+    console.log(
+      "❌ Pre-Approval API Error Response:",
+      err.response?.data || err.message,
+    );
     return {
       status: "FAILED",
       message: err.response?.data?.message || err.message || "Unknown Error",
@@ -135,6 +151,8 @@ async function getPreApproval(user) {
 async function processBatch(users) {
   const results = await Promise.allSettled(
     users.map(async (user) => {
+      console.log(`\n🔍 Processing phone: ${user.phone}`);
+
       const userDoc = await UserDB.findOne({ phone: user.phone });
       const updates = {};
       let needUpdate = false;
@@ -222,7 +240,10 @@ async function processBatch(users) {
 
   results.forEach((result, index) => {
     if (result.status === "rejected") {
-      console.error(`Error processing user at index ${index}:`, result.reason);
+      console.error(
+        `❌ Error processing user at index ${index}:`,
+        result.reason,
+      );
     } else {
       console.log(`✅ Successfully processed user at index ${index}`);
     }
