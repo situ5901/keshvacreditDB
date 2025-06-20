@@ -10,8 +10,8 @@ mongoose
   .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
 
 const UserDB = mongoose.model(
-  "smcoll",
-  new mongoose.Schema({}, { collection: "smcoll", strict: false }),
+  "situ",
+  new mongoose.Schema({}, { collection: "situ", strict: false }),
 );
 
 const MAX_PROCESS = 50000;
