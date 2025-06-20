@@ -18,7 +18,7 @@ router.post("/filterdata", async (req, res) => {
       message: "Valid phone number array is required",
     });
   }
-
+  //situ git
   phones = phones.map((p) => Number(p));
 
   try {
