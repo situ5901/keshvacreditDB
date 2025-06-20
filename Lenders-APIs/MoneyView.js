@@ -67,7 +67,6 @@ router.post("/moneyview/lead", async (req, res) => {
     if (duplicate) {
       return res.status(409).json({
         status: false,
-        msg: "Duplicate data already exists in the database.",
       });
     }
 
