@@ -1,55 +1,39 @@
 const express = require("express");
 const router = express.Router();
 const mongoose = require("mongoose");
+require("dotenv").config();
 
-const SECOND_DB_URI =
-  "mongodb+srv://keshvacredit:Vishal12Meham34Keshva@keshvacredit.ftbuh58.mongodb.net/KeshvaCredit";
-
-const secondaryConnection = mongoose.createConnection(SECOND_DB_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-});
-//situ
-secondaryConnection.on("connected", () => {
-  console.log("✅ Connected to Secondary MongoDB Cluster");
-});
-
-secondaryConnection.on("error", (err) => {
-  console.error("❌ Secondary DB Connection Error:", err);
-});
-
-const db = secondaryConnection;
+mongoose.set("strictQuery", true);
 
 router.post("/filterdata", async (req, res) => {
+  let { phones } = req.body;
+
+  if (
+    !Array.isArray(phones) ||
+    !phones.length ||
+    phones.some((p) => isNaN(p))
+  ) {
+    return res.status(400).json({
+      success: false,
+      message: "Valid phone number array is required",
+    });
+  }
+
+  phones = phones.map((p) => Number(p));
+
   try {
-    let { phone } = req.body;
-
-    if (!Array.isArray(phone) || phone.length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: "Please provide an array of phone numbers",
-      });
-    }
-
-    const phoneNumbers = phone.map((p) => Number(p)); // match number-type phones
-
-    const results = await db
+    const results = await mongoose.connection
       .collection("userdb")
       .find(
-        { phone: { $in: phoneNumbers } },
-        {
-          projection: {
-            apiResponse: 0,
-            RefArr: 0,
-          },
-        },
+        { phone: { $in: phones } },
+        { projection: { RefArr: 0, apiResponse: 0 } },
       )
       .toArray();
 
-    if (results.length === 0) {
+    if (!results.length) {
       return res.status(404).json({
         success: false,
-        message: "No data found for provided phone numbers",
+        message: "No data found for the provided phone numbers",
       });
     }
 
@@ -59,7 +43,7 @@ router.post("/filterdata", async (req, res) => {
       data: results,
     });
   } catch (error) {
-    console.error("Error fetching user data by phone:", error);
+    console.error("Error:", error.message);
     res.status(500).json({
       success: false,
       message: "Internal Server Error",
