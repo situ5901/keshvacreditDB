@@ -9,7 +9,7 @@ const secondaryConnection = mongoose.createConnection(SECOND_DB_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 });
-
+//situ
 secondaryConnection.on("connected", () => {
   console.log("✅ Connected to Secondary MongoDB Cluster");
 });
