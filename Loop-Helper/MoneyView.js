@@ -96,7 +96,6 @@ async function dedupeCheck(lead, token) {
   };
 
   try {
-    // 🔍 Check if required fields are150000sent
     if (!lead.pan || !lead.phone || !lead.email) {
       console.error("❌ Missing required fields in lead object:", {
         panNo: lead.pan,
@@ -107,7 +106,6 @@ async function dedupeCheck(lead, token) {
       return dedupeResponse;
     }
 
-    // ✅ Prepare payload as expected by the API
     const payload = {
       panNO: lead.pan, // Field must match curl: panNO
       mobileNo: lead.phone, // Field must match curl: mobileNo
@@ -116,7 +114,6 @@ async function dedupeCheck(lead, token) {
 
     console.log(`\n🧾 [DEDUPE REQUEST] =>`, payload);
 
-    // ✅ Make API request
     const response = await axios.post(DEDUPE_API, payload, {
       headers: {
         token: token, // curl is using token in header (not Bearer format)

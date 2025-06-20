@@ -162,7 +162,6 @@ router.post("/moneyview/lead", async (req, res) => {
     await Userdb.create(leadData);
     return res.status(200).json({
       success: true,
-      msg: "Submission successful — data stored securely.",
       savedData: leadData,
     });
   } catch (dbError) {
