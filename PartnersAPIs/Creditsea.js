@@ -37,9 +37,10 @@ router.post("/create_apis", async (req, res) => {
 
     const requiredFields = {
       name,
-
+      
       state,
       city,
+,
       state,
       city,
       email,
@@ -88,6 +89,8 @@ router.post("/create_apis", async (req, res) => {
       email,
       employeeType,
       pan,
+      state,
+      city,
       pincode,
       income,
       dob,
@@ -125,18 +128,23 @@ router.post("/zype/create", async (req, res) => {
       email,
       employeeType,
       pan,
+      state,
+      city,
       pincode,
       income,
       dob,
       partner_Id,
     } = req.body;
 
+    // Validate required fields
     const requiredFields = {
       name,
       phone,
       email,
       employeeType,
       pan,
+      state,
+      city,
       pincode,
       income,
       dob,
@@ -154,6 +162,7 @@ router.post("/zype/create", async (req, res) => {
       });
     }
 
+    // Validate partner ID
     if (partner_Id !== VALID_PARTNER_ID) {
       return res.status(403).json({
         status: 403,
@@ -161,6 +170,7 @@ router.post("/zype/create", async (req, res) => {
       });
     }
 
+    // Validate PAN format
     if (!panRegex.test(pan)) {
       return res.status(400).json({
         status: 400,
@@ -168,6 +178,7 @@ router.post("/zype/create", async (req, res) => {
       });
     }
 
+    // Check if user already exists
     const userExists = await Promise.any([
       customer.findOne({ phone, pan }),
       partnerdb.findOne({ phone, pan }),
@@ -187,6 +198,8 @@ router.post("/zype/create", async (req, res) => {
       email,
       employeeType,
       pan,
+      state,
+      city,
       pincode,
       income,
       dob,
