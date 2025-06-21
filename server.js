@@ -48,27 +48,27 @@ function isSessionValid() {
 async function main() {
   try {
     // ✅ Step 1: Password check in dev only
-    if (process.env.NODE_ENV !== "production") {
-      if (!isSessionValid()) {
-        const inputPassword = await askPassword();
-        const correctPassword = process.env.SERVER_PASSWORD;
-
-        if (inputPassword !== correctPassword) {
-          console.log("\n❌ Incorrect password. Server not started.");
-          process.exit(1);
-        }
-
-        fs.writeFileSync(
-          sessionPath,
-          JSON.stringify({ authenticatedAt: new Date().toISOString() }),
-        );
-        console.log("✅ Password accepted. Session saved for 30 minutes.\n");
-      } else {
-        console.log("✅ Session still valid. Skipping password.\n");
-      }
-    } else {
-      console.log("🚀 Production mode — Skipping password prompt.");
-    }
+    // if (process.env.NODE_ENV !== "production") {
+    //   if (!isSessionValid()) {
+    //     const inputPassword = await askPassword();
+    //     const correctPassword = process.env.SERVER_PASSWORD;
+    //
+    //     if (inputPassword !== correctPassword) {
+    //       console.log("\n❌ Incorrect password. Server not started.");
+    //       process.exit(1);
+    //     }
+    //
+    //     fs.writeFileSync(
+    //       sessionPath,
+    //       JSON.stringify({ authenticatedAt: new Date().toISOString() }),
+    //     );
+    //     console.log("✅ Password accepted. Session saved for 30 minutes.\n");
+    //   } else {
+    //     console.log("✅ Session still valid. Skipping password.\n");
+    //   }
+    // } else {
+    //   console.log("🚀 Production mode — Skipping password prompt.");
+    // }
 
     const chalkAnimation = await import("chalk-animation");
     const banner = await new Promise((resolve, reject) => {
