@@ -13,7 +13,7 @@ const UserDB = mongoose.model(
   "situ",
   new mongoose.Schema({}, { collection: "situ", strict: false }),
 );
-
+//situ kumar
 const MAX_PROCESS = 50000;
 const BATCH_SIZE = 1;
 const Campaign_name = "Keshvacredit_3";
