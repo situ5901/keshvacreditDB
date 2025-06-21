@@ -13,7 +13,7 @@ const UserDB = mongoose.model(
   "situ",
   new mongoose.Schema({}, { collection: "situ", strict: false }),
 );
-//situ kumar
+
 const MAX_PROCESS = 50000;
 const BATCH_SIZE = 1;
 const Campaign_name = "Keshvacredit_3";
@@ -24,11 +24,7 @@ const PRE_APPROVAL_API =
   "https://prod.zype.co.in/attribution-service/api/v1/underwriting/preApprovalOffer";
 
 function validateUser(user) {
-  const result = {
-    passed: true,
-    reasons: [],
-  };
-
+  const result = { passed: true, reasons: [] };
   if (user.income <= 50000) {
     result.passed = false;
     result.reasons.push("Income should be => ₹50,000");
@@ -80,7 +76,6 @@ async function processIncome(user) {
 async function sendToNewAPI(user) {
   try {
     await processIncome(user);
-
     const payload = {
       mobileNumber: String(user.phone),
       panNumber: user.pan,
@@ -95,7 +90,6 @@ async function sendToNewAPI(user) {
     });
 
     console.log("✅ Eligibility API Response:", response.data);
-
     return response.data;
   } catch (err) {
     console.log(
@@ -134,7 +128,6 @@ async function getPreApproval(user) {
     });
 
     console.log("✅ Pre-Approval API Response:", response.data);
-
     return response.data;
   } catch (err) {
     console.log(
@@ -171,86 +164,79 @@ async function processBatch(users) {
         await UserDB.updateOne({ phone: user.phone }, { $set: updates });
       }
 
-      // Step 1: Validate
       const validation = validateUser(user);
       const validationStatus = validation.passed ? "PASSED" : "FAILED";
       const validationMessage =
         validation.reasons.join(", ") || "Validation Passed";
 
-      // Step 2: Agar validation fail ho
-      if (!validation.passed) {
-        const combinedLog = {
-          ZypeValidation: true,
-          validationStatus,
-          message: validationMessage,
-          status: validationStatus,
-          createdAt: new Date().toISOString(),
-        };
+      const logBase = {
+        ZypeValidation: true,
+        validationStatus,
+        message: validationMessage,
+        createdAt: new Date().toISOString(),
+      };
 
+      // log and continue if validation fails
+      if (!validation.passed) {
         await UserDB.updateOne(
           { phone: user.phone },
           {
-            $push: {
-              apiResponse: combinedLog,
-              RefArr: { name: "ZypeVali" },
+            $addToSet: {
+              apiResponse: { ...logBase, status: validationStatus },
+              RefArr: { name: "ZypeVali", at: new Date() },
             },
+            $set: { zypeProcessed: true },
           },
         );
-
         console.log(
-          `⛔ Skipping API for ${user.phone} due to validation failure: ${validationMessage}`,
+          `⛔ Skipping ${user.phone} due to validation: ${validationMessage}`,
         );
         return;
       }
 
-      // Step 3: Eligibility API
+      // Eligibility API
       const response = await sendToNewAPI(user);
-
-      const combinedLog = {
-        ZypeValidation: true,
-        validationStatus,
-        message: validationMessage,
-        status: response.status,
-        ZypeValiResponse: {
-          ...response,
-          Zype: true,
-        },
-        createdAt: new Date().toISOString(),
-      };
 
       await UserDB.updateOne(
         { phone: user.phone },
         {
-          $push: {
-            apiResponse: combinedLog,
-            RefArr: { name: "ZypeVali" },
+          $addToSet: {
+            apiResponse: {
+              ...logBase,
+              status: response.status,
+              ZypeValiResponse: { ...response, Zype: true },
+            },
+            RefArr: { name: "ZypeVali", at: new Date() },
           },
           $unset: { accounts: "" },
         },
       );
 
-      // Step 4: Pre-Approval if ACCEPTED
+      // Pre-Approval if ACCEPT
       if (response.status === "ACCEPT") {
         const preApproval = await getPreApproval(user);
-
-        const preApprovalLog = {
-          ZypeValiResponse: preApproval,
-          status: preApproval.status,
-          amount: preApproval.amount,
-          message: preApproval.message,
-          createdAt: new Date().toISOString(),
-        };
-
         await UserDB.updateOne(
           { phone: user.phone },
           {
-            $push: {
-              apiResponse: preApprovalLog,
-              RefArr: { name: "ZypeVali" },
+            $addToSet: {
+              apiResponse: {
+                ZypeValiResponse: preApproval,
+                status: preApproval.status,
+                amount: preApproval.amount,
+                message: preApproval.message,
+                createdAt: new Date().toISOString(),
+              },
+              RefArr: { name: "ZypeVali", at: new Date() },
             },
           },
         );
       }
+
+      // ✅ Mark lead as processed finally
+      await UserDB.updateOne(
+        { phone: user.phone },
+        { $set: { zypeProcessed: true } },
+      );
     }),
   );
 
@@ -274,14 +260,15 @@ async function Loop() {
       const leads = await UserDB.aggregate([
         {
           $match: {
-            "RefArr.name": { $ne: "ZypeVali" },
+            zypeProcessed: { $ne: true },
+            phone: { $exists: true, $ne: null },
           },
         },
         { $limit: BATCH_SIZE },
       ]);
 
       if (leads.length === 0) {
-        console.log("✅ No more leads. Waiting...");
+        console.log("✅ No more leads to process. Exiting...");
         break;
       }
 
@@ -295,12 +282,12 @@ async function Loop() {
       console.log(`🏁 Total Processed Leads: ${processedCount}`);
 
       if (processedCount >= MAX_PROCESS) {
-        console.log("🎯 Reached processing limit. Stopping.");
+        console.log("🎯 Reached max limit. Done!");
         break;
       }
     }
   } catch (error) {
-    console.error("❌ Error occurred:", error.message);
+    console.error("❌ Error occurred during processing:", error.message);
   } finally {
     console.log("🔌 Closing DB connection...");
     mongoose.connection.close();
