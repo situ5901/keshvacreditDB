@@ -11,7 +11,7 @@ mongoose
 
 const UserDB = mongoose.model(
   "ZypeVali",
-  new mongoose.Schema({}, { collection: "ZypeVal strict: false }),
+  new mongoose.Schema({}, { collection: "ZypeVali" strict: false }),
 );
 
 const MAX_PROCESS = 50000;
