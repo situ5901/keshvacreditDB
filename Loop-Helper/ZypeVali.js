@@ -10,8 +10,8 @@ mongoose
   .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
 
 const UserDB = mongoose.model(
-  "ZypeVali",
-  new mongoose.Schema({}, { collection: "ZypeVali" strict: false }),
+  "zypeimp",
+  new mongoose.Schema({}, { collection: "zypeimp", strict: false }),
 );
 
 const MAX_PROCESS = 50000;
@@ -236,7 +236,7 @@ async function Loop() {
         {
           $match: {
             // Match documents where 'RefArr' does not contain an object with 'name: "Zype"'
-            "RefArr.name": { $ne: "Zype" },
+            "RefArr.name": { $ne: "zypeimp" },
           },
         },
         { $limit: BATCH_SIZE },
