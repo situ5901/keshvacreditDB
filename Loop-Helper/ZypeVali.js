@@ -146,7 +146,7 @@ async function processBatch(users) {
     users.map(async (user) => {
       console.log(`\n🔍 Processing phone: ${user.phone}`);
 
-      // Mark user as currently processing to avoid duplication
+      // Mark as being processed
       await UserDB.updateOne(
         { phone: user.phone },
         { $set: { zypeProcessing: true } },
@@ -219,29 +219,33 @@ async function processBatch(users) {
         },
       );
 
-      if (response.status === "ACCEPT") {
-        const preApproval = await getPreApproval(user);
+      // ✅ If NOT ACCEPT, mark as processed & skip
+      if (response.status !== "ACCEPT") {
         await UserDB.updateOne(
           { phone: user.phone },
           {
-            $addToSet: {
-              apiResponse: {
-                ZypeValiResponse: preApproval,
-                status: preApproval.status,
-                amount: preApproval.amount,
-                message: preApproval.message,
-                createdAt: new Date().toISOString(),
-              },
-              RefArr: { name: "ZypeVali", at: new Date() },
-            },
+            $set: { zypeProcessed: true },
+            $unset: { zypeProcessing: "" },
           },
         );
+        return;
       }
 
-      // Finalize
+      const preApproval = await getPreApproval(user);
+
       await UserDB.updateOne(
         { phone: user.phone },
         {
+          $addToSet: {
+            apiResponse: {
+              ZypeValiResponse: preApproval,
+              status: preApproval.status,
+              amount: preApproval.amount,
+              message: preApproval.message,
+              createdAt: new Date().toISOString(),
+            },
+            RefArr: { name: "ZypeVali", at: new Date() },
+          },
           $set: { zypeProcessed: true },
           $unset: { zypeProcessing: "" },
         },
@@ -269,9 +273,9 @@ async function Loop() {
       const leads = await UserDB.aggregate([
         {
           $match: {
-            "RefArr.name": { $ne: "LoanTap" },
             zypeProcessed: { $ne: true },
             zypeProcessing: { $ne: true },
+            phone: { $exists: true, $ne: null },
           },
         },
         { $limit: BATCH_SIZE },
