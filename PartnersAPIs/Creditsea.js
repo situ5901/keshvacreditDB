@@ -37,10 +37,9 @@ router.post("/create_apis", async (req, res) => {
 
     const requiredFields = {
       name,
-      
+
       state,
       city,
-,
       state,
       city,
       email,
