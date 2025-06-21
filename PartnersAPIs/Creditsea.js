@@ -28,6 +28,8 @@ router.post("/create_apis", async (req, res) => {
       employeeType,
       pan,
       pincode,
+      state,
+      city,
       income,
       dob,
       partner_Id,
@@ -36,6 +38,8 @@ router.post("/create_apis", async (req, res) => {
     const requiredFields = {
       name,
       phone,
+      state,
+      city,
       email,
       employeeType,
       pan,
