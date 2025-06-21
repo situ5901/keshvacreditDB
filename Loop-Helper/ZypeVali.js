@@ -146,6 +146,12 @@ async function processBatch(users) {
     users.map(async (user) => {
       console.log(`\n🔍 Processing phone: ${user.phone}`);
 
+      // Mark user as currently processing to avoid duplication
+      await UserDB.updateOne(
+        { phone: user.phone },
+        { $set: { zypeProcessing: true } },
+      );
+
       const userDoc = await UserDB.findOne({ phone: user.phone });
       const updates = {};
       let needUpdate = false;
@@ -176,7 +182,6 @@ async function processBatch(users) {
         createdAt: new Date().toISOString(),
       };
 
-      // log and continue if validation fails
       if (!validation.passed) {
         await UserDB.updateOne(
           { phone: user.phone },
@@ -185,7 +190,10 @@ async function processBatch(users) {
               apiResponse: { ...logBase, status: validationStatus },
               RefArr: { name: "ZypeVali", at: new Date() },
             },
-            $set: { zypeProcessed: true },
+            $set: {
+              zypeProcessed: true,
+            },
+            $unset: { zypeProcessing: "" },
           },
         );
         console.log(
@@ -194,7 +202,6 @@ async function processBatch(users) {
         return;
       }
 
-      // Eligibility API
       const response = await sendToNewAPI(user);
 
       await UserDB.updateOne(
@@ -212,7 +219,6 @@ async function processBatch(users) {
         },
       );
 
-      // Pre-Approval if ACCEPT
       if (response.status === "ACCEPT") {
         const preApproval = await getPreApproval(user);
         await UserDB.updateOne(
@@ -232,10 +238,13 @@ async function processBatch(users) {
         );
       }
 
-      // ✅ Mark lead as processed finally
+      // Finalize
       await UserDB.updateOne(
         { phone: user.phone },
-        { $set: { zypeProcessed: true } },
+        {
+          $set: { zypeProcessed: true },
+          $unset: { zypeProcessing: "" },
+        },
       );
     }),
   );
@@ -260,8 +269,9 @@ async function Loop() {
       const leads = await UserDB.aggregate([
         {
           $match: {
+            "RefArr.name": { $ne: "LoanTap" },
             zypeProcessed: { $ne: true },
-            phone: { $exists: true, $ne: null },
+            zypeProcessing: { $ne: true },
           },
         },
         { $limit: BATCH_SIZE },
