@@ -104,7 +104,7 @@ router.post("/create_apis", async (req, res) => {
   }
 });
 
-router.post("/partner/zype/create", async (req, res) => {
+router.post("/zype/create", async (req, res) => {
   try {
     const authHeader = req.headers["authorization"];
     const authKey = authHeader?.replace(/^Bearer\s+/i, "");
