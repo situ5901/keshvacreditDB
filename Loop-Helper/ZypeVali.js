@@ -10,8 +10,8 @@ mongoose
   .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
 
 const UserDB = mongoose.model(
-  "loops",
-  new mongoose.Schema({}, { collection: "loops", strict: false }),
+  "ZypeVali",
+  new mongoose.Schema({}, { collection: "ZypeVal strict: false }),
 );
 
 const MAX_PROCESS = 50000;
