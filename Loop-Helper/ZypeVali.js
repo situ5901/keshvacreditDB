@@ -15,7 +15,7 @@ const UserDB = mongoose.model(
 );
 
 const MAX_PROCESS = 50000;
-const BATCH_SIZE = 1;
+const BATCH_SIZE = 1; // You can adjust this based on your needs for concurrency
 const Campaign_name = "Keshvacredit_3";
 const PartnerID = "92a87d42-ca67-49c8-a004-79dc8f86fc44";
 const ELIGIBILITY_API =
@@ -25,9 +25,19 @@ const PRE_APPROVAL_API =
 
 function validateUser(user) {
   const result = { passed: true, reasons: [] };
-  if (user.income <= 50000) {
+
+  if (!user.income || typeof user.income === "undefined") {
     result.passed = false;
-    result.reasons.push("Income should be => ₹50,000");
+    result.reasons.push("Income is missing or undefined.");
+  } else {
+    // Attempt to convert income to a number if it's a string
+    let parsedIncome =
+      typeof user.income === "string" ? parseFloat(user.income) : user.income;
+
+    if (isNaN(parsedIncome) || parsedIncome <= 50000) {
+      result.passed = false;
+      result.reasons.push("Income should be a number and => ₹50,000");
+    }
   }
 
   const tierAStates = [
@@ -40,7 +50,7 @@ function validateUser(user) {
     "Pune",
   ];
 
-  if (!tierAStates.includes(user.state)) {
+  if (!user.state || !tierAStates.includes(user.state)) {
     result.passed = false;
     result.reasons.push("Invalid Location");
   }
@@ -54,28 +64,51 @@ function validateUser(user) {
   const rawEmployment = user.employment?.toString().trim().toLowerCase();
   const empCode = employmentMap[rawEmployment];
 
-  if (!["A", "B", "C"].includes(empCode)) {
+  if (!rawEmployment || !["A", "B", "C"].includes(empCode)) {
     result.passed = false;
     result.reasons.push("Invalid Employer Category");
+  }
+
+  // Basic checks for required fields for the APIs
+  if (!user.phone) {
+    result.passed = false;
+    result.reasons.push("Phone number is missing.");
+  }
+  if (!user.pan) {
+    result.passed = false;
+    result.reasons.push("PAN number is missing.");
+  }
+  if (!user.email) {
+    result.passed = false;
+    result.reasons.push("Email is missing.");
+  }
+  if (!user.name) {
+    result.passed = false;
+    result.reasons.push("Name is missing.");
+  }
+  if (!user.dob) {
+    result.passed = false;
+    result.reasons.push("Date of birth is missing.");
   }
 
   return result;
 }
 
+// Helper function to process income to ensure it's a number
 async function processIncome(user) {
   if (typeof user.income === "string") {
     const parsedIncome = parseFloat(user.income);
     if (!isNaN(parsedIncome)) {
       user.income = parsedIncome;
     } else {
-      throw new Error("INCOME_SHOULD_BE_NUMBER");
+      throw new Error("INCOME_SHOULD_BE_NUMBER"); // Or handle as a validation failure
     }
   }
 }
 
 async function sendToNewAPI(user) {
   try {
-    await processIncome(user);
+    await processIncome(user); // Ensure income is a number
     const payload = {
       mobileNumber: String(user.phone),
       panNumber: user.pan,
@@ -105,6 +138,7 @@ async function sendToNewAPI(user) {
 
 async function getPreApproval(user) {
   try {
+    await processIncome(user); // Ensure income is a number
     const payload = {
       mobileNumber: String(user.phone),
       email: user.email,
@@ -113,12 +147,12 @@ async function getPreApproval(user) {
       dob: user.dob,
       income: user.income,
       employmentType: user.employment,
-      orgName: "Infosys Ltd",
+      orgName: "Infosys Ltd", // You might want to make this dynamic if available in user data
       partnerId: PartnerID,
       campaignName: Campaign_name,
       bureauType: 1,
       bureauName: "experian",
-      bureauData: JSON.stringify({ score: 765, reportDate: "2024-03-20" }),
+      bureauData: JSON.stringify({ score: 765, reportDate: "2024-03-20" }), // Make dynamic if actual bureau data is available
     };
 
     console.log("\n📤 Sending Pre-Approval Payload:", payload);
@@ -142,169 +176,205 @@ async function getPreApproval(user) {
 }
 
 async function processBatch(users) {
-  const results = await Promise.allSettled(
+  let successCount = 0;
+
+  await Promise.allSettled(
     users.map(async (user) => {
-      console.log(`\n🔍 Processing phone: ${user.phone}`);
-
-      // Mark as being processed
-      await UserDB.updateOne(
-        { phone: user.phone },
-        { $set: { zypeProcessing: true } },
-      );
-
-      const userDoc = await UserDB.findOne({ phone: user.phone });
-      const updates = {};
-      let needUpdate = false;
-
-      if (userDoc.apiResponse && !Array.isArray(userDoc.apiResponse)) {
-        updates.apiResponse = [userDoc.apiResponse];
-        needUpdate = true;
-      }
-
-      if (userDoc.preApproval && !Array.isArray(userDoc.preApproval)) {
-        updates.preApproval = [userDoc.preApproval];
-        needUpdate = true;
-      }
-
-      if (needUpdate) {
-        await UserDB.updateOne({ phone: user.phone }, { $set: updates });
-      }
-
-      const validation = validateUser(user);
-      const validationStatus = validation.passed ? "PASSED" : "FAILED";
-      const validationMessage =
-        validation.reasons.join(", ") || "Validation Passed";
-
-      const logBase = {
-        ZypeValidation: true,
-        validationStatus,
-        message: validationMessage,
+      let apiResponseEntry = {
+        ZypeValidation: {},
+        status: "SKIPPED",
+        message: "Skipped due to prior processing or validation issues",
         createdAt: new Date().toISOString(),
       };
 
-      if (!validation.passed) {
+      try {
+        // Skip if already processed for ZypeVAli5901
+        if (user.RefArr && user.RefArr.some((r) => r.name === "ZypeVAli5901")) {
+          console.log(
+            `Skipping user ${user.phone} - already processed for Zype Validation.`,
+          );
+          // We still want to update the apiResponse for consistency if it was somehow missed,
+          // though the primary purpose of this block is to avoid redundant API calls.
+          await UserDB.updateOne(
+            { phone: user.phone },
+            {
+              $push: {
+                apiResponse: {
+                  ZypeValidation: {
+                    eligibility: {
+                      status: "SKIPPED",
+                      message: "Already processed for Zype Validation",
+                    },
+                    preApproval: {
+                      status: "SKIPPED",
+                      message: "Already processed for Zype Validation",
+                    },
+                  },
+                  status: "SKIPPED",
+                  message: "Already processed for Zype Validation",
+                  createdAt: new Date().toISOString(),
+                },
+              },
+            },
+          );
+          return;
+        }
+
+        const userValidity = validateUser(user);
+        if (!userValidity.passed) {
+          const reason = `Validation failed: ${userValidity.reasons.join(", ")}`;
+          apiResponseEntry.message = reason;
+          await UserDB.updateOne(
+            { phone: user.phone },
+            {
+              $push: {
+                RefArr: {
+                  name: "SkippedZypeValidation",
+                  reason,
+                  createdAt: new Date().toISOString(),
+                },
+                apiResponse: apiResponseEntry,
+              },
+            },
+          );
+          console.log(`Skipping user ${user.phone} - ${reason}`);
+          return;
+        }
+
+        const eligibilityResponse = await sendToNewAPI(user);
+        apiResponseEntry.ZypeValidation.eligibility = eligibilityResponse;
+
+        if (eligibilityResponse.status === "SUCCESS") {
+          const preApprovalResponse = await getPreApproval(user);
+          apiResponseEntry.ZypeValidation.preApproval = preApprovalResponse;
+          apiResponseEntry.status = preApprovalResponse.status || "FAILED";
+          apiResponseEntry.message = preApprovalResponse.message || "";
+
+          if (preApprovalResponse.status === "SUCCESS") {
+            successCount += 1;
+          }
+        } else {
+          apiResponseEntry.status = eligibilityResponse.status || "FAILED";
+          apiResponseEntry.message = eligibilityResponse.message || "";
+        }
+
+        // Update the user document with the API responses and mark as processed
         await UserDB.updateOne(
           { phone: user.phone },
           {
+            $push: { apiResponse: apiResponseEntry },
             $addToSet: {
-              apiResponse: { ...logBase, status: validationStatus },
-              RefArr: { name: "ZypeVali", at: new Date() },
+              RefArr: {
+                name: "ZypeVAli5901",
+                createdAt: new Date().toISOString(),
+              },
             },
-            $set: {
-              zypeProcessed: true,
-            },
-            $unset: { zypeProcessing: "" },
           },
         );
-        console.log(
-          `⛔ Skipping ${user.phone} due to validation: ${validationMessage}`,
-        );
-        return;
-      }
-
-      const response = await sendToNewAPI(user);
-
-      await UserDB.updateOne(
-        { phone: user.phone },
-        {
-          $addToSet: {
-            apiResponse: {
-              ...logBase,
-              status: response.status,
-              ZypeValiResponse: { ...response, Zype: true },
-            },
-            RefArr: { name: "ZypeVali", at: new Date() },
-          },
-          $unset: { accounts: "" },
-        },
-      );
-
-      // ✅ If NOT ACCEPT, mark as processed & skip
-      if (response.status !== "ACCEPT") {
+      } catch (error) {
+        const errorMessage = `Unexpected error during Zype API processing: ${error.message}`;
+        apiResponseEntry.message = errorMessage;
+        apiResponseEntry.status = "ERROR";
         await UserDB.updateOne(
           { phone: user.phone },
           {
-            $set: { zypeProcessed: true },
-            $unset: { zypeProcessing: "" },
+            $push: {
+              RefArr: {
+                name: "SkippedZypeValidationWithError",
+                reason: errorMessage,
+                createdAt: new Date().toISOString(),
+              },
+              apiResponse: apiResponseEntry,
+            },
           },
         );
-        return;
+        console.error(`❌ Error processing user ${user.phone}:`, error);
       }
-
-      const preApproval = await getPreApproval(user);
-
-      await UserDB.updateOne(
-        { phone: user.phone },
-        {
-          $addToSet: {
-            apiResponse: {
-              ZypeValiResponse: preApproval,
-              status: preApproval.status,
-              amount: preApproval.amount,
-              message: preApproval.message,
-              createdAt: new Date().toISOString(),
-            },
-            RefArr: { name: "ZypeVali", at: new Date() },
-          },
-          $set: { zypeProcessed: true },
-          $unset: { zypeProcessing: "" },
-        },
-      );
     }),
   );
 
-  results.forEach((result, index) => {
-    if (result.status === "rejected") {
-      console.error(
-        `❌ Error processing user at index ${index}:`,
-        result.reason,
-      );
-    } else {
-      console.log(`✅ Successfully processed user at index ${index}`);
-    }
-  });
+  return successCount;
 }
 
-let processedCount = 0;
-
 async function Loop() {
+  let successLeads = 0;
+
   try {
-    while (processedCount < MAX_PROCESS) {
+    while (successLeads < MAX_PROCESS) {
+      console.log(`Fetching leads... Current success leads: ${successLeads}`);
+
       const leads = await UserDB.aggregate([
         {
           $match: {
-            zypeProcessed: { $ne: true },
-            zypeProcessing: { $ne: true },
-            phone: { $exists: true, $ne: null },
+            // Only fetch leads that have NOT been processed by ZypeVAli5901
+            "RefArr.name": { $ne: "ZypeVAli5901" },
+            // Also exclude leads that were skipped due to ZypeValidation issues or errors
+            "RefArr.name": {
+              $nin: ["SkippedZypeValidation", "SkippedZypeValidationWithError"],
+            },
           },
         },
-        { $limit: BATCH_SIZE },
+        { $limit: BATCH_SIZE * 2 }, // Fetch a bit more than BATCH_SIZE to account for local filtering
       ]);
 
-      if (leads.length === 0) {
-        console.log("✅ No more leads to process. Exiting...");
+      if (!leads.length) {
+        console.log(
+          "No more leads to process or all leads have been processed.",
+        );
         break;
       }
 
-      const remaining = MAX_PROCESS - processedCount;
-      const batchToProcess = leads.slice(0, remaining);
+      const validLeads = leads.filter((user) => {
+        const userValidity = validateUser(user);
+        if (!userValidity.passed) {
+          console.log(
+            `User ${user.phone} failed initial validation: ${userValidity.reasons.join(", ")}. Will be skipped.`,
+          );
+        }
+        return userValidity.passed;
+      });
 
-      await processBatch(batchToProcess);
+      if (!validLeads.length) {
+        console.log(
+          "No valid leads found in the current batch after initial filtering.",
+        );
+        if (leads.length < BATCH_SIZE * 2) {
+          break;
+        }
+        await new Promise((resolve) => setImmediate(resolve));
+        continue;
+      }
 
-      processedCount += batchToProcess.length;
-      console.log(`✅ Processed batch of: ${batchToProcess.length}`);
-      console.log(`🏁 Total Processed Leads: ${processedCount}`);
+      const remainingSlots = MAX_PROCESS - successLeads;
+      const batchToProcess = validLeads.slice(
+        0,
+        Math.min(validLeads.length, remainingSlots),
+      );
 
-      if (processedCount >= MAX_PROCESS) {
-        console.log("🎯 Reached max limit. Done!");
+      if (batchToProcess.length === 0) {
+        console.log("No leads left to process to reach MAX_PROCESS.");
         break;
       }
+
+      console.log(`Processing batch of ${batchToProcess.length} leads.`);
+      const batchSuccess = await processBatch(batchToProcess);
+      successLeads += batchSuccess;
+
+      console.log(`Batch processed. Total successful leads: ${successLeads}`);
+
+      if (successLeads >= MAX_PROCESS) {
+        console.log(`Reached MAX_PROCESS of ${MAX_PROCESS} successful leads.`);
+        break;
+      }
+
+      // Small delay to avoid overwhelming the database/APIs
+      await new Promise((resolve) => setImmediate(resolve));
     }
   } catch (error) {
-    console.error("❌ Error occurred during processing:", error.message);
+    console.error("Unhandled error in main Loop:", error);
   } finally {
-    console.log("🔌 Closing DB connection...");
-    mongoose.connection.close();
+    console.log("Disconnecting MongoDB.");
+    mongoose.disconnect();
   }
 }
 
