@@ -9,6 +9,7 @@ const {
   VALID_PARTNER_ID,
   VALID_ZYPE_ID,
 } = require("../config/partnerConf.js");
+
 router.get("/testdeno", async (req, res) => {
   res.send("Hello World!");
 });
@@ -37,20 +38,18 @@ router.post("/create_apis", async (req, res) => {
 
     const requiredFields = {
       name,
-      
-      state,
-      city,
-,
-      state,
-      city,
+      phone,
       email,
       employeeType,
       pan,
       pincode,
+      state,
+      city,
       income,
       dob,
       partner_Id,
     };
+
     const missingFields = Object.entries(requiredFields)
       .filter(([_, value]) => !value)
       .map(([key]) => key);
@@ -136,7 +135,6 @@ router.post("/zype/create", async (req, res) => {
       partner_Id,
     } = req.body;
 
-    // Validate required fields
     const requiredFields = {
       name,
       phone,
@@ -162,7 +160,6 @@ router.post("/zype/create", async (req, res) => {
       });
     }
 
-    // Validate partner ID
     if (partner_Id !== VALID_PARTNER_ID) {
       return res.status(403).json({
         status: 403,
@@ -170,7 +167,6 @@ router.post("/zype/create", async (req, res) => {
       });
     }
 
-    // Validate PAN format
     if (!panRegex.test(pan)) {
       return res.status(400).json({
         status: 400,
@@ -178,7 +174,6 @@ router.post("/zype/create", async (req, res) => {
       });
     }
 
-    // Check if user already exists
     const userExists = await Promise.any([
       customer.findOne({ phone, pan }),
       partnerdb.findOne({ phone, pan }),
@@ -191,7 +186,6 @@ router.post("/zype/create", async (req, res) => {
       });
     }
 
-    // Save new user
     const newUser = new partnerdb({
       name,
       phone,
