@@ -10,8 +10,8 @@ mongoose
   .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
 
 const UserDB = mongoose.model(
-  "situ",
-  new mongoose.Schema({}, { collection: "situ", strict: false }),
+  "loops",
+  new mongoose.Schema({}, { collection: "loops", strict: false }),
 );
 
 const MAX_PROCESS = 50000;
@@ -115,6 +115,17 @@ async function processBatch(users) {
         return;
       }
 
+      // Check if "Zype" already exists in RefArr for this user
+      if (
+        userDoc.RefArr &&
+        userDoc.RefArr.some((item) => item.name === "Zype")
+      ) {
+        console.log(
+          `⏩ Skipping API hit for user ${user.phone} as 'Zype' already exists in RefArr.`,
+        );
+        return; // Skip further processing for this user
+      }
+
       const updates = {};
       let needUpdate = false;
 
@@ -146,15 +157,16 @@ async function processBatch(users) {
         createdAt: new Date().toISOString(),
       };
 
+      // Ensure RefArr is updated with "Zype" after a successful API hit
       const refArrEntry = {
-        name: "Zype",
+        name: "Zype", // Changed from "Zypevali5901" to "Zype"
         createdAt: new Date().toISOString(),
       };
 
       const updateDoc = {
         $push: {
           apiResponse: { $each: [baseApiEntry] },
-          RefArr: refArrEntry,
+          RefArr: refArrEntry, // Pushing "Zype" into RefArr
         },
         $unset: { accounts: "" },
       };
@@ -223,14 +235,17 @@ async function Loop() {
       const leads = await UserDB.aggregate([
         {
           $match: {
-            "RefArr.name": { $ne: "Zypevali5901" },
+            // Match documents where 'RefArr' does not contain an object with 'name: "Zype"'
+            "RefArr.name": { $ne: "Zype" },
           },
         },
         { $limit: BATCH_SIZE },
       ]);
 
       if (leads.length === 0) {
-        console.log("✅ No more leads left. Waiting for new data...");
+        console.log(
+          "✅ No more leads left to process with 'Zype' in RefArr. Waiting for new data...",
+        );
         await new Promise((resolve) => setTimeout(resolve, 10000));
         continue;
       }
