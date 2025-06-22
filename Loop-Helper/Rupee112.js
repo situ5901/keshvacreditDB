@@ -1,6 +1,8 @@
 const mongoose = require("mongoose");
 const axios = require("axios");
-// const readXlsxFile = require("../utils/readXlsxFile");
+const readXlsxFile = require("read-excel-file/node");
+const path = require("path");
+const fs = require("fs");
 require("dotenv").config();
 
 const MONGODB_URINEW = process.env.MONGODB_URINEW;
@@ -11,14 +13,14 @@ if (!MONGODB_URINEW) {
 
 mongoose
   .connect(MONGODB_URINEW)
-  .then(() => console.log("MongoDB Connected Successfully"))
-  .catch((err) => console.error("MongoDB Connection Error:", err));
+  .then(() => console.log("✅ MongoDB Connected Successfully"))
+  .catch((err) => console.error("❌ MongoDB Connection Error:", err));
 
 const UserDB = mongoose.model(
   "userdb",
   new mongoose.Schema({}, { collection: "userdb", strict: false }),
 );
-//situ update
+
 const MAX_PROCESS = 10000;
 const BATCH_SIZE = 100;
 const Partner_id = "Keshvacredit";
@@ -27,12 +29,26 @@ const DEDUPE_API_URL =
 const PushAPI_URL = "https://api.rupee112fintech.com/marketing-push-data";
 const loanAmount = "20000";
 
-const validPincodeRows = readXlsxFile("xlsx/rupee.xlsx");
-const validPincodes = validPincodeRows.map((row) => String(row.Pincode).trim());
-if (validPincodes.length === 0) {
-  console.warn(
-    "No valid pincodes loaded. All pincode-dependent leads will be skipped.",
-  );
+const xlsxFilePath = path.join(__dirname, "../xlsx/rupee.xlsx");
+
+let validPincodes = [];
+
+async function loadPincodes() {
+  try {
+    const rows = await readXlsxFile(fs.createReadStream(xlsxFilePath));
+    const header = rows[0];
+    const pincodeIndex = header.indexOf("Pincode");
+
+    if (pincodeIndex === -1) throw new Error("❌ Pincode column not found");
+
+    validPincodes = rows
+      .slice(1)
+      .map((row) => String(row[pincodeIndex]).trim())
+      .filter((p) => p);
+  } catch (err) {
+    console.error("❌ Error reading rupee.xlsx:", err.message);
+    process.exit(1);
+  }
 }
 
 function getHeaders() {
@@ -69,20 +85,20 @@ function isValidUser(user) {
 
 async function sendToDedupeAPI(lead) {
   try {
-    const FirstPayload = {
+    const payload = {
       mobile: lead.phone,
       pancard: lead.pan,
       Partner_id,
     };
-    console.log(`Sending Dedupe request for ${lead.phone}`);
-    const response = await axios.post(DEDUPE_API_URL, FirstPayload, {
+    console.log(`📤 Sending Dedupe request for ${lead.phone}`);
+    const res = await axios.post(DEDUPE_API_URL, payload, {
       headers: getHeaders(),
     });
-    console.log(`Dedupe API Response for ${lead.phone}:`, response.data);
-    return response.data;
+    console.log(`✅ Dedupe API Response for ${lead.phone}:`, res.data);
+    return res.data;
   } catch (error) {
     console.error(
-      `Dedupe API Call Failed for ${lead.phone}:`,
+      `❌ Dedupe API Call Failed for ${lead.phone}:`,
       error.response?.data?.Error || error.message,
     );
     return {
@@ -93,9 +109,9 @@ async function sendToDedupeAPI(lead) {
   }
 }
 
-async function sendToPunshAPI(lead) {
+async function sendToPushAPI(lead) {
   try {
-    const apiRequestBody = {
+    const body = {
       full_name: lead.name || "",
       mobile: lead.phone || "",
       email: lead.email || "",
@@ -109,19 +125,14 @@ async function sendToPunshAPI(lead) {
       customer_lead_id: generate7DigitId(),
     };
 
-    console.log(`Sending Push request for ${lead.phone}`);
-    const response = await axios.post(PushAPI_URL, apiRequestBody, {
-      headers: getHeaders(),
-    });
+    console.log(`📤 Sending Push request for ${lead.phone}`);
+    const res = await axios.post(PushAPI_URL, body, { headers: getHeaders() });
 
-    console.log(
-      `Marketing Push API Response for ${lead.phone}:`,
-      response.data,
-    );
-    return response.data;
+    console.log(`✅ Push API Response for ${lead.phone}:`, res.data);
+    return res.data;
   } catch (err) {
     console.error(
-      `Marketing Push API Error for ${lead.phone}:`,
+      `❌ Push API Error for ${lead.phone}:`,
       err.response?.data || err.message,
     );
     return {
@@ -138,8 +149,8 @@ async function processBatch(users) {
   await Promise.allSettled(
     users.map(async (user) => {
       try {
-        if (user.RefArr && user.RefArr.some((r) => r.name === "Rupee112")) {
-          console.log(`Skipping user ${user.phone}`);
+        if (user.RefArr?.some((r) => r.name === "Rupee112")) {
+          console.log(`⏩ Skipping user ${user.phone}`);
           return;
         }
 
@@ -178,9 +189,6 @@ async function processBatch(users) {
           return;
         }
 
-        const userDoc = await UserDB.findOne({ phone: user.phone });
-        if (!userDoc) return;
-
         const dedupeResponse = await sendToDedupeAPI(user);
 
         let updateDoc = {
@@ -202,7 +210,7 @@ async function processBatch(users) {
           dedupeResponse.Status === "2" ||
           dedupeResponse.Message === "User not found"
         ) {
-          const pushResponse = await sendToPunshAPI(user);
+          const pushResponse = await sendToPushAPI(user);
           updateDoc.$push.apiResponse.Rupee112 = { ...pushResponse };
           updateDoc.$push.apiResponse.status =
             pushResponse.status || pushResponse.Status;
@@ -213,7 +221,7 @@ async function processBatch(users) {
             pushResponse.Status === 1 &&
             pushResponse.Message === "Lead Created Successfuly"
           ) {
-            successCount += 1;
+            successCount++;
           }
         } else {
           updateDoc.$push.apiResponse.Rupee112 = { ...dedupeResponse };
@@ -245,6 +253,8 @@ async function processBatch(users) {
 }
 
 async function Loop() {
+  await loadPincodes();
+
   let successLeads = 0;
 
   try {
@@ -290,9 +300,9 @@ async function Loop() {
       await new Promise((resolve) => setImmediate(resolve));
     }
   } catch (error) {
-    console.error("Unhandled error in loop:", error);
+    console.error("❌ Unhandled error in loop:", error);
   } finally {
-    console.log("Disconnecting MongoDB.");
+    console.log("🛑 Disconnecting MongoDB.");
     mongoose.disconnect();
   }
 }
