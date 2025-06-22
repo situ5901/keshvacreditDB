@@ -484,7 +484,7 @@ async function processBatch(leads, token) {
   await Promise.allSettled(promises);
 }
 
-let totalLeads = 0;
+// let totalLeads = 0;
 
 async function Loop() {
   let token = await getToken();
@@ -494,10 +494,10 @@ async function Loop() {
   }
 
   while (true) {
-    if (totalLeads >= MAX_LEADS) {
-      console.log(`✅ Processed ${MAX_LEADS} leads. Exiting loop.`);
-      break;
-    }
+    // if (totalLeads >= MAX_LEADS) {
+    //   console.log(`✅ Processed ${MAX_LEADS} leads. Exiting loop.`);
+    //   break;
+    // }
 
     console.log("\n📦 Fetching next batch...");
     const leads = await UserDB.aggregate([
