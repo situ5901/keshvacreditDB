@@ -4,15 +4,15 @@ const readXlsxFile = require("read-excel-file/node");
 require("dotenv").config();
 const { v4: uuidv4 } = require("uuid");
 
-const MONGODB_URINEW = process.env.MONGODB_URINEW;
-if (!MONGODB_URINEW) {
+const MONGODB_URIVISH = process.env.MONGODB_URIVISH;
+if (!MONGODB_URIVISH) {
   console.error("MONGODB_URINEW is not defined in your .env file.");
   process.exit(1);
 }
 
 const UserDB = mongoose.model(
-  "userdb",
-  new mongoose.Schema({}, { collection: "userdb", strict: false }),
+  "smcoll",
+  new mongoose.Schema({}, { collection: "smcoll", strict: false }),
 );
 
 const MAX_PROCESS = 10000;
