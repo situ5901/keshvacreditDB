@@ -2,17 +2,13 @@ const mongoose = require("mongoose");
 const axios = require("axios");
 const readXlsxFile = require("read-excel-file/node");
 require("dotenv").config();
+const { v4: uuidv4 } = require("uuid");
 
 const MONGODB_URINEW = process.env.MONGODB_URINEW;
 if (!MONGODB_URINEW) {
   console.error("MONGODB_URINEW is not defined in your .env file.");
   process.exit(1);
 }
-
-mongoose
-  .connect(MONGODB_URINEW)
-  .then(() => console.log("MongoDB Connected Successfully"))
-  .catch((err) => console.error("MongoDB Connection Error:", err));
 
 const UserDB = mongoose.model(
   "userdb",
@@ -26,15 +22,7 @@ const DEDUPE_API_URL =
   "https://api.rupee112fintech.com/marketing-check-dedupe/";
 const PushAPI_URL = "https://api.rupee112fintech.com/marketing-push-data";
 const loanAmount = "20000";
-
-// ✅ Use the reusable utility to load pincodes
-const validPincodeRows = readXlsxFile("xlsx/rupee.xlsx");
-const validPincodes = validPincodeRows.map((row) => String(row.Pincode).trim());
-if (validPincodes.length === 0) {
-  console.warn(
-    "No valid pincodes loaded. All pincode-dependent leads will be skipped.",
-  );
-}
+let validPincodes = [];
 
 function getHeaders() {
   return {
@@ -44,7 +32,6 @@ function getHeaders() {
   };
 }
 
-const { v4: uuidv4 } = require("uuid");
 const generate7DigitId = () => {
   const uuid = uuidv4();
   const digits = uuid.replace(/\D/g, "");
@@ -59,12 +46,10 @@ function isValidUser(user) {
       reason: `Invalid employment type: ${user.employmentType}`,
     };
   }
-
   const age = Number(user.age);
   if (isNaN(age) || age < 25 || age > 50) {
     return { valid: false, reason: `Invalid age: ${user.age}` };
   }
-
   return { valid: true };
 }
 
@@ -75,17 +60,12 @@ async function sendToDedupeAPI(lead) {
       pancard: lead.pan,
       Partner_id,
     };
-    console.log(`Sending Dedupe request for ${lead.phone}`);
+    console.log(`🔍 Sending Dedupe request for ${lead.phone}`);
     const response = await axios.post(DEDUPE_API_URL, FirstPayload, {
       headers: getHeaders(),
     });
-    console.log(`Dedupe API Response for ${lead.phone}:`, response.data);
     return response.data;
   } catch (error) {
-    console.error(
-      `Dedupe API Call Failed for ${lead.phone}:`,
-      error.response?.data?.Error || error.message,
-    );
     return {
       Status: 0,
       Error:
@@ -94,7 +74,7 @@ async function sendToDedupeAPI(lead) {
   }
 }
 
-async function sendToPunshAPI(lead) {
+async function sendToPushAPI(lead) {
   try {
     const apiRequestBody = {
       full_name: lead.name || "",
@@ -110,21 +90,12 @@ async function sendToPunshAPI(lead) {
       customer_lead_id: generate7DigitId(),
     };
 
-    console.log(`Sending Push request for ${lead.phone}`);
+    console.log(`📤 Sending Push request for ${lead.phone}`);
     const response = await axios.post(PushAPI_URL, apiRequestBody, {
       headers: getHeaders(),
     });
-
-    console.log(
-      `Marketing Push API Response for ${lead.phone}:`,
-      response.data,
-    );
     return response.data;
   } catch (err) {
-    console.error(
-      `Marketing Push API Error for ${lead.phone}:`,
-      err.response?.data || err.message,
-    );
     return {
       Status: 0,
       Error:
@@ -140,7 +111,7 @@ async function processBatch(users) {
     users.map(async (user) => {
       try {
         if (user.RefArr && user.RefArr.some((r) => r.name === "Rupee112")) {
-          console.log(`Skipping user ${user.phone}`);
+          console.log(`⏩ Skipping user ${user.phone}`);
           return;
         }
 
@@ -203,7 +174,7 @@ async function processBatch(users) {
           dedupeResponse.Status === "2" ||
           dedupeResponse.Message === "User not found"
         ) {
-          const pushResponse = await sendToPunshAPI(user);
+          const pushResponse = await sendToPushAPI(user);
           updateDoc.$push.apiResponse.Rupee112 = { ...pushResponse };
           updateDoc.$push.apiResponse.status =
             pushResponse.status || pushResponse.Status;
@@ -291,11 +262,33 @@ async function Loop() {
       await new Promise((resolve) => setImmediate(resolve));
     }
   } catch (error) {
-    console.error("Unhandled error in loop:", error);
+    console.error("🚨 Unhandled error in loop:", error);
   } finally {
-    console.log("Disconnecting MongoDB.");
+    console.log("🔌 Disconnecting MongoDB.");
     mongoose.disconnect();
   }
 }
 
-Loop();
+async function start() {
+  try {
+    await mongoose.connect(MONGODB_URINEW);
+    console.log("✅ MongoDB Connected Successfully");
+
+    const validPincodeRows = await readXlsxFile("xlsx/rupee.xlsx");
+    validPincodes = validPincodeRows
+      .slice(1)
+      .map((row) => String(row[0]).trim()); // Column A assumed for Pincode
+
+    if (validPincodes.length === 0) {
+      console.warn("⚠️ No valid pincodes loaded.");
+    } else {
+      console.log(`✅ Loaded ${validPincodes.length} valid pincodes`);
+    }
+
+    await Loop();
+  } catch (err) {
+    console.error("❌ Error starting script:", err.message);
+  }
+}
+
+start();
