@@ -1,18 +1,20 @@
 const mongoose = require("mongoose");
 const axios = require("axios");
-const readXlsxFile = require("read-excel-file/node");
+const path = require("path");
+const xlsx = require("xlsx");
 require("dotenv").config();
 const { v4: uuidv4 } = require("uuid");
 
-const MONGODB_URIVISH = process.env.MONGODB_URIVISH;
-if (!MONGODB_URIVISH) {
-  console.error("MONGODB_URINEW is not defined in your .env file.");
-  process.exit(1);
-}
+const MONGODB_URINEW = process.env.MONGODB_URINEW;
+
+mongoose
+  .connect(MONGODB_URINEW)
+  .then(() => console.log("✅ MongoDB Connected Successfully"))
+  .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
 
 const UserDB = mongoose.model(
-  "smcoll",
-  new mongoose.Schema({}, { collection: "smcoll", strict: false }),
+  "userdb",
+  new mongoose.Schema({}, { collection: "userdb", strict: false }),
 );
 
 const MAX_PROCESS = 10000;
@@ -22,7 +24,25 @@ const DEDUPE_API_URL =
   "https://api.rupee112fintech.com/marketing-check-dedupe/";
 const PushAPI_URL = "https://api.rupee112fintech.com/marketing-push-data";
 const loanAmount = "20000";
-let validPincodes = [];
+
+const PINCODE_FILE_PATH = path.join(__dirname, "..", "xlsx", "rupee.xlsx");
+
+function loadValidPincodes(filePath) {
+  try {
+    const workbook = xlsx.readFile(filePath);
+    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+    const data = xlsx.utils.sheet_to_json(sheet);
+    return data.map((row) => String(row.Pincode).trim());
+  } catch (error) {
+    console.error(
+      `❌ Error loading valid pincodes from ${filePath}:`,
+      error.message,
+    );
+    return [];
+  }
+}
+
+const validPincodes = loadValidPincodes(PINCODE_FILE_PATH);
 
 function getHeaders() {
   return {
@@ -40,16 +60,19 @@ const generate7DigitId = () => {
 
 function isValidUser(user) {
   const empType = (user.employmentType || "").toLowerCase().trim();
+
   if (empType !== "salaried") {
     return {
       valid: false,
       reason: `Invalid employment type: ${user.employmentType}`,
     };
   }
+
   const age = Number(user.age);
   if (isNaN(age) || age < 25 || age > 50) {
     return { valid: false, reason: `Invalid age: ${user.age}` };
   }
+
   return { valid: true };
 }
 
@@ -58,23 +81,28 @@ async function sendToDedupeAPI(lead) {
     const FirstPayload = {
       mobile: lead.phone,
       pancard: lead.pan,
-      Partner_id,
+      Partner_id: Partner_id,
     };
-    console.log(`🔍 Sending Dedupe request for ${lead.phone}`);
+    console.log("📤 Sending Lead Data to Dedupe API:", FirstPayload);
+
     const response = await axios.post(DEDUPE_API_URL, FirstPayload, {
       headers: getHeaders(),
     });
+
+    console.log("✅ Dedupe API Response Received:", response.data);
     return response.data;
   } catch (error) {
-    return {
-      Status: 0,
-      Error:
-        error.response?.data?.Error || error.message || "Unknown Dedupe Error",
-    };
+    console.error(
+      "🚫 Dedupe API Call Failed for",
+      lead.phone,
+      ":",
+      error.message,
+    );
+    return { Status: 0, Error: error.response?.data?.Error || error.message };
   }
 }
 
-async function sendToPushAPI(lead) {
+async function sendToPunshAPI(lead) {
   try {
     const apiRequestBody = {
       full_name: lead.name || "",
@@ -82,24 +110,30 @@ async function sendToPushAPI(lead) {
       email: lead.email || "",
       pancard: lead.pan || "",
       pincode: lead.pincode || "",
-      income_type: "1",
+      income_type: "1", // salaried
       monthly_salary: lead.income || "",
       purpose_of_loan: "3",
       loan_amount: loanAmount,
-      Partner_id,
+      Partner_id: Partner_id,
       customer_lead_id: generate7DigitId(),
     };
 
-    console.log(`📤 Sending Push request for ${lead.phone}`);
+    console.log("📤 Sending Lead Data to Marketing Push API:", apiRequestBody);
+
     const response = await axios.post(PushAPI_URL, apiRequestBody, {
       headers: getHeaders(),
     });
+
+    console.log("✅ Marketing Push API Response Received:", response.data);
     return response.data;
   } catch (err) {
+    console.error(
+      "❌ PreApproval API Error:",
+      err.response?.data || err.message,
+    );
     return {
       Status: 0,
-      Error:
-        err.response?.data?.message || err.message || "Unknown Push API Error",
+      Error: err.response?.data?.message || err.message || "Unknown Error",
     };
   }
 }
@@ -107,109 +141,99 @@ async function sendToPushAPI(lead) {
 async function processBatch(users) {
   let successCount = 0;
 
-  await Promise.allSettled(
+  const results = await Promise.allSettled(
     users.map(async (user) => {
-      try {
-        if (user.RefArr && user.RefArr.some((r) => r.name === "Rupee112")) {
-          console.log(`⏩ Skipping user ${user.phone}`);
-          return;
-        }
+      if (user.RefArr && user.RefArr.some((r) => r.name === "Rupee112")) {
+        console.log(`⏭️ Skipping user ${user.phone} as already processed.`);
+        return;
+      }
 
-        const pincodeTrimmed = String(user.pincode || "").trim();
-        if (!pincodeTrimmed || !validPincodes.includes(pincodeTrimmed)) {
-          const reason = `Invalid or missing pincode: ${user.pincode}`;
-          await UserDB.updateOne(
-            { phone: user.phone },
-            {
-              $push: {
-                RefArr: {
-                  name: "SkippedRupee112",
-                  reason,
-                  createdAt: new Date().toISOString(),
-                },
-              },
-            },
-          );
-          return;
-        }
-
-        const { valid, reason } = isValidUser(user);
-        if (!valid) {
-          await UserDB.updateOne(
-            { phone: user.phone },
-            {
-              $push: {
-                RefArr: {
-                  name: "SkippedRupee112",
-                  reason,
-                  createdAt: new Date().toISOString(),
-                },
-              },
-            },
-          );
-          return;
-        }
-
-        const userDoc = await UserDB.findOne({ phone: user.phone });
-        if (!userDoc) return;
-
-        const dedupeResponse = await sendToDedupeAPI(user);
-
-        let updateDoc = {
-          $unset: { accounts: "" },
-          $push: {
-            apiResponse: {
-              Rupee112: {},
-              status: "",
-              message: "",
-              createdAt: new Date().toISOString(),
-            },
-          },
-          $addToSet: {
-            RefArr: { name: "Rupee112" },
-          },
-        };
-
-        if (
-          dedupeResponse.Status === "2" ||
-          dedupeResponse.Message === "User not found"
-        ) {
-          const pushResponse = await sendToPushAPI(user);
-          updateDoc.$push.apiResponse.Rupee112 = { ...pushResponse };
-          updateDoc.$push.apiResponse.status =
-            pushResponse.status || pushResponse.Status;
-          updateDoc.$push.apiResponse.message =
-            pushResponse.message || pushResponse.Error;
-
-          if (
-            pushResponse.Status === 1 &&
-            pushResponse.Message === "Lead Created Successfuly"
-          ) {
-            successCount += 1;
-          }
-        } else {
-          updateDoc.$push.apiResponse.Rupee112 = { ...dedupeResponse };
-          updateDoc.$push.apiResponse.status =
-            dedupeResponse.status || dedupeResponse.Status;
-          updateDoc.$push.apiResponse.message =
-            dedupeResponse.message || dedupeResponse.Error;
-        }
-
-        await UserDB.updateOne({ phone: user.phone }, updateDoc);
-      } catch (error) {
+      if (
+        !user.pincode ||
+        !validPincodes.includes(String(user.pincode).trim())
+      ) {
+        console.error(
+          `❌ Invalid pincode: ${user.pincode} for user: ${user.phone}. Skipping.`,
+        );
         await UserDB.updateOne(
           { phone: user.phone },
           {
             $push: {
               RefArr: {
-                name: "SkippedRupee112Error",
-                reason: `Unexpected error: ${error.message}`,
+                name: "SkippedRupee112",
+                reason: `Invalid pincode: ${user.pincode}`,
                 createdAt: new Date().toISOString(),
               },
             },
           },
         );
+        return;
       }
+
+      const { valid, reason } = isValidUser(user);
+      if (!valid) {
+        console.error(`❌ Skipping user ${user.phone}: ${reason}`);
+        await UserDB.updateOne(
+          { phone: user.phone },
+          {
+            $push: {
+              RefArr: {
+                name: "SkippedRupee112",
+                reason,
+                createdAt: new Date().toISOString(),
+              },
+            },
+          },
+        );
+        return;
+      }
+
+      const userDoc = await UserDB.findOne({ phone: user.phone });
+      if (!userDoc) {
+        console.log(`❌ User with phone ${user.phone} not found in DB.`);
+        return;
+      }
+
+      const response = await sendToDedupeAPI(user);
+
+      let updateDoc = {
+        $unset: { accounts: "" },
+        $push: {
+          apiResponse: {
+            Rupee112: {},
+            status: "",
+            message: "",
+            createdAt: new Date().toISOString(),
+          },
+        },
+        $addToSet: {
+          RefArr: { name: "Rupee112" },
+        },
+      };
+
+      if (response.Status === "2" || response.Message === "User not found") {
+        const pushResponse = await sendToPunshAPI(user);
+
+        updateDoc.$push.apiResponse.Rupee112 = { ...pushResponse };
+        updateDoc.$push.apiResponse.status =
+          pushResponse.status || pushResponse.Status;
+        updateDoc.$push.apiResponse.message =
+          pushResponse.message || pushResponse.Error;
+
+        if (
+          pushResponse.Status === 1 &&
+          pushResponse.Message === "Lead Created Successfuly"
+        ) {
+          successCount += 1;
+        }
+      } else {
+        updateDoc.$push.apiResponse.Rupee112 = { ...response };
+        updateDoc.$push.apiResponse.status = response.status || response.Status;
+        updateDoc.$push.apiResponse.message =
+          response.message || response.Error;
+      }
+
+      await UserDB.updateOne({ phone: user.phone }, updateDoc);
     }),
   );
 
@@ -221,74 +245,55 @@ async function Loop() {
 
   try {
     while (successLeads < MAX_PROCESS) {
+      console.log("📦 Fetching leads...");
       const leads = await UserDB.aggregate([
         {
           $match: {
             "RefArr.name": { $ne: "Rupee112" },
           },
         },
-        { $limit: BATCH_SIZE * 2 },
+        { $limit: BATCH_SIZE * 2 }, // Fetch more to compensate for invalids
       ]);
 
-      if (!leads.length) break;
+      if (!leads.length) {
+        console.log("🎉 All leads processed. Exiting loop.");
+        break;
+      }
 
+      // ✅ Filter valid users before processing
       const validLeads = leads.filter((user) => {
-        const userValidity = isValidUser(user);
-        const pincodeTrimmed = String(user.pincode || "").trim();
-        const isPincodeValid =
-          pincodeTrimmed && validPincodes.includes(pincodeTrimmed);
-        return userValidity.valid && isPincodeValid;
+        const isValid = isValidUser(user);
+        return (
+          isValid.valid &&
+          user.pincode &&
+          validPincodes.includes(String(user.pincode).trim())
+        );
       });
 
       if (!validLeads.length) {
-        if (leads.length < BATCH_SIZE * 2) break;
-        await new Promise((resolve) => setImmediate(resolve));
-        continue;
+        console.log("❌ No valid leads in this batch.");
+        break;
       }
 
-      const remainingSlots = MAX_PROCESS - successLeads;
-      const batchToProcess = validLeads.slice(
-        0,
-        Math.min(validLeads.length, remainingSlots),
-      );
-
-      if (batchToProcess.length === 0) break;
+      const remaining = MAX_PROCESS - successLeads;
+      const batchToProcess = validLeads.slice(0, remaining);
 
       const batchSuccess = await processBatch(batchToProcess);
+
       successLeads += batchSuccess;
 
-      if (successLeads >= MAX_PROCESS) break;
+      console.log(`✅ Processed valid leads: ${batchToProcess.length}`);
+      console.log(`🌟 Total Successfully Created Leads: ${successLeads}`);
+
+      if (successLeads >= MAX_PROCESS) {
+        console.log("🎯 Reached 5000 successful leads. Stopping.");
+        break;
+      }
 
       await new Promise((resolve) => setImmediate(resolve));
     }
   } catch (error) {
-    console.error("🚨 Unhandled error in loop:", error);
-  } finally {
-    console.log("🔌 Disconnecting MongoDB.");
-    mongoose.disconnect();
+    console.error("❌ Error in loop:", error);
   }
 }
-
-async function start() {
-  try {
-    await mongoose.connect(MONGODB_URIVISH);
-    console.log("✅ MongoDB Connected Successfully");
-
-    const validPincodeRows = await readXlsxFile("xlsx/rupee.xlsx");
-    validPincodes = validPincodeRows
-      .slice(1)
-      .map((row) => String(row[0]).trim()); // Column A assumed for Pincode
-
-    if (validPincodes.length === 0) {
-      console.warn("⚠️ No valid pincodes loaded.");
-    } else {
-      console.log(`✅ Loaded ${validPincodes.length} valid pincodes`);
-    }
-
-    await Loop();
-  } catch (err) {
-    console.error("❌ Error starting script:", err.message);
-  }
-}
-
-start();
+Loop();
