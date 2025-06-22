@@ -159,7 +159,7 @@ async function processBatch(users) {
 
       // Ensure RefArr is updated with "Zype" after a successful API hit
       const refArrEntry = {
-        name: "ZypeVali", // Changed from "Zypevali5901" to "Zype"
+        name: "Zype", // Changed from "Zypevali5901" to "Zype"
         createdAt: new Date().toISOString(),
       };
 
