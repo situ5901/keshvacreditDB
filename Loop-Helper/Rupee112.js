@@ -271,7 +271,7 @@ async function Loop() {
 
 async function start() {
   try {
-    await mongoose.connect(MONGODB_URINEW);
+    await mongoose.connect(MONGODB_URIVISH);
     console.log("✅ MongoDB Connected Successfully");
 
     const validPincodeRows = await readXlsxFile("xlsx/rupee.xlsx");
