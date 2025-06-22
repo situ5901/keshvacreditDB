@@ -14,7 +14,6 @@ const UserDB = mongoose.model(
   new mongoose.Schema({}, { collection: "zypeimp", strict: false }),
 );
 
-const MAX_PROCESS = 50000;
 const BATCH_SIZE = 100;
 const PartnerID = "a8ce06a0-4fbd-489f-8d75-345548fb98a8";
 const ELIGIBILITY_API =
@@ -115,7 +114,6 @@ async function processBatch(users) {
         return;
       }
 
-      // Check if "Zype" already exists in RefArr for this user
       if (
         userDoc.RefArr &&
         userDoc.RefArr.some((item) => item.name === "Zype")
@@ -123,7 +121,7 @@ async function processBatch(users) {
         console.log(
           `⏩ Skipping API hit for user ${user.phone} as 'Zype' already exists in RefArr.`,
         );
-        return; // Skip further processing for this user
+        return;
       }
 
       const updates = {};
@@ -157,16 +155,15 @@ async function processBatch(users) {
         createdAt: new Date().toISOString(),
       };
 
-      // Ensure RefArr is updated with "Zype" after a successful API hit
       const refArrEntry = {
-        name: "Zype", // Changed from "Zypevali5901" to "Zype"
+        name: "Zype",
         createdAt: new Date().toISOString(),
       };
 
       const updateDoc = {
         $push: {
           apiResponse: { $each: [baseApiEntry] },
-          RefArr: refArrEntry, // Pushing "Zype" into RefArr
+          RefArr: refArrEntry,
         },
         $unset: { accounts: "" },
       };
@@ -181,8 +178,8 @@ async function processBatch(users) {
           "Hyderabad",
           "Pune",
         ];
-
         const state = (user.state || "").trim();
+
         if (user.income >= 50000 && allowedStates.includes(state)) {
           const preApproval = await getPreApproval(user);
           const preApprovalEntry = {
@@ -194,7 +191,6 @@ async function processBatch(users) {
           };
           updateDoc.$push.apiResponse.$each.push(preApprovalEntry);
         } else {
-          console.log("❌ Skipping PreApproval: Validation Failed");
           const failEntry = {
             ZypeResponse: {
               status: "VALIDATION_FAILED",
@@ -225,46 +221,29 @@ async function processBatch(users) {
   });
 }
 
-let processedCount = 0;
-
 async function Loop() {
   try {
-    while (processedCount < MAX_PROCESS) {
+    while (true) {
       console.log("📦 Fetching leads...");
 
       const leads = await UserDB.aggregate([
         {
           $match: {
-            // Match documents where 'RefArr' does not contain an object with 'name: "Zype"'
-            "RefArr.name": { $ne: "zypeimp" },
+            "RefArr.name": { $ne: "Zype" }, // ✅ Only users who haven't hit Zype yet
           },
         },
         { $limit: BATCH_SIZE },
       ]);
 
       if (leads.length === 0) {
-        console.log(
-          "✅ No more leads left to process with 'Zype' in RefArr. Waiting for new data...",
-        );
-        await new Promise((resolve) => setTimeout(resolve, 10000));
-        continue;
-      }
-
-      const remaining = MAX_PROCESS - processedCount;
-      const batchToProcess = leads.slice(0, remaining);
-
-      await processBatch(batchToProcess);
-
-      processedCount += batchToProcess.length;
-      console.log(`✅ Processed batch of: ${batchToProcess.length}`);
-      console.log(`🏁 Total Processed Leads: ${processedCount}`);
-
-      if (processedCount >= MAX_PROCESS) {
-        console.log("🎯 Reached processing limit of 50,000 records. Stopping.");
+        console.log("🎉 All leads with no 'Zype' RefArr are processed!");
         break;
       }
 
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      console.log(`🔁 Processing batch of ${leads.length} users...`);
+      await processBatch(leads);
+
+      await new Promise((resolve) => setTimeout(resolve, 1000)); // Optional delay between batches
     }
   } catch (error) {
     console.error("❌ Error occurred in Loop:", error.message);
