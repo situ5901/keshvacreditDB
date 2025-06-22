@@ -229,7 +229,7 @@ async function Loop() {
       const leads = await UserDB.aggregate([
         {
           $match: {
-            "RefArr.name": { $ne: "Zype" }, // ✅ Only users who haven't hit Zype yet
+            "RefArr.name": { $ne: "Zypevali" }, // ✅ Only users who haven't hit Zype yet
           },
         },
         { $limit: BATCH_SIZE },
