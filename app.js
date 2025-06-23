@@ -25,6 +25,7 @@ app.use(`/api${API_VERSION}/leaveSend`, require("./utils/leaveMail"));
 app.use(`/api${API_VERSION}/employee`, require("./employee/Daily_Work"));
 app.use(`/api${API_VERSION}/partner`, require("./PartnersAPIs/Creditsea"));
 app.use(`/api${API_VERSION}/LenderAPIs`, require("./Lenders-APIs/MoneyView"));
+app.use(`/api${API_VERSION}/LenderAPIs`, require("./Lenders-APIs/smartcoin"));
 app.use(`/api${API_VERSION}/Test`, require("./Test/filter.js"));
 app.use(errorHandler);
 
