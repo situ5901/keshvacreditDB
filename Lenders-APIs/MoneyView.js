@@ -4,7 +4,6 @@ const router = express.Router();
 const axios = require("axios");
 const Userdb = require("../Lenders-APIs/PartnerSchema.js");
 
-
 router.post("/moneyview/lead", async (req, res) => {
   const { MV_USERNAME, MV_PASSWORD, MV_PARTNER_CODE } = process.env;
 
