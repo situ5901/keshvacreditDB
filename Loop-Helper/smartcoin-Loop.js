@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 const axios = require("axios");
 const qs = require("qs");
 require("dotenv").config();
-
+const Userdb = require("../Lenders-APIs/PartnerSchema.js");
 const MONGODB_URIVISH = process.env.MONGODB_URIVISH;
 
 mongoose
@@ -23,8 +23,8 @@ const PRE_APPROVAL_API =
 function getheaders() {
   return {
     "content-type": "application/x-www-form-urlencoded",
-    "admin-api-client-id": "SC_KVCD_oruwm5w5fXy4JNoi",
-    "admin-api-client-key": "esy7kphMG6G9hu90",
+    "admin-api-client-id": "sc_kvcd_oruwm5w5fxy4jnoi",
+    "admin-api-client-key": "esy7kphmg6g9hu90",
   };
 }
 
