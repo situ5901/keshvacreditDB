@@ -53,7 +53,7 @@ router.post("/partner/rupee/lead-create", async (req, res) => {
       email: email || "",
       pancard: pan || "",
       pincode: pincode || "",
-      income_type: empType || "1",
+      income_type: employment || "1",
       monthly_salary: income || "",
       purpose_of_loan: "3",
       loan_amount: loanAmount || "",
