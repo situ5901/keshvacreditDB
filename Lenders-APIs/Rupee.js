@@ -20,7 +20,7 @@ router.get("/testuser", async (req, res) => {
 //update situ
 router.post("/partner/rupee/lead-create", async (req, res) => {
   try {
-    const { name, phone, email, pan, pincode, empType, income, loanAmount } =
+    const { name, phone, email, pan, pincode, employment, income, loanAmount } =
       req.query;
 
     const dedupePayload = {
