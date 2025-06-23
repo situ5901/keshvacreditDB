@@ -5,7 +5,6 @@ const WebUserDB = require("../models/user.model");
 
 const CreateUserAPI =
   "https://www.chintamanifinlease.com/api/chintamanifinleaseDsaPartnerTest";
-
 const Partner_id = "Keshvacredit";
 
 router.post("/partner/chintamani", async (req, res) => {
@@ -26,12 +25,12 @@ router.post("/partner/chintamani", async (req, res) => {
 
     console.log("➡️ Incoming Request Body:", req.body);
 
-    const existingUser = await WebUserDB.findOne({ phone });
-    if (!existingUser) {
-      return res
-        .status(409)
-        .json({ success: false, message: "❌ User not found" });
-    }
+    // const existingUser = await WebUserDB.findOne({ phone });
+    // if (!existingUser) {
+    //   return res
+    //     .status(409)
+    //     .json({ success: false, message: "❌ User not found" });
+    // }
 
     const requestBody = {
       mobile_number: phone,
@@ -48,7 +47,10 @@ router.post("/partner/chintamani", async (req, res) => {
       headers: { "Content-Type": "application/json" },
     });
 
-    await WebUserDB.updateOne({ phone }, { $set: { chintamani: true } });
+    // ✅ Check Chintamani response
+    // if (hitApi.data?.status === true) {
+    //   await WebUserDB.updateOne({ phone }, { $set: { chintamani: true } });
+    // }
 
     return res.status(200).json({
       apiResponse: hitApi.data,
