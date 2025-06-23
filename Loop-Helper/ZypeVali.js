@@ -116,10 +116,10 @@ async function processBatch(users) {
 
       if (
         userDoc.RefArr &&
-        userDoc.RefArr.some((item) => item.name === "Zype")
+        userDoc.RefArr.some((item) => item.name === "Zypevali")
       ) {
         console.log(
-          `⏩ Skipping API hit for user ${user.phone} as 'Zype' already exists in RefArr.`,
+          `⏩ Skipping API hit for user ${user.phone} as 'Zypevali' already exists in RefArr.`,
         );
         return;
       }
@@ -156,7 +156,7 @@ async function processBatch(users) {
       };
 
       const refArrEntry = {
-        name: "Zype",
+        name: "Zypevali", // ✅ Consistent name
         createdAt: new Date().toISOString(),
       };
 
@@ -229,21 +229,21 @@ async function Loop() {
       const leads = await UserDB.aggregate([
         {
           $match: {
-            "RefArr.name": { $ne: "Zypevali" }, // ✅ Only users who haven't hit Zype yet
+            "RefArr.name": { $ne: "Zypevali" }, // ✅ Match consistent name
           },
         },
         { $limit: BATCH_SIZE },
       ]);
 
       if (leads.length === 0) {
-        console.log("🎉 All leads with no 'Zype' RefArr are processed!");
+        console.log("🎉 All leads with no 'Zypevali' RefArr are processed!");
         break;
       }
 
       console.log(`🔁 Processing batch of ${leads.length} users...`);
       await processBatch(leads);
 
-      await new Promise((resolve) => setTimeout(resolve, 1000)); // Optional delay between batches
+      await new Promise((resolve) => setTimeout(resolve, 1000)); // delay between batches
     }
   } catch (error) {
     console.error("❌ Error occurred in Loop:", error.message);
