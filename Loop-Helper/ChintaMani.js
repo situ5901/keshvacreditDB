@@ -4,16 +4,16 @@ require("dotenv").config();
 const path = require("path");
 const xlsx = require("xlsx");
 
-const MONGODB_URIVISH = process.env.MONGODB_URIVISH;
+const MONGODB_URINEW = process.env.MONGODB_URINEW;
 
 mongoose
-  .connect(MONGODB_URIVISH)
+  .connect(MONGODB_URINEW)
   .then(() => console.log("✅ MongoDB Connected Successfully"))
   .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
 
 const UserDB = mongoose.model(
-  "smcoll",
-  new mongoose.Schema({}, { collection: "smcoll", strict: false }),
+  "utilsdb",
+  new mongoose.Schema({}, { collection: "utilsdb", strict: false }),
 );
 
 const PINCODE_FILE_PATH = path.join(__dirname, "..", "xlsx", "pincode.xlsx");
