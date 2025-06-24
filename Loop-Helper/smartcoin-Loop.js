@@ -4,7 +4,7 @@ const qs = require("qs");
 require("dotenv").config();
 const Userdb = require("../Lenders-APIs/PartnerSchema.js");
 const MONGODB_URIVISH = process.env.MONGODB_URIVISH;
-
+//updfate
 mongoose
   .connect(MONGODB_URIVISH)
   .then(() => console.log("✅ MongoDB Connected Successfully"))
