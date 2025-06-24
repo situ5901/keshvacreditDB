@@ -5,7 +5,6 @@ const jwt = require("jsonwebtoken");
 const User = require("../models/user.model"); // Ensure correct path
 const Lead = require("../models/RamFinSch");
 const mongoose = require("mongoose");
-const customer = require("../PartnersAPIs/PartnerSchema");
 
 require("dotenv").config();
 
@@ -206,9 +205,7 @@ router.post("/getUsers", async (req, res) => {
   }
   try {
     const user = await User.findOne({ phone });
-    const customer = await customer.findOne({ phone });
-
-    if (user || customer) {
+    if (user) {
       res.json(user);
     } else {
       res.status(404).json({ error: "User not found" });
