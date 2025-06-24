@@ -17,7 +17,6 @@ const UserDB = mongoose.model(
   new mongoose.Schema({}, { collection: "smcoll", strict: false }),
 );
 
-const MAX_PROCESS = 10000;
 const BATCH_SIZE = 100;
 const Partner_id = "Keshvacredit";
 const DEDUPE_API_URL =
@@ -244,7 +243,7 @@ async function Loop() {
   let successLeads = 0;
 
   try {
-    while (successLeads < MAX_PROCESS) {
+    while (true) {
       console.log("📦 Fetching leads...");
       const leads = await UserDB.aggregate([
         {
@@ -275,7 +274,6 @@ async function Loop() {
         break;
       }
 
-      const remaining = MAX_PROCESS - successLeads;
       const batchToProcess = validLeads.slice(0, remaining);
 
       const batchSuccess = await processBatch(batchToProcess);
