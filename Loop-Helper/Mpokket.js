@@ -66,11 +66,11 @@ async function getPreApproval(user) {
   try {
     const payload = {
       mobile_no: user.phone.toString(),
-      pancard: user.pan,
+      // pancard: user.pan,
       email_id: user.email,
       Full_name: user.name,
-      date_of_birth: user.dob,
-      profession: user.employment,
+      // date_of_birth: user.dob,
+      // profession: user.employment,
       partnerId: PartnerID,
     };
 
