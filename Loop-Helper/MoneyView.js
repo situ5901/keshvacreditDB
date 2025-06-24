@@ -5,7 +5,7 @@ const path = require("path");
 const xlsx = require("xlsx");
 
 const MONGODB_URINEW = process.env.MONGODB_URINEW;
-
+//situ yupda
 mongoose
   .connect(MONGODB_URINEW)
   .then(() => console.log("✅ MongoDB Connected Successfully"))
