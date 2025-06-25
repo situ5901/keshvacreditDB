@@ -21,7 +21,7 @@ const Partner_id = "Keshvacredit";
 function getHeaders() {
   return {
     "Content-Type": "application/json",
-    Authentication: "d70e2e18685f38708e175d780390d064ke58",
+    "api-key": "d70e2e18685f38708e175d780390d064ke58",
   };
 }
 
