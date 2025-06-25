@@ -13,7 +13,7 @@ mongoose
 
 const UserDB = mongoose.model(
   "MVcollection",
-  new mongoose.Schema({}, { collection: "userdb", strict: false }),
+  new mongoose.Schema({}, { collection: "MVcollection", strict: false }),
 );
 
 const Healthcheck_API = "https://atlas.whizdm.com/atlas/v1/health";
