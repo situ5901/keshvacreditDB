@@ -14,13 +14,14 @@ const UserDB = mongoose.model(
   new mongoose.Schema({}, { collection: "smcoll", strict: false }),
 );
 
-const API_URL = "https://instantmudra.com/admin/API/new_API_instantmudra";
+const API_URL = "https://instantmudra.com/admin/API/Live_instantmudra";
 const MAX_LEADS = 1;
 const Partner_id = "Keshvacredit";
 
 function getHeaders() {
   return {
     "Content-Type": "application/json",
+    Authentication: "d70e2e18685f38708e175d780390d064ke58",
   };
 }
 

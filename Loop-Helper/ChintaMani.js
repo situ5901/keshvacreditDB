@@ -18,8 +18,7 @@ const UserDB = mongoose.model(
 
 const PINCODE_FILE_PATH = path.join(__dirname, "..", "xlsx", "pincode.xlsx");
 
-const API_URL =
-  "https://www.chintamanifinlease.com/api/chintamanifinleaseDsaPartnerTest";
+const API_URL = "https://www.chintamanifinlease.com/api/dsa_live_data";
 const MAX_LEADS = 1;
 const Partner_id = "Keshvacredit";
 
@@ -35,6 +34,7 @@ const validPincodes = loadValidPincodes(PINCODE_FILE_PATH);
 function getHeaders() {
   return {
     "Content-Type": "application/json",
+    Authentication: "d70e2e18685f38708e175d780390d064",
   };
 }
 
