@@ -10,8 +10,8 @@ mongoose
   .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
 
 const UserDB = mongoose.model(
-  "smcoll",
-  new mongoose.Schema({}, { collection: "smcoll", strict: false }),
+  "userdb",
+  new mongoose.Schema({}, { collection: "userdb", strict: false }),
 );
 
 const API_URL = "https://instantmudra.com/admin/API/Live_instantmudra";
@@ -138,8 +138,6 @@ async function loop() {
         await processBatch(leads);
         processedCount += leads.length;
         console.log(`✅ Total Processed: ${processedCount}`);
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-        console.log("⏳ Waiting for 1 second before next batch...");
       }
     }
   } catch (err) {

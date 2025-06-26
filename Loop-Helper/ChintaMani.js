@@ -58,6 +58,7 @@ async function sendToNewAPI(lead) {
       mobile_number: lead.phone,
       email_id: lead.email,
       fname: lead.name,
+      pan_buss_number: lead.pan,
       current_pincode: lead.pincode,
       d_o_b: lead.dob,
       gender: lead.gender,
