@@ -40,6 +40,7 @@ router.post("/partner/instant", async (req, res) => {
     const apiResponse = await axios.post(API_URL, requestBody, {
       headers: {
         "Content-Type": "application/json",
+        "api-key": "d70e2e18685f38708e175d780390d064ke58",
       },
     });
 

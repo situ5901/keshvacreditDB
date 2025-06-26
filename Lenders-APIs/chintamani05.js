@@ -24,13 +24,6 @@ router.post("/partner/chintamani", async (req, res) => {
 
     console.log("➡️ Incoming Request Body:", req.body);
 
-    // const existingUser = await WebUserDB.findOne({ phone });
-    // if (!existingUser) {
-    //   return res
-    //     .status(409)
-    //     .json({ success: false, message: "❌ User not found" });
-    // }
-
     const requestBody = {
       mobile_number: phone,
       email_id: email,
@@ -43,7 +36,10 @@ router.post("/partner/chintamani", async (req, res) => {
     };
 
     const hitApi = await axios.post(CreateUserAPI, requestBody, {
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "api-key": "d70e2e18685f38708e175d780390d064",
+      },
     });
 
     // ✅ Check Chintamani response
