@@ -3,8 +3,7 @@ const axios = require("axios");
 const router = express.Router();
 const WebUserDB = require("../models/user.model");
 
-const CreateUserAPI =
-  "https://www.chintamanifinlease.com/api/chintamanifinleaseDsaPartnerTest";
+const CreateUserAPI = "https://www.chintamanifinlease.com/api/dsa_live_data";
 const Partner_id = "Keshvacredit";
 
 router.post("/partner/chintamani", async (req, res) => {

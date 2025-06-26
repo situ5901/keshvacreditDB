@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const axios = require("axios");
 const Partner_id = "Keshvacredit";
-const API_URL = "https://instantmudra.com/admin/API/new_API_instantmudra";
+const API_URL = "https://instantmudra.com/admin/API/Live_instantmudra";
 
 router.get("/partner/instant", async (req, res) => {
   res.send("Hello from instantmudra");
