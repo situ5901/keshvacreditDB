@@ -7,11 +7,11 @@ const TOKEN_API =
 const ELIGIBILITY_API =
   "https://onboardingapi.fatakpay.com/external-api/v1/emi-insurance-eligibility";
 
-router.post("/partner/fatakpl", async (req, res) => {
+router.post("/partner/fatakdcl", async (req, res) => {
   try {
     const tokenPayloads = {
       username: "KeshvaCredit",
-      password: "df9786e1ee29910713cc",
+      password: "a5df9f760eb280c878b4",
     };
 
     console.log("\n🔑 Generating token...");
