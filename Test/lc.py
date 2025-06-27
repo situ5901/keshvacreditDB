@@ -5,11 +5,11 @@ import requests
 from Crypto.Cipher import AES
 
 # ✅ LendenClub API Constants
-API_URL = "https://dev-tsp-los.lendenclub.com/v2/lead/create"
-KEY = "03f4e9c37121bbe88545b5a06cd7e619"  # 32 bytes for AES-256
-IV = "47ed667825c963ab"                  # 16 bytes for AES CBC
+API_URL = "https://dev-tsp-los.lendenclub.com/v2"
+KEY = "04f4e9c37121bbe88545b5a06cd7e619"  # 32 bytes 
+IV = "48ed667825c963ab"                  # 16 bytes
 PARTNER_CODE = "LKC"
-AUTH_TOKEN = "e70783bb76614b48a9299c77367748"  # STPL Token
+AUTH_TOKEN = "e70783bb76614b48a9299c77367748"  
 API_CODE = "CREATE_LEAD_API_V2"
 AES_BLOCK_SIZE = 32
 
@@ -30,7 +30,7 @@ payload = {
             "type": "COMMUNICATION",
             "address_line": "charni Road",
             "pincode": 5200156,
-            "state_code": "hisar"
+            "state_code": "MH"
         },
         "professional_details": {
             "occupation_type": "SALARIED",
