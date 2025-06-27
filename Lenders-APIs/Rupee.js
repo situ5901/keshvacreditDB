@@ -46,7 +46,7 @@ router.post("/partner/rupee/lead-create", async (req, res) => {
     }
 
     // const customer_lead_id = generate7DigitId();
-
+    //
     // const pushPayload = {
     //   full_name: name || "",
     //   mobile: phone || "",
@@ -59,8 +59,8 @@ router.post("/partner/rupee/lead-create", async (req, res) => {
     //   loan_amount: loanAmount || "",
     //   Partner_id,
     //   customer_lead_id,
-    };
-
+    // };
+    //
     // const pushRes = await axios.post(PushAPI_URL, pushPayload, {
     //   headers: {
     //     Username: Partner_id,
@@ -73,11 +73,12 @@ router.post("/partner/rupee/lead-create", async (req, res) => {
     //   pushResponse: pushRes.data,
     // });
     // if (pushRes.data.status === 0) {
-      return res.status(401).json({
-        success: false,
-        error: pushRes.data.error || "Unauthorized access",
-      });
-    }
+    //   return res.status(401).json({
+    //     success: false,
+    //     message: "❌ Lead push failed",
+    //     error: pushRes.data.error || "Unauthorized access",
+    //   });
+    // }
   } catch (err) {
     return res.status(500).json({
       success: false,
