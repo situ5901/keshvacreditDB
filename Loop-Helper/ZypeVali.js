@@ -118,9 +118,6 @@ async function processBatch(users) {
         userDoc.RefArr &&
         userDoc.RefArr.some((item) => item.name === "Zypevali")
       ) {
-        console.log(
-          `⏩ Skipping API hit for user ${user.phone} as 'Zypevali' already exists in RefArr.`,
-        );
         return;
       }
 
