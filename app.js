@@ -42,7 +42,7 @@ app.use(
   `/api${API_VERSION}/LenderAPIs`,
   require("./Lenders-APIs/salaryontime"),
 );
-app.use(`/api${API_VERSION}/LenderAPIs`, require("./Lenders-APIs/fatakPay"));
+app.use(`/api${API_VERSION}/LenderAPIs`, require("./Lenders-APIs/FatakPay"));
 app.use(`/api${API_VERSION}/Test`, require("./Test/filter.js"));
 app.use(errorHandler);
 
