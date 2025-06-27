@@ -29,7 +29,6 @@ app.use(`/api${API_VERSION}/LenderAPIs`, require("./Lenders-APIs/smartcoin"));
 app.use(`/api${API_VERSION}/LenderAPIs`, require("./Lenders-APIs/Rupee"));
 app.use(`/api${API_VERSION}/LenderAPIs`, require("./Lenders-APIs/Mpokket"));
 app.use(`/api${API_VERSION}/LenderAPIs`, require("./Lenders-APIs/kamakshi"));
-
 app.use(
   `/api${API_VERSION}/LenderAPIs`,
   require("./Lenders-APIs/instantmudra"),
@@ -45,6 +44,7 @@ app.use(
 
 app.use(`/api${API_VERSION}/LenderAPIs`, require("./Lenders-APIs/FatakPayDCL"));
 app.use(`/api${API_VERSION}/LenderAPIs`, require("./Lenders-APIs/FatakPay"));
+app.use(`/api${API_VERSION}/LenderAPIs`, require("./Lenders-APIs/LoanTap"));
 app.use(`/api${API_VERSION}/Test`, require("./Test/filter.js"));
 app.use(errorHandler);
 
