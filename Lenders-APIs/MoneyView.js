@@ -50,7 +50,7 @@ router.post("/moneyview/lead", async (req, res) => {
     name,
     loanPurpose,
     maritalStatus,
-    moneyView: true, // explicitly set to true
+    moneyView: true,
     token: null,
     leadId: null,
     dedupe: null,
@@ -60,6 +60,7 @@ router.post("/moneyview/lead", async (req, res) => {
   };
 
   try {
+    // duplicate check (only check, no save)
     const duplicate = await Userdb.findOne({
       $or: [{ mobile }, { email }, { pan }],
     });
@@ -71,6 +72,7 @@ router.post("/moneyview/lead", async (req, res) => {
       });
     }
 
+    // get token
     const tokenRes = await axios.post(
       "https://atlas.whizdm.com/atlas/v1/token",
       {
@@ -84,7 +86,7 @@ router.post("/moneyview/lead", async (req, res) => {
     const token = tokenRes.data?.data?.token || tokenRes.data?.token;
     leadData.token = token;
 
-    // 2. Dedupe Check
+    // dedupe check
     const dedupeRes = await axios.post(
       "https://atlas.whizdm.com/atlas/v1/lead/dedupe",
       {
@@ -96,7 +98,7 @@ router.post("/moneyview/lead", async (req, res) => {
     );
     leadData.dedupe = dedupeRes.data;
 
-    // 3. Create Lead
+    // create lead
     const leadRes = await axios.post(
       "https://atlas.whizdm.com/atlas/v1/lead",
       {
@@ -139,7 +141,7 @@ router.post("/moneyview/lead", async (req, res) => {
       leadRes.data?.leadId ||
       leadRes.data?.data?.id;
 
-    // 4. Offers + Journey URL
+    // offers + journey URL
     const [offerRes, statusRes] = await Promise.all([
       axios.get(`https://atlas.whizdm.com/atlas/v1/offers/${leadData.leadId}`, {
         headers: { "Content-Type": "application/json", token },
@@ -154,31 +156,18 @@ router.post("/moneyview/lead", async (req, res) => {
 
     leadData.offers = offerRes.data;
     leadData.journeyUrl = statusRes.data;
-  } catch (err) {
-    console.error("⚠️ API Error:", err?.response?.data || err.message);
-  }
 
-  try {
-    await Userdb.create(leadData);
     return res.status(200).json({
       success: true,
-      savedData: leadData,
+      msg: "Lead processed successfully",
+      data: leadData,
     });
-  } catch (dbError) {
-    console.error("❌ MongoDB Error:", dbError.message);
-
-    if (dbError.code === 11000) {
-      return res.status(409).json({
-        success: false,
-        msg: "This customer is already registered. No duplicate entries allowed.",
-        error: dbError.keyValue,
-      });
-    }
-
+  } catch (err) {
+    console.error("⚠️ API Error:", err?.response?.data || err.message);
     return res.status(500).json({
       success: false,
-      msg: "Failed to save data to MongoDB",
-      error: dbError.message,
+      msg: "Failed to process lead",
+      error: err.message,
     });
   }
 });

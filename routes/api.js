@@ -95,10 +95,9 @@ router.post("/userinfo", async (req, res) => {
       pincode,
       loanAmount,
       income,
-      dob,
+      state,
     } = req.body;
 
-    // Check for missing fields
     let missingFields = [];
     if (!name) missingFields.push("name");
     if (!phone) missingFields.push("phone");
@@ -118,35 +117,30 @@ router.post("/userinfo", async (req, res) => {
       });
     }
 
-    // Validate phone number (10 digits)
     if (!/^\d{10}$/.test(phone)) {
       return res
         .status(400)
         .json({ status: 400, error: "Invalid phone number format" });
     }
 
-    // Validate email format
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return res
         .status(400)
         .json({ status: 400, error: "Invalid email format" });
     }
 
-    // Validate PAN card (Alphanumeric, 10 characters)
     if (!/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(pan)) {
       return res
         .status(400)
         .json({ status: 400, error: "Invalid PAN card format" });
     }
 
-    // Validate Pincode (6 digits)
     if (!/^\d{6}$/.test(pincode)) {
       return res
         .status(400)
         .json({ status: 400, error: "Invalid pincode format" });
     }
 
-    // Validate loan amount and income (should be numeric)
     if (isNaN(loanAmount) || isNaN(income)) {
       return res.status(400).json({
         status: 400,
@@ -169,7 +163,6 @@ router.post("/userinfo", async (req, res) => {
       });
     }
 
-    // Save user data with default partner "Keshvacredit"
     const newUser = new User({
       name,
       phone,
@@ -215,7 +208,30 @@ router.post("/getUsers", async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 });
-//eligibil Lender API//
+
+router.put("/updateUser", async (req, res) => {
+  const { phone } = req.body;
+
+  if (!phone) {
+    return res.status(400).json({ message: "phone is required" });
+  }
+
+  try {
+    const updatedUser = await User.findOneAndUpdate(
+      { mobile: phone }, // yahan mobile likha
+      { $set: req.body }, // jitna bhi data aaye sab update ho
+      { new: true },
+    );
+
+    if (!updatedUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.json(updatedUser);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 router.post("/ramfinwebAPI", async (req, res) => {
   try {
