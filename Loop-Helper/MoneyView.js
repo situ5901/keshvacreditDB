@@ -5,15 +5,15 @@ const path = require("path");
 const xlsx = require("xlsx");
 
 const MONGODB_URINEW = process.env.MONGODB_URINEW;
-
+//situ yupda
 mongoose
   .connect(MONGODB_URINEW)
   .then(() => console.log("✅ MongoDB Connected Successfully"))
   .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
 
 const UserDB = mongoose.model(
-  "userdb",
-  new mongoose.Schema({}, { collection: "userdb", strict: false }),
+  "MVcollection",
+  new mongoose.Schema({}, { collection: "MVcollection", strict: false }),
 );
 
 const Healthcheck_API = "https://atlas.whizdm.com/atlas/v1/health";
