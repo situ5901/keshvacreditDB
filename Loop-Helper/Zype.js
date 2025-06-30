@@ -14,7 +14,6 @@ const UserDB = mongoose.model(
   new mongoose.Schema({}, { collection: "smcoll", strict: false }),
 );
 
-const MAX_PROCESS = 100000;
 const BATCH_SIZE = 100; // Set your batch size
 const PartnerID = "a8ce06a0-4fbd-489f-8d75-345548fb98a8";
 const ELIGIBILITY_API =
@@ -173,39 +172,22 @@ async function processBatch(users) {
 let processedCount = 0;
 async function Loop() {
   try {
-    while (processedCount < MAX_PROCESS) {
+    while (true) {
       console.log("📦 Fetching leads...");
 
       const leads = await UserDB.aggregate([
-        {
-          $match: {
-            "RefArr.name": { $ne: "Zype" },
-          },
-        },
+        { $match: { "RefArr.name": { $ne: "Zype" } } },
         { $limit: BATCH_SIZE },
       ]);
 
       if (leads.length === 0) {
-        console.log("✅ No more leads left. Waiting for new data...");
-        await new Promise((resolve) => setTimeout(resolve, 10000)); // wait 10 seconds before retry
-        continue;
-      }
-
-      const remaining = MAX_PROCESS - processedCount;
-      const batchToProcess = leads.slice(0, remaining);
-
-      await processBatch(batchToProcess);
-
-      processedCount += batchToProcess.length;
-      console.log(`✅ Processed batch of: ${batchToProcess.length}`);
-      console.log(`🏁 Total Processed Leads: ${processedCount}`);
-
-      if (processedCount >= MAX_PROCESS) {
-        console.log("🎯 Reached processing limit of 50,000 records. Stopping.");
+        console.log("✅ No more leads left. Stopping.");
         break;
       }
 
-      await new Promise((resolve) => setTimeout(resolve, 1000)); // 1 sec delay between batches
+      await processBatch(leads);
+
+      console.log(`✅ Processed batch of: ${leads.length}`);
     }
   } catch (error) {
     console.error("❌ Error occurred:", error.message);

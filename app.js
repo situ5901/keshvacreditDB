@@ -29,6 +29,7 @@ app.use(`/api${API_VERSION}/LenderAPIs`, require("./Lenders-APIs/smartcoin"));
 app.use(`/api${API_VERSION}/LenderAPIs`, require("./Lenders-APIs/Rupee"));
 app.use(`/api${API_VERSION}/LenderAPIs`, require("./Lenders-APIs/Mpokket"));
 app.use(`/api${API_VERSION}/LenderAPIs`, require("./Lenders-APIs/kamakshi"));
+app.use(`/api${API_VERSION}/utiles`, require("./utils/adsMail"));
 app.use(
   `/api${API_VERSION}/LenderAPIs`,
   require("./Lenders-APIs/instantmudra"),
