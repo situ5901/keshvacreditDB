@@ -2,7 +2,6 @@ const eligibleLenders = [
   {
     name: "Ramfin",
     minAge: 21,
-    employment: ""
     maxAge: 55,
     minIncome: 15000,
     url: "https://www.ramfincorp.com/images/logo.png",
