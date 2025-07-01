@@ -96,7 +96,6 @@ router.post("/userinfo", async (req, res) => {
       loanAmount,
       income,
       dob,            // fixed
-      state,
     } = req.body;
 
     let missingFields = [];
