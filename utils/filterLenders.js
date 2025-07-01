@@ -11,7 +11,7 @@ const eligibleLenders = [
     name: "Rupee",
     minAge: 21,
     maxAge: 55,
-    employment: "salaried",
+    employment: "Salaried",
     minIncome: 15000,
     url: "https://www.rupee112.com/public/images/brand_logo.png",
     utm: "https://www.rupee112.com/apply-now?utm_source=KESHVACREDIT&utm_medium=",
@@ -20,7 +20,7 @@ const eligibleLenders = [
     name: "Zype",
     minAge: 21,
     maxAge: 55,
-    employment: "salaried",
+    employment: "Salaried",
     minIncome: 15000,
     url: "https://www.getzype.com/wp-content/uploads/2024/08/Group-852775729.webp",
     utm: "https://zype.sng.link/Ajygt/1ba7?_dl=com.zype.mobile&_smtype=3",
@@ -45,7 +45,7 @@ const eligibleLenders = [
     name: "salaryontime",
     minAge: 18,
     maxAge: 60,
-    employment: "salaried",
+    employment: "Salaried",
     minIncome: 10000,
     url: "https://play-lh.googleusercontent.com/9sBV7LnfSo9QG_sZM9_0sNteV-n7RhWaJ-YQmqn8aFb-eBurWd4kDQCyc4myR21v8zTu=w240-h480-rw",
     utm: "https://salaryontime.com/apply-now?utm_source=Keshvacredit&utm_medium=Keywords&utm_campaign=Keywords&utm_term=Keywords",
@@ -86,7 +86,7 @@ const eligibleLenders = [
     name: "BharatLoan",
     minAge: 21,
     maxAge: 60,
-    employment: "salaried",
+    employment: "Salaried",
     minIncome: 15000,
     url: "https://www.bharatloan.com/public/images/brand_logo.png",
     utm: "https://www.bharatloan.com/apply-now?utm_source=KESHVACREDIT&utm_medium=",
@@ -155,7 +155,7 @@ const user = {
   dob: "1998-05-20", // please use yyyy-mm-dd
   income: 25000,
   loanAmount: 100000,
-  employment: "salaried",
+  employment: "Salaried",
 };
 
 // calculate from user data
