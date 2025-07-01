@@ -14,8 +14,8 @@ API_CODE = "CREATE_LEAD_API_V2"
 AES_BLOCK_SIZE = 32
 
 payload = {
-    "partner_code": PARTNER_CODE,
-    "api_code": API_CODE,
+    # "partner_code": PARTNER_CODE,
+    # "api_code": API_CODE,
     "product_type": "STPL",
 
 "payload": {
