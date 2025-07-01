@@ -150,4 +150,28 @@ async function filterLenders(age, income, loan, employment) {
   return filteredLenders;
 }
 
+// Example user data
+const user = {
+  dob: "1998-05-20", // please use yyyy-mm-dd
+  income: 25000,
+  loanAmount: 100000,
+  employment: "salaried",
+};
+
+// calculate from user data
+const dobDate = new Date(user.dob);
+const age = new Date().getFullYear() - dobDate.getFullYear();
+const income = user.income;
+const loanAmount = user.loanAmount;
+const employment = user.employment;
+
+// run filter
+filterLenders(age, income, loanAmount, employment)
+  .then((result) => {
+    console.log("Eligible Lenders:", result);
+  })
+  .catch((err) => {
+    console.error(err);
+  });
+
 module.exports = filterLenders;

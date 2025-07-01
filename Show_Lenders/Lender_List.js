@@ -19,16 +19,27 @@ router.post("/lenderlist", async (req, res) => {
       return res.status(404).json({ message: "User not found." });
     }
 
+    // calculate age more precisely
     const dobDate = new Date(user.dob);
-    const age = new Date().getFullYear() - dobDate.getFullYear();
+    const today = new Date();
+    let age = today.getFullYear() - dobDate.getFullYear();
+    const monthDiff = today.getMonth() - dobDate.getMonth();
+    if (
+      monthDiff < 0 ||
+      (monthDiff === 0 && today.getDate() < dobDate.getDate())
+    ) {
+      age--;
+    }
+
     const income = user.income;
     const loanAmount = user.loanAmount;
+    const employment = user.employment || ""; // safe fallback
 
     if (!dobDate || !income || !loanAmount) {
       return res.status(400).json({ message: "User data incomplete." });
     }
 
-    const lenders = await filterLenders(age, income, loanAmount);
+    const lenders = await filterLenders(age, income, loanAmount, employment);
 
     return res.status(200).json({
       message: "Fetch Eligible Lenders",
