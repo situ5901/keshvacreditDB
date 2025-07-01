@@ -6,68 +6,134 @@ router.post("/adsmail", async (req, res) => {
   const { email } = req.body;
 
   if (!email) {
-    return res.status(400).json({ message: "email is required" });
+    return res.status(401).json({ message: "email is required" });
   }
 
   try {
     await adsmail.sendMail({
       from: process.env.EMAIL,
       to: email,
-      subject: "Special Ad from Situcome",
+      subject: "Special Digital Loan Offer Just for You — KeshvaCredit",
       html: `<!DOCTYPE html>
 <html>
   <head>
     <meta charset="UTF-8" />
-    <title>Exclusive Loan Offer</title>
+    <title>KeshvaCredit – Personal Loan Offer</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        background: #0e0e0e;
+        font-family: 'Segoe UI', Arial, sans-serif;
+        color: #ffffff;
+      }
+      .container {
+        max-width: 600px;
+        margin: auto;
+        background: #1a1a1a;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.6);
+      }
+      .header {
+        background: linear-gradient(135deg, #8e2de2, #4a00e0);
+        padding: 35px 25px;
+        text-align: center;
+      }
+      .header h1 {
+        margin: 0;
+        font-size: 28px;
+        color: #fff;
+        line-height: 1.4;
+      }
+      .header p {
+        font-size: 15px;
+        margin-top: 10px;
+        color: #e0e0e0;
+      }
+      .banner {
+        width: 100%;
+        display: block;
+      }
+      .content {
+        padding: 25px 22px;
+        font-size: 16px;
+        color: #eee;
+      }
+      .content h2 {
+        font-size: 22px;
+        color: #ffd700;
+        margin-bottom: 14px;
+      }
+      .content ul {
+        padding-left: 20px;
+        margin-top: 15px;
+        line-height: 1.7;
+      }
+      .content ul li {
+        margin-bottom: 10px;
+      }
+      .cta {
+        text-align: center;
+        margin: 35px 0 20px;
+      }
+      .cta a {
+        background: linear-gradient(135deg, #ff512f, #dd2476);
+        color: white;
+        padding: 14px 30px;
+        text-decoration: none;
+        border-radius: 50px;
+        font-weight: 600;
+        font-size: 16px;
+        box-shadow: 0 4px 10px rgba(255, 82, 82, 0.4);
+        display: inline-block;
+        transition: background 0.3s ease;
+      }
+      .cta a:hover {
+        background: linear-gradient(135deg, #e60073, #ff3300);
+      }
+      .footer {
+        font-size: 12px;
+        text-align: center;
+        color: #999;
+        padding: 18px 20px;
+        background: #121212;
+      }
+    </style>
   </head>
-  <body style="margin:0;padding:0;font-family:Arial,sans-serif;background:#f4f4f4;">
-    <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f4;padding:20px;">
-      <tr>
-        <td align="center">
-          <table width="600" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:8px;overflow:hidden;">
-                 <tr>
-                  <td align="center" style="background:#004d99; color:#ffffff; padding: 30px; font-family: Arial, sans-serif;">
-                  <h1 style="margin: 0; font-size: 28px; font-weight: bold;">KeshvaCredit Loan Offers</h1>
-                  <p style="margin: 8px 0 0 0; font-size: 16px; font-style: italic;">Empowering Your Financial Future</p>
-                     </td>
-                    </tr>
-            <tr>
-              <td style="padding:20px;">
-                <img
-                  src="https://d1csarkz8obe9u.cloudfront.net/posterpreviews/personal-loan-banner-ad-design-template-036280f01a5e27157b98684350431119_screen.jpg?ts=1733257279"
-                  alt="Loan Banner"
-                  style="max-width:100%;border-radius:4px;"
-                />
-                <h2 style="color:#1976d2;margin-top:20px;">Need Instant Cash?</h2>
-                <p style="color:#555;font-size:16px;">
-                  We are offering you a personal loan with <strong>low interest rates</strong> and fast approvals.
-                </p>
-                <ul style="color:#555;font-size:16px;line-height:1.6;">
-                  <li>✅ Up to ₹5,00,000 loan</li>
-                  <li>✅ 0% processing fee</li>
-                  <li>✅ 100% online & paperless</li>
-                  <li>✅ Approval in minutes</li>
-                </ul>
-                <div style="text-align:center;margin:20px;">
-                  <a
-                    href="https://keshvacredit.com"
-                    style="background:#1976d2;color:#fff;text-decoration:none;padding:12px 24px;border-radius:4px;display:inline-block;"
-                  >Apply Now</a>
-                </div>
-                <p style="color:#555;font-size:14px;">
-                  If you have any questions, reply to this email or call our support team anytime.
-                </p>
-                <hr style="border:none;border-top:1px solid #eee;margin:20px 0;" />
-                <p style="font-size:12px;color:#999;text-align:center;">
-                 © 2025 Keshvacredit™. All Rights Reserved.
-                </p>
-              </td>
-            </tr>
-          </table>
-        </td>
-      </tr>
-    </table>
-  </body>
+  <body>
+    <div class="container">
+   
+      <img class="banner" src="https://i.postimg.cc/VvQjgLYM/Blue-and-White-Simple-Home-Loan-Services-Instagram-Post.png" alt="Loan Banner" />
+
+      <div class="content">
+        <h2>💸 Need Instant Cash?</h2>
+        <p>
+          Dear Customer,<br>
+          🚀 Get your personal loan in <strong>just 5 minutes</strong>.<br>
+          💰 Loan amount: <strong>Up to ₹5,00,000</strong><br>
+          🔐 Safe, Secure & Fully Online!
+        </p>
+
+        <h2>✨ Why Choose KeshvaCredit?</h2>
+        <ul>
+          <li>⚡ Instant Approval & Quick Disbursal</li>
+          <li>❌ No Processing Fees</li>
+          <li>🧾 100% Paperless Application</li>
+          <li>📲 No Branch Visits Required</li>
+        </ul>
+
+        <div class="cta">
+          <a href="https://keshvacredit.com">🚀 Apply Now</a>
+        </div>
+      </div>
+
+      <div class="footer">
+        Need assistance? Just reply to this email or contact our support team.<br><br>
+        © 2025 KeshvaCredit™. All rights reserved.
+      </div>
+    </div>
+  </body>
 </html>
 `,
     });
@@ -77,7 +143,7 @@ router.post("/adsmail", async (req, res) => {
     res.json({ message: `Ad mail sent to ${email}` });
   } catch (error) {
     console.error(`Failed to send ad mail to ${email}. Error:`, error);
-    res.status(500).json({ message: "Mail send failed" });
+    res.status(501).json({ message: "Mail send failed" });
   }
 });
 
