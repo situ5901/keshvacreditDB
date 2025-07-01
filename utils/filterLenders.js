@@ -167,9 +167,7 @@ const employment = user.employment;
 
 // run filter
 filterLenders(age, income, loanAmount, employment)
-  .then((result) => {
-    console.log("Eligible Lenders:", result);
-  })
+  .then((result) => {})
   .catch((err) => {
     console.error(err);
   });

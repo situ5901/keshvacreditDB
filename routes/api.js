@@ -95,6 +95,7 @@ router.post("/userinfo", async (req, res) => {
       pincode,
       loanAmount,
       income,
+      dob,            // fixed
       state,
     } = req.body;
 
@@ -108,6 +109,7 @@ router.post("/userinfo", async (req, res) => {
     if (!loanAmount) missingFields.push("loanAmount");
     if (!income) missingFields.push("income");
     if (!dob) missingFields.push("dob");
+    if (!state) missingFields.push("state");  // optional, add if needed
 
     if (missingFields.length > 0) {
       return res.status(400).json({
@@ -129,7 +131,7 @@ router.post("/userinfo", async (req, res) => {
         .json({ status: 400, error: "Invalid email format" });
     }
 
-    if (!/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(pan)) {
+    if (!/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(pan.toUpperCase())) {
       return res
         .status(400)
         .json({ status: 400, error: "Invalid PAN card format" });
@@ -168,21 +170,23 @@ router.post("/userinfo", async (req, res) => {
       phone,
       email,
       employeeType,
-      pan,
+      pan: pan.toUpperCase(),   // save uppercase PAN
       pincode,
       loanAmount,
       income,
       dob,
-      partner: "Keshvacredit", // Default partner
+      state,
+      partner: "Keshvacredit",
     });
 
     await newUser.save();
     res.status(201).json({
-      status: 201,
+      status: "success",
       message: "User information saved successfully",
       user: newUser,
     });
   } catch (error) {
+    console.error("Error in /userinfo:", error);
     res.status(500).json({
       status: 500,
       error: "Internal Server Error",
