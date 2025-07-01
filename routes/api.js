@@ -108,7 +108,6 @@ router.post("/userinfo", async (req, res) => {
     if (!loanAmount) missingFields.push("loanAmount");
     if (!income) missingFields.push("income");
     if (!dob) missingFields.push("dob");
-    if (!state) missingFields.push("state");  // optional, add if needed
 
     if (missingFields.length > 0) {
       return res.status(400).json({
@@ -174,7 +173,6 @@ router.post("/userinfo", async (req, res) => {
       loanAmount,
       income,
       dob,
-      state,
       partner: "Keshvacredit",
     });
 
