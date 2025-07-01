@@ -19,8 +19,8 @@ const eligibleLenders = [
   {
     name: "Zype",
     minAge: 21,
-    employment: "salaried",
     maxAge: 55,
+    employment: "salaried",
     minIncome: 15000,
     url: "https://www.getzype.com/wp-content/uploads/2024/08/Group-852775729.webp",
     utm: "https://zype.sng.link/Ajygt/1ba7?_dl=com.zype.mobile&_smtype=3",
@@ -41,7 +41,6 @@ const eligibleLenders = [
     url: "https://mir-s3-cdn-cf.behance.net/project_modules/source/302bf6105854045.5f82a86549930.png",
     utm: "https://web.mpokket.in/?utm_source=keshvacredit&utm_medium=keshvacredit",
   },
-
   {
     name: "salaryontime",
     minAge: 18,
@@ -49,7 +48,7 @@ const eligibleLenders = [
     employment: "salaried",
     minIncome: 10000,
     url: "https://play-lh.googleusercontent.com/9sBV7LnfSo9QG_sZM9_0sNteV-n7RhWaJ-YQmqn8aFb-eBurWd4kDQCyc4myR21v8zTu=w240-h480-rw",
-    utm: "https://salaryontime.com/apply-now?utm_source=Keshvacredit&utm_medium=Keywords&utm_campaign=Keywords&utm_term=Keywords ",
+    utm: "https://salaryontime.com/apply-now?utm_source=Keshvacredit&utm_medium=Keywords&utm_campaign=Keywords&utm_term=Keywords",
   },
   {
     name: "smartCoin",
@@ -73,8 +72,8 @@ const eligibleLenders = [
     maxAge: 60,
     minIncome: 15000,
     url: "https://i.postimg.cc/sgkVCJpQ/download.png",
+    utm: "no data",
   },
-
   {
     name: "MoneyView",
     minAge: 21,
@@ -125,20 +124,24 @@ const eligibleLenders = [
     utm: "no data",
   },
 ];
-async function filterLenders(age, income, loan) {
+
+async function filterLenders(age, income, loan, employment) {
   if (!age || !income || !loan) return [];
 
   const filteredLenders = eligibleLenders.reduce((acc, lender) => {
+    const matchesEmployment =
+      !lender.employment || lender.employment === employment;
+
     if (
       lender.minAge <= age &&
       lender.maxAge >= age &&
-      employment === "salaried" &&
+      matchesEmployment &&
       lender.minIncome <= income
     ) {
       acc.push({
         name: lender.name,
         url: lender.url,
-        utm: lender.utm,
+        utm: lender.utm || "no data",
       });
     }
     return acc;
