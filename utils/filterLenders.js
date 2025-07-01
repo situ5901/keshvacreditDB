@@ -11,7 +11,7 @@ const eligibleLenders = [
     name: "Rupee",
     minAge: 21,
     maxAge: 55,
-    employment: "salaried"
+    employment: "salaried",
     minIncome: 15000,
     url: "https://www.rupee112.com/public/images/brand_logo.png",
     utm: "https://www.rupee112.com/apply-now?utm_source=KESHVACREDIT&utm_medium=",
@@ -19,7 +19,7 @@ const eligibleLenders = [
   {
     name: "Zype",
     minAge: 21,
-    employment: "salaried"
+    employment: "salaried",
     maxAge: 55,
     minIncome: 15000,
     url: "https://www.getzype.com/wp-content/uploads/2024/08/Group-852775729.webp",
@@ -46,7 +46,7 @@ const eligibleLenders = [
     name: "salaryontime",
     minAge: 18,
     maxAge: 60,
-    employment: "salaried"
+    employment: "salaried",
     minIncome: 10000,
     url: "https://play-lh.googleusercontent.com/9sBV7LnfSo9QG_sZM9_0sNteV-n7RhWaJ-YQmqn8aFb-eBurWd4kDQCyc4myR21v8zTu=w240-h480-rw",
     utm: "https://salaryontime.com/apply-now?utm_source=Keshvacredit&utm_medium=Keywords&utm_campaign=Keywords&utm_term=Keywords ",
@@ -87,7 +87,7 @@ const eligibleLenders = [
     name: "BharatLoan",
     minAge: 21,
     maxAge: 60,
-    employment: "salaried"
+    employment: "salaried",
     minIncome: 15000,
     url: "https://www.bharatloan.com/public/images/brand_logo.png",
     utm: "https://www.bharatloan.com/apply-now?utm_source=KESHVACREDIT&utm_medium=",
@@ -105,7 +105,6 @@ const eligibleLenders = [
     minAge: 21,
     maxAge: 60,
     minIncome: 15000,
-
     url: "https://www.chintamanifinlease.com/",
     utm: "https://myflot.com/?utm_source=Keshvacredit&utm_medium=%7B_medium%7D&utm_campaign=%7B_campaign%7D",
   },
