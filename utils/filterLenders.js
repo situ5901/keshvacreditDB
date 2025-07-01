@@ -132,7 +132,7 @@ async function filterLenders(age, income, loan) {
     if (
       lender.minAge <= age &&
       lender.maxAge >= age &&
-      employment === "salaried"
+      employment === "salaried" &&
       lender.minIncome <= income
     ) {
       acc.push({
