@@ -1,119 +1,149 @@
-import base64
-import hashlib
-import json
-import requests
-from Crypto.Cipher import AES
+const crypto = require("crypto");
+const axios = require("axios");
 
-API_URL = "https://dev-tsp-los.lendenclub.com/v2/"
-KEY = "03f4e9c37121bbe88545b5a06cd7e619"
-IV = "47ed667825c963ab"
+// ✅ LendenClub API Constants
+const API_URL = "https://dev-tsp-los.lendenclub.com/v2";
+const KEY = "03f4e9c37121bbe88545b5a06cd7e619"; // 32 bytes
+const IV = "47ed667825c963ab"; // 16 bytes
+const AUTH_TOKEN = "e70783bb76614b48a9299c77367748";
+const API_CODE = "CREATE_LEAD_API_V2";
+const AES_BLOCK_SIZE = 16; // correct block size
 
-# IMPORTANT:
-# KEY is 16-byte hex (32 chars) -> correct for AES-128
-# IV must be 16 bytes total -> so padded to 16 hex characters (32 chars)
-# or you can generate proper 16-byte random
-
-payload = {
-    "payload": {
-        "basic_details": {
-            "mobile_number": "8850689034",
-            "email": "test@gmail.com",
-            "name": "Bhanupriya Bhatnagar",
-            "pan": "BCLPD9988G",
-            "date_of_birth": "15/10/1990"
-        },
-        "address_details": {
-            "type": "COMMUNICATION",
-            "address_line": "charni Road",
-            "pincode": 400009,
-            "state_code": "MH"
-        },
-        "professional_details": {
-            "occupation_type": "SALARIED",
-            "company_name": "COMPANY NAME",
-            "income": 30000
-        },
-        "loan_details": {
-            "amount": 10000,
-            "interest": {
-                "type": "FLAT",
-                "frequency": "MONTHLY",
-                "value": 3
-            },
-            "tenure": {
-                "type": "MONTHLY",
-                "value": 2
-            }
-        },
-        "consent_data": {
-            "content": ["testing-message"],
-            "ip_address": "127.0.0.1",
-            "latitude": 18.520430,
-            "longitude": 19.520430,
-            "device_id": "23456789",
-            "consent_dtm": "2024-09-05 12:04:31.132 +0530"
-        }
+const payload = {
+  payload: {
+    basic_details: {
+      mobile_number: "8850689034",
+      email: "test@gmail.com",
+      name: "Bhanupriya Bhatnagar",
+      pan: "BCLPD9988G",
+      date_of_birth: "15/10/1990",
     },
-    "api_code": "CREATE_LEAD_API_V2"
+    address_details: {
+      type: "COMMUNICATION",
+      address_line: "charni Road",
+      pincode: 5200156,
+      state_code: "MH",
+    },
+    professional_details: {
+      occupation_type: "SALARIED",
+      company_name: "COMPANY NAME",
+      income: 30000,
+      bureau_score: 650,
+    },
+    loan_details: {
+      amount: 10000,
+      interest: {
+        type: "FLAT",
+        frequency: "MONTHLY",
+        value: 3,
+      },
+      tenure: {
+        type: "MONTHLY",
+        value: 2,
+      },
+    },
+    consent_data: {
+      content: ["", ""],
+      ip_address: "127.0.0.1",
+      latitude: 18.52043,
+      longitude: 19.52043,
+      device_id: "23456789",
+      consent_dtm: "2024-09-05 12:04:31.132 +0530",
+    },
+  },
+};
+
+// ✅ Padding helpers
+function pad(data) {
+  const buffer = Buffer.from(data, "utf-8");
+  const padLen = AES_BLOCK_SIZE - (buffer.length % AES_BLOCK_SIZE);
+  const padding = Buffer.alloc(padLen, padLen);
+  return Buffer.concat([buffer, padding]);
 }
 
+function unpad(data) {
+  const padLen = data[data.length - 1];
+  return data.slice(0, data.length - padLen);
+}
 
-def pad(data: str) -> bytes:
-    pad_len = AES_BLOCK_SIZE - (len(data.encode("utf-8")) % AES_BLOCK_SIZE)
-    return data.encode("utf-8") + bytes([pad_len] * pad_len)
+// ✅ AES Encryption/Decryption
+function encryptAES(plainText, key, iv) {
+  const cipher = crypto.createCipheriv(
+    "aes-256-cbc",
+    Buffer.from(key, "utf-8"),
+    Buffer.from(iv, "utf-8"),
+  );
+  const paddedData = pad(plainText);
+  const encrypted = Buffer.concat([cipher.update(paddedData), cipher.final()]);
+  return encrypted.toString("base64");
+}
 
-def unpad(data: bytes) -> str:
-    pad_len = data[-1]
-    return data[:-pad_len].decode("utf-8")
+function decryptAES(encryptedText, key, iv) {
+  const decipher = crypto.createDecipheriv(
+    "aes-256-cbc",
+    Buffer.from(key, "utf-8"),
+    Buffer.from(iv, "utf-8"),
+  );
+  const decrypted = Buffer.concat([
+    decipher.update(Buffer.from(encryptedText, "base64")),
+    decipher.final(),
+  ]);
+  return unpad(decrypted).toString("utf-8");
+}
 
-def encrypt_aes(plain_text: str, key: str, iv: str) -> str:
-    key_bytes = bytes.fromhex(key)
-    iv_bytes = bytes.fromhex(iv)
-    cipher = AES.new(key_bytes, AES.MODE_CBC, iv_bytes)
-    padded_data = pad(plain_text)
-    encrypted = cipher.encrypt(padded_data)
-    return base64.b64encode(encrypted).decode("utf-8")
+// ✅ SHA256 Checksum
+function generateChecksum(data) {
+  return crypto.createHash("sha256").update(data, "utf-8").digest("hex");
+}
 
-def decrypt_aes(cipher_text: str, key: str, iv: str) -> str:
-    key_bytes = bytes.fromhex(key)
-    iv_bytes = bytes.fromhex(iv)
-    cipher = AES.new(key_bytes, AES.MODE_CBC, iv_bytes)
-    encrypted_data = base64.b64decode(cipher_text)
-    decrypted = cipher.decrypt(encrypted_data)
-    return unpad(decrypted)
+// ✅ API Request Function
+async function sendLeadRequest() {
+  try {
+    const jsonStr = JSON.stringify(payload);
+    const encryptedPayload = encryptAES(jsonStr, KEY, IV);
+    const checksum = generateChecksum(encryptedPayload);
 
-def generate_hash(data: str) -> str:
-    return hashlib.sha256(data.encode('utf-8')).hexdigest()
+    const finalPayload = {
+      payload: encryptedPayload,
+      checksum: checksum,
+    };
 
-def send_post_request():
-    json_payload = json.dumps(payload, separators=(",", ":"))
-    encrypted_payload = encrypt_aes(json_payload, KEY, IV)
-    checksum = generate_hash(encrypted_payload)
+    const headers = {
+      "Content-Type": "application/json",
+      "api-code": API_CODE,
+      Authorization: AUTH_TOKEN,
+    };
 
-    request_data = {
-        "payload": encrypted_payload,
-        "checksum": checksum
+    console.log(
+      "🔐 Encrypted Payload:\n",
+      JSON.stringify(finalPayload, null, 2),
+    );
+    console.log("📩 Headers:\n", JSON.stringify(headers, null, 2));
+
+    const response = await axios.post(API_URL, finalPayload, { headers });
+
+    if (response.data?.payload) {
+      const decrypted = decryptAES(response.data.payload, KEY, IV);
+      console.log(
+        "🔓 Decrypted Response:\n",
+        JSON.stringify(JSON.parse(decrypted), null, 2),
+      );
+    } else {
+      console.log("📡 Response:\n", JSON.stringify(response.data, null, 2));
     }
-    headers = {
-        "Content-Type": "application/json",
-        "partner_code": "CM"
+  } catch (err) {
+    if (err.response) {
+      console.error(
+        "❌ API Error Response:",
+        JSON.stringify(err.response.data, null, 2),
+      );
+    } else if (err.request) {
+      console.error("❌ No response received:", err.message);
+    } else {
+      console.error("❌ Error:", err.message || err);
     }
+  }
+}
 
-    try:
-        response = requests.post(API_URL, headers=headers, json=request_data)
-        response.raise_for_status()
-        response_data = response.json()
-        print("Raw response:", response_data)
-
-        encrypted_resp_payload = response_data.get("payload", "")
-        if encrypted_resp_payload:
-            decrypted = decrypt_aes(encrypted_resp_payload, KEY, IV)
-            print("Decrypted kar diya bhai:\n", decrypted)
-        else:
-            print("No encrypted payload in response")
-
-    except requests.exceptions.RequestException as e:
-        print("API error:", e)
-
-if __name__ == "__main__":
-    send_post_request()
+// ✅ Entry point
+sendLeadRequest();

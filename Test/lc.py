@@ -6,30 +6,31 @@ from Crypto.Cipher import AES
 
 # ✅ LendenClub API Constants
 API_URL = "https://dev-tsp-los.lendenclub.com/v2"
-KEY = "04f4e9c37121bbe88545b5a06cd7e619"  # 32 bytes 
-IV = "48ed667825c963ab"                  # 16 bytes
+KEY = "03f4e9c37121bbe88545b5a06cd7e619"  # 32 bytes 
+IV = "47ed667825c963ab"                  # 16 bytes
 PARTNER_CODE = "LKC"
 AUTH_TOKEN = "e70783bb76614b48a9299c77367748"  
 API_CODE = "CREATE_LEAD_API_V2"
 AES_BLOCK_SIZE = 32
 
 payload = {
-"payload": {
-    "basic_details": {
-        "mobile_number": "8850689034",
-        "pan": "BCLPD9988G",
-        "date_of_birth": "15/10/1990"
-    },
-    "address_details": {
-        "pincode": 520015
-    },
-    "professional_details": {
-        "income": 30000
-    },
-    "loan_details": {
-        "amount": 10000
+    "payload": {
+        "basic_details": {
+            "name": "Vishal",
+            "mobile_number": "9696965689",
+            "email": "vishal@gmail.com",
+            "pan": "BCLPD9987G",
+            "date_of_birth": "15/10/1990",
+            "occupation_type": "SALARIED",
+            "pincode": 520015,
+            "income": 30000,
+            "amount": 10000,
+        },
+        "consent_data": {
+            "consent": True
+        },
+        "content": ["sms", "email"]
     }
-}
 }
 
 def pad(data: str) -> bytes:

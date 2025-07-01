@@ -30,7 +30,7 @@ router.post("/adsmail", async (req, res) => {
             <tr>
               <td style="text-align: center; padding: 20px;">
                 <img
-                  src="https://i.postimg.cc/VvQjgLYM/Blue-and-White-Simple-Home-Loan-Services-Instagram-Post.png"
+                  src="https://keshvacredit.com/mailimage.png"
                   alt="Loan Banner"
                   style="max-width: 90%; height: auto; border-radius: 8px;"
                 />
@@ -63,7 +63,7 @@ router.post("/adsmail", async (req, res) => {
 
               <p style="color: #777; font-size: 14px; text-align: center;">
   Have questions? Just reply to this email or
-  <a href="mailto:parveenchouhan082@gmail.com" style="color: #1976d2; text-decoration: none;"><b>contact<b/></b></a>
+  <a href="mailto:situdancer9@gmail.com" style="color: #1976d2; text-decoration: none;"><b>contact<b/></b></a>
   our support team anytime.
 </p>
 
