@@ -88,7 +88,7 @@ const eligibleLenders = [
     minAge: 21,
     maxAge: 60,
     minIncome: 15000,
-    url: "https://moneyview.in/images/mv-green-logo-v3Compressed.svg",
+    url: "https://credmantra.com/assets/cm(credmantra).png",
     utm: "no data",
   },
   {
