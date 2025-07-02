@@ -52,30 +52,15 @@ async function createUserToken() {
 
 async function sendEligibilityCheck(user, token) {
   try {
-    function formatDOB(dob) {
-      if (!dob) return null;
-      const date = new Date(dob);
-
-      if (isNaN(date.getTime())) {
-        console.error("❌ Invalid DOB format:", dob);
-        return null;
-      }
-
-      const year = date.getUTCFullYear();
-      const month = String(date.getUTCMonth() + 1).padStart(2, "0");
-      const day = String(date.getUTCDate()).padStart(2, "0");
-      return `${year}-${month}-${day}`;
-    }
-
     const payload = {
       mobile: user.phone,
       first_name: user.name,
       last_name: user.last_name || "kumar",
       employment_type_id: user.employment,
       pan: user.pan || null,
-      // dob: user.dob ? new Date(user.dob).toISOString().split("T")[0] : null, // ✅ DOB formatted here
+      dob: user.dob ? new Date(user.dob).toISOString().split("T")[0] : null, // ✅ DOB formatted here
       email: user.email || "not@provided.com",
-      dob: formatDOB(user.dob),
+      // dob: formatDOB(user.dob),
       pincode: user.pincode || "400001",
       home_address: user.home_address || "123 MG Road, Mumbai",
       office_address:
