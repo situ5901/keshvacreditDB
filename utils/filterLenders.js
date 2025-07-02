@@ -113,7 +113,7 @@ const eligibleLenders = [
     minAge: 21,
     maxAge: 60,
     minIncome: 15000,
-    url: "https://www.chintamanifinlease.com/",
+    url: "https://about.me/cdn-cgi/image/q=80,dpr=1,f=auto,fit=cover,w=1200,h=630,gravity=0.153x0.283/https://assets.about.me/background/users/c/h/i/chintamanifinlease_1583412727_852.jpg",
     utm: "https://myflot.com/?utm_source=Keshvacredit&utm_medium=%7B_medium%7D&utm_campaign=%7B_campaign%7D",
   },
   {
