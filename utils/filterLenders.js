@@ -72,7 +72,7 @@ const eligibleLenders = [
     minAge: 21,
     maxAge: 50,
     minIncome: 20000,
-    url: "https://www.kamakshimoney.com/index_files/finpath-loan-logo.svg",
+    url: "https://s3.ap-south-1.amazonaws.com/cdn-kamakshimoney.com/public/front/images/logo.png",
     utm: "no data",
   },
   {
