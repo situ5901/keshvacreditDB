@@ -88,7 +88,7 @@ const eligibleLenders = [
     minAge: 21,
     maxAge: 60,
     minIncome: 15000,
-    url: "https://credmantra.com/assets/cm(credmantra).png",
+    url: "https://cdn.prod.website-files.com/65b65b84c3edfa5897cdfb0b/66223fca2ba9f44ca226f304_Primary%20logo.png",
     utm: "no data",
   },
   {
