@@ -77,12 +77,18 @@ router.post("/check-data", async (req, res) => {
     const { phone } = req.body;
 
     if (!Array.isArray(phone)) {
-      return res.status(400).json({ message: "Please enter a number" });
+      return res.status(400).json({ message: "Please enter a number array" });
     }
 
-    const foundUser = await Users.find({ phone: { $in: phone } }).select(
-      "phone",
-    );
+    const foundUser = await Users.find({
+      phone: { $in: phone },
+    }).select("phone");
+
+    if (!foundUser || foundUser.length === 0) {
+      return res.json({
+        data: phone.map((num) => ({ phone: num, status: "Not Duplicate" })),
+      });
+    }
 
     const foundNumbers = foundUser.map((user) => user.phone);
 
@@ -93,8 +99,8 @@ router.post("/check-data", async (req, res) => {
 
     res.json({ data: response });
   } catch (error) {
-    console.log(error);
-    res.status(500).json({ message: "Error" });
+    console.error("Error in /check-data", error); // detailed log
+    res.status(500).json({ message: "Internal Server Error" });
   }
 });
 module.exports = router;
