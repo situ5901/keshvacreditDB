@@ -84,15 +84,29 @@ router.post("/check-data", async (req, res) => {
 
     const phoneStrings = phone.map((p) => p.toString());
 
-    const foundUsers = await User.find({ phone: { $in: phoneStrings } }).select(
-      "phone",
-    );
+    // check in User collection
+    const foundUsers = await User.find({
+      phone: { $in: phoneStrings },
+    }).select("phone");
 
-    const foundNumbers = foundUsers.map((user) => user.phone);
+    // check in Users collection (from checkdata.js)
+    const foundUsersSecond = await Users.find({
+      phone: { $in: phoneStrings },
+    }).select("phone");
 
+    // merge results
+    const foundNumbers = [
+      ...foundUsers.map((u) => u.phone),
+      ...foundUsersSecond.map((u) => u.phone),
+    ];
+
+    // remove duplicates if same number exists in both
+    const uniqueFoundNumbers = [...new Set(foundNumbers)];
+
+    // build response
     const response = phoneStrings.map((num) => ({
       phone: num,
-      status: foundNumbers.includes(num) ? "Duplicate" : "Not Duplicate",
+      status: uniqueFoundNumbers.includes(num) ? "Duplicate" : "Not Duplicate",
     }));
 
     res.json({ data: response });
