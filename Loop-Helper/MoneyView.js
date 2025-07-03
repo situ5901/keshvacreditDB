@@ -23,7 +23,7 @@ const OFFERS_API = "https://atlas.whizdm.com/atlas/v1/offers";
 const JOURNEY_URL_API = "https://atlas.whizdm.com/atlas/v1/journey-url";
 const MAX_LEADS = 150000;
 const PARTNER_CODE = 422;
-const BATCH_SIZE = 10;
+const BATCH_SIZE = 1;
 const PINCODE_FILE_PATH = path.join(__dirname, "..", "xlsx", "mv.xlsx");
 // situ demo
 function loadValidPincodes(filePath) {
@@ -484,7 +484,9 @@ async function processBatch(leads, token) {
 }
 
 let totalLeads = 0;
-
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 async function Loop() {
   let token = await getToken();
   if (!token) {
@@ -519,6 +521,10 @@ async function Loop() {
     console.log(
       `📊 Total Processed: ${totalLeads}, ✅ Successful: ${successCount}`,
     );
+
+    // ⏱ Wait for 4 minutes (240,000 ms)
+    console.log("⏳ Waiting 1 minutes before next batch...");
+    await sleep(1 * 60 * 1000);
   }
 
   console.log("🔌 Closing DB connection...");
