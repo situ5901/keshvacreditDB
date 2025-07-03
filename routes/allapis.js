@@ -2,7 +2,6 @@ const express = require("express");
 const router = express.Router();
 const mongoose = require("mongoose");
 require("dotenv").config();
-const User = require("../models/user.model");
 const Users = require("../models/checkdata");
 
 mongoose.set("strictQuery", true);
@@ -82,31 +81,18 @@ router.post("/check-data", async (req, res) => {
         .json({ message: "Please send an array of phone numbers" });
     }
 
-    const phoneStrings = phone.map((p) => p.toString());
+    // convert to numbers
+    const phoneNumbers = phone.map((p) => Number(p));
 
-    // check in User collection
-    const foundUsers = await User.find({
-      phone: { $in: phoneStrings },
+    const foundUsers = await Users.find({
+      phone: { $in: phoneNumbers },
     }).select("phone");
 
-    // check in Users collection (from checkdata.js)
-    const foundUsersSecond = await Users.find({
-      phone: { $in: phoneStrings },
-    }).select("phone");
+    const foundNumbers = foundUsers.map((user) => user.phone);
 
-    // merge results
-    const foundNumbers = [
-      ...foundUsers.map((u) => u.phone),
-      ...foundUsersSecond.map((u) => u.phone),
-    ];
-
-    // remove duplicates if same number exists in both
-    const uniqueFoundNumbers = [...new Set(foundNumbers)];
-
-    // build response
-    const response = phoneStrings.map((num) => ({
+    const response = phoneNumbers.map((num) => ({
       phone: num,
-      status: uniqueFoundNumbers.includes(num) ? "Duplicate" : "Not Duplicate",
+      status: foundNumbers.includes(num) ? "Duplicate" : "Not Duplicate",
     }));
 
     res.json({ data: response });
