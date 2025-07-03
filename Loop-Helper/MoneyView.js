@@ -23,7 +23,7 @@ const OFFERS_API = "https://atlas.whizdm.com/atlas/v1/offers";
 const JOURNEY_URL_API = "https://atlas.whizdm.com/atlas/v1/journey-url";
 const MAX_LEADS = 150000;
 const PARTNER_CODE = 422;
-const BATCH_SIZE = 1;
+const BATCH_SIZE = 25;
 const PINCODE_FILE_PATH = path.join(__dirname, "..", "xlsx", "mv.xlsx");
 // situ demo
 function loadValidPincodes(filePath) {
