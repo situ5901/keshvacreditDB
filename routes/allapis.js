@@ -2,7 +2,8 @@ const express = require("express");
 const router = express.Router();
 const mongoose = require("mongoose");
 require("dotenv").config();
-const Users = require("../models/checkdata");
+const User = require("../models/user.model"); // Ensure correct path
+const Users = require("../models/checkdata"); // Ensure correct path
 
 mongoose.set("strictQuery", true);
 const db = mongoose.connection;
@@ -71,36 +72,30 @@ router.get("/Test", async (req, res) => {
   res.send("Hello CRM");
 });
 
-//update code
-
 router.post("/check-data", async (req, res) => {
   try {
-    let { phone } = req.body;
+    const { phone } = req.body;
 
     if (!Array.isArray(phone)) {
-      return res
-        .status(400)
-        .json({ message: "Please send an array of phone numbers" });
+      return res.status(400).json({ message: "Please enter a number" });
     }
 
-    // convert to numbers
-    const phoneNumbers = phone.map((p) => Number(p));
+    // Correct field name used here: "phone"
+    const foundUser = await Users.find({ phone: { $in: phone } }).select(
+      "phone",
+    );
 
-    const foundUsers = await Users.find({
-      phone: { $in: phoneNumbers },
-    }).select("phone");
+    const foundNumbers = foundUser.map((user) => user.phone);
 
-    const foundNumbers = foundUsers.map((user) => user.phone);
-
-    const response = phoneNumbers.map((num) => ({
+    const response = phone.map((num) => ({
       phone: num,
       status: foundNumbers.includes(num) ? "Duplicate" : "Not Duplicate",
     }));
 
     res.json({ data: response });
   } catch (error) {
-    console.error("Error checking phone data:", error);
-    res.status(500).json({ message: "Internal Server Error" });
+    console.log(error);
+    res.status(500).json({ message: "Error" });
   }
 });
 module.exports = router;
