@@ -73,7 +73,6 @@ router.get("/Test", async (req, res) => {
 });
 
 router.post("/check-data", async (req, res) => {
-  res.send("Hello CRM");
   try {
     const { phone } = req.body;
 
