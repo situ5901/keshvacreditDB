@@ -74,28 +74,28 @@ router.get("/Test", async (req, res) => {
 
 router.post("/check-data", async (req, res) => {
   res.send("Hello CRM");
-  // try {
-  //   const { phone } = req.body;
-  //
-  //   if (!Array.isArray(phone)) {
-  //     return res.status(400).json({ message: "Please enter a number" });
-  //   }
-  //
-  //   const foundUser = await Users.find({ phone: { $in: phone } }).select(
-  //     "phone",
-  //   );
-  //
-  //   const foundNumbers = foundUser.map((user) => user.phone);
-  //
-  //   const response = phone.map((num) => ({
-  //     phone: num,
-  //     status: foundNumbers.includes(num) ? "Duplicate" : "Not Duplicate",
-  //   }));
-  //
-  //   res.json({ data: response });
-  // } catch (error) {
-  //   console.log(error);
-  //   res.status(500).json({ message: "Error" });
-  // }
+  try {
+    const { phone } = req.body;
+
+    if (!Array.isArray(phone)) {
+      return res.status(400).json({ message: "Please enter a number" });
+    }
+
+    const foundUser = await Users.find({ phone: { $in: phone } }).select(
+      "phone",
+    );
+
+    const foundNumbers = foundUser.map((user) => user.phone);
+
+    const response = phone.map((num) => ({
+      phone: num,
+      status: foundNumbers.includes(num) ? "Duplicate" : "Not Duplicate",
+    }));
+
+    res.json({ data: response });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Error" });
+  }
 });
 module.exports = router;
