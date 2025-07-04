@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 const axios = require("axios");
 require("dotenv").config();
 const { v4: uuidv4 } = require("uuid");
-
+//update
 const MONGODB_URINEW = process.env.MONGODB_URINEW;
 const BATCH_SIZE = 10;
 const Partner_id = "Keshvacredit";
