@@ -250,7 +250,7 @@ async function Loop() {
   if (!token) return;
 
   while (true) {
-    if (successfulOffersCount >= MAX_OFFERS) {
+    if (successfulOffersCount >= OFFER_LEADS) {
       console.log("🎯 Reached 15 successful offers. Stopping loop.");
       break;
     }
