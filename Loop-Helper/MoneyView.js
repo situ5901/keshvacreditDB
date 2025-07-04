@@ -340,7 +340,7 @@ async function fetchOffers(leadId, token) {
   }
   return offersResponse;
 }
-
+const successfulOffersCount = 0;
 async function processBatch(leads, token) {
   const promises = leads.map(async (lead) => {
     let apiResponsesToSave = {};
