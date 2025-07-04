@@ -24,7 +24,7 @@ const OFFERS_API = "https://atlas.whizdm.com/atlas/v1/offers";
 const JOURNEY_URL_API = "https://atlas.whizdm.com/atlas/v1/journey-url";
 const PARTNER_CODE = 422;
 const BATCH_SIZE = 25;
-const MAX_OFFERS = 15000;
+const OFFER_LEADS = 15000;
 const PINCODE_FILE_PATH = path.join(__dirname, "..", "xlsx", "mv.xlsx");
 
 let successfulOffersCount = 0;
@@ -53,6 +53,7 @@ const validPincodesSet = loadValidPincodes(PINCODE_FILE_PATH);
 async function getToken() {
   try {
     const health = await axios.get(Healthcheck_API);
+    console.log("[HEALTHCHECK REQUEST] =>", Healthcheck_API);
     console.log("[HEALTHCHECK RESPONSE] =>", health.data);
 
     const payload = {
@@ -60,6 +61,7 @@ async function getToken() {
       password: "Zb'91O(Nhy",
       partnerCode: PARTNER_CODE,
     };
+    console.log("[TOKEN REQUEST] =>", payload);
     const response = await axios.post(TOKEN_API, payload);
     console.log("[TOKEN RESPONSE] =>", response.data);
     return response.data.token;
@@ -73,20 +75,20 @@ function isValidPAN(pan) {
   return /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(pan);
 }
 
-async function fetchOffers(leadId, token) {
+async function fetchOffers(leadId, token, phone) {
   try {
     console.log(`[OFFERS REQUEST] => ${OFFERS_API}/${leadId}`);
     const response = await axios.get(`${OFFERS_API}/${leadId}`, {
       headers: { Authorization: `Bearer ${token}` },
     });
-    console.log("[OFFERS RESPONSE] =>", response.data);
+    console.log(`[OFFERS RESPONSE for ${phone}] =>`, response.data);
     if (
       response.data.status === "success" &&
       response.data.message === "success"
     ) {
       successfulOffersCount++;
       console.log(`🎯 Offers Success Count: ${successfulOffersCount}`);
-      if (successfulOffersCount >= MAX_OFFERS) {
+      if (successfulOffersCount >= OFFER_LEADS) {
         throw new Error("🎯 Max offer count reached");
       }
     }
@@ -109,6 +111,7 @@ async function fetchJourneyUrl(leadId, token) {
     const response = await axios.get(`${JOURNEY_URL_API}/${leadId}`, {
       headers: { Authorization: `Bearer ${token}` },
     });
+    console.log("[JOURNEY URL RESPONSE] =>", response.data);
     return { status: "success", data: response.data };
   } catch (error) {
     console.log(
@@ -183,12 +186,12 @@ async function sendToMoneyView(lead, token) {
   let offers = { status: "skipped" };
   let journey = { status: "skipped" };
   if (leadId) {
-    offers = await fetchOffers(leadId, token);
+    offers = await fetchOffers(leadId, token, lead.phone);
     if (offers.status === "success") {
       journey = await fetchJourneyUrl(leadId, token);
     }
   }
-  return { leadId, offers, journey };
+  return { leadId, offers, journey, reqBody };
 }
 
 async function processBatch(leads, token) {
@@ -224,6 +227,13 @@ async function processBatch(leads, token) {
                 name: "MoneyView",
                 createdAt: new Date().toISOString(),
               },
+              apiResponse: {
+                dedupe: response.reqBody || {},
+                leadRes: response.leadRes || {},
+                offers: response.offers.data || {},
+                journeyUrl: response.journey.data || {},
+                createdAt: new Date().toISOString(),
+              },
             },
             $unset: { accounts: "" },
           },
@@ -233,10 +243,6 @@ async function processBatch(leads, token) {
       }
     }),
   );
-}
-
-function sleep(ms) {
-  return new Promise((res) => setTimeout(res, ms));
 }
 
 async function Loop() {
@@ -270,7 +276,6 @@ async function Loop() {
     console.log(
       `✅ Leads Processed: ${successCount}, 🎯 Offers Success: ${successfulOffersCount}`,
     );
-    await sleep(60 * 1000);
   }
   await mongoose.connection.close();
   console.log("🔌 MongoDB connection closed.");
