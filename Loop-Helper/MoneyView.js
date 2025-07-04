@@ -5,6 +5,7 @@ const path = require("path");
 const xlsx = require("xlsx");
 
 const MONGODB_URINEW = process.env.MONGODB_URINEW;
+
 mongoose
   .connect(MONGODB_URINEW)
   .then(() => console.log("✅ MongoDB Connected Successfully"))
@@ -25,7 +26,7 @@ const PARTNER_CODE = 422;
 const OFFER_LEADS = 15000;
 const BATCH_SIZE = 25;
 const PINCODE_FILE_PATH = path.join(__dirname, "..", "xlsx", "mv.xlsx");
-// situ demo
+
 function loadValidPincodes(filePath) {
   try {
     const workbook = xlsx.readFile(filePath);
@@ -36,7 +37,6 @@ function loadValidPincodes(filePath) {
       if (typeof pin === "number") pin = pin.toString().padStart(6, "0");
       return String(pin).trim();
     });
-
     console.log(`✅ Loaded ${pins.length} valid pincodes from Excel`);
     return new Set(pins);
   } catch (error) {
@@ -51,11 +51,12 @@ if (validPincodesSet.size === 0) {
 }
 
 let successCount = 0;
+let successfulOffersCount = 0;
 
 async function getToken() {
   try {
-    const healthChecek = await axios.get(Healthcheck_API);
-    if (healthChecek.status === 200) {
+    const healthCheck = await axios.get(Healthcheck_API);
+    if (healthCheck.status === 200) {
       console.log("✅ Healthcheck API is up and running");
     } else {
       console.error("❌ Healthcheck API is not up and running");
@@ -106,16 +107,16 @@ async function dedupeCheck(lead, token) {
     }
 
     const payload = {
-      panNO: lead.pan, // Field must match curl: panNO
-      mobileNo: lead.phone, // Field must match curl: mobileNo
-      email: lead.email, // Same
+      panNO: lead.pan,
+      mobileNo: lead.phone,
+      email: lead.email,
     };
 
     console.log(`\n🧾 [DEDUPE REQUEST] =>`, payload);
 
     const response = await axios.post(DEDUPE_API, payload, {
       headers: {
-        token: token, // curl is using token in header (not Bearer format)
+        token,
         "Content-Type": "application/json",
       },
     });
@@ -140,6 +141,52 @@ async function dedupeCheck(lead, token) {
   return dedupeResponse;
 }
 
+async function fetchOffers(leadId, token, phone) {
+  let offersResponse = {
+    status: "failure",
+    message: "Unknown error fetching offers",
+  };
+  try {
+    console.log(
+      `\n💰 [OFFERS REQUEST] Lead ID => ${leadId}, Phone => ${phone}`,
+    );
+    const response = await axios.get(`${OFFERS_API}/${leadId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    console.log(
+      `[OFFERS RESPONSE for Phone ${phone}] =>`,
+      JSON.stringify(response.data, null, 2),
+      "\n",
+    );
+
+    if (
+      response.data.status === "success" &&
+      response.data.message === "success"
+    ) {
+      successfulOffersCount++;
+      console.log(
+        `🎯 Offer Success | Current Count: ${successfulOffersCount} | Phone: ${phone}`,
+      );
+      if (successfulOffersCount >= OFFER_LEADS) {
+        throw new Error("🎯 Max successful offer count reached");
+      }
+    }
+
+    offersResponse = { status: "success", data: response.data };
+  } catch (error) {
+    if (error.message === "🎯 Max successful offer count reached") {
+      throw error;
+    }
+    console.error(
+      `❌ Error fetching offers for Lead ID ${leadId}, Phone ${phone}:`,
+      error.response?.data || error.message,
+    );
+    offersResponse.message = error.response?.data?.message || error.message;
+    offersResponse.data = error.response?.data || null;
+  }
+  return offersResponse;
+}
+
 async function sendToMoneyView(lead, token) {
   const requestBody = {
     partnerCode: 422,
@@ -157,14 +204,13 @@ async function sendToMoneyView(lead, token) {
         : lead.employment,
     incomeMode: "online",
     declaredIncome: parseInt(lead.income),
-    educationLevel: "GRADUATION", // default
-    maritalStatus: "Married", // default
-
+    educationLevel: "GRADUATION",
+    maritalStatus: "Married",
     addressList: [
       {
-        addressLine1: "NA", // optional static
+        addressLine1: "NA",
         pincode: lead.pincode,
-        residenceType: "rented", // static or from lead
+        residenceType: "rented",
         addressType: "current",
         city: lead.city,
         state: lead.state,
@@ -173,17 +219,14 @@ async function sendToMoneyView(lead, token) {
     emailList: [
       {
         email: lead.email,
-        type: "primary_user", // API expects this instead of "primary_device"
+        type: "primary_user",
       },
     ],
-
-    loanPurpose: "Travel", // or override with dynamic lead.loanPurpose
-
+    loanPurpose: "Travel",
     consent: {
       consentDecision: true,
       deviceTimeStamp: new Date().toISOString(),
     },
-
     consentDetails: {
       consentDataList: [
         {
@@ -195,6 +238,7 @@ async function sendToMoneyView(lead, token) {
       deviceTimeStamp: new Date().toISOString(),
     },
   };
+
   console.log(
     "\n📤 [LEAD SUBMISSION REQUEST] =>",
     JSON.stringify(requestBody, null, 2),
@@ -202,39 +246,41 @@ async function sendToMoneyView(lead, token) {
 
   let leadSubmissionResult = {
     status: "failure",
-    message: "Lead submission not attempted",
+    message: "Lead not attempted",
   };
   let offersResult = {
     status: "skipped",
-    message: "Lead submission failed or skipped",
+    message: "Lead submission failed/skipped",
   };
   let journeyUrlResult = {
     status: "skipped",
-    message: "Lead submission or offers failed/skipped",
+    message: "offers failed/skipped",
   };
 
   try {
     const response = await axios.post(LEAD_API, requestBody, {
       headers: { "Content-Type": "application/json", token },
     });
+
     console.log(
       "📥 [LEAD SUBMISSION RESPONSE] =>",
       JSON.stringify(response.data, null, 2),
       "\n",
     );
+
     leadSubmissionResult = { status: "success", data: response.data };
 
     const leadId = response.data.leadId;
     if (leadId) {
-      offersResult = await fetchOffers(leadId, token);
+      offersResult = await fetchOffers(leadId, token, lead.phone);
       if (offersResult.status === "success" && offersResult.data) {
         journeyUrlResult = await fetchJourneyUrl(leadId, token);
       } else {
-        console.warn("NO Lead Receivd");
+        console.warn("NO lead received");
       }
     } else {
       console.warn(
-        "⚠️ No leadId received from lead submission. Skipping offers and Journey URL APII calls.",
+        "⚠️ No leadId received from lead submission. Skipping offers.",
       );
     }
 
@@ -246,7 +292,7 @@ async function sendToMoneyView(lead, token) {
     };
   } catch (error) {
     console.error(
-      `❌ Submission failed for PAN: ${lead.pan}`,
+      `❌ Submission failed for PAN: ${lead.pan}, Phone: ${lead.phone}`,
       error.response?.data || error.message,
     );
     leadSubmissionResult = {
@@ -264,83 +310,27 @@ async function sendToMoneyView(lead, token) {
   }
 }
 
-async function fetchOffers(leadId, token) {
-  let offersResponse = {
-    status: "failure",
-    message: "Unknown error fetching offers",
-  };
+async function fetchJourneyUrl(leadId, token) {
   try {
-    console.log(`\n💰 [OFFERS REQUEST] Lead ID => ${leadId}`);
-    const response = await axios.get(`${OFFERS_API}/${leadId}`, {
+    console.log(`🌐 [JOURNEY URL REQUEST] Lead ID => ${leadId}`);
+    const response = await axios.get(`${JOURNEY_URL_API}/${leadId}`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     console.log(
-      "[OFFERS RESPONSE] =>",
+      "[JOURNEY URL RESPONSE] =>",
       JSON.stringify(response.data, null, 2),
       "\n",
     );
-    offersResponse = { status: "success", data: response.data };
+    return { status: "success", data: response.data };
   } catch (error) {
     console.error(
-      `❌ Error fetching offers for Lead ID ${leadId}:`,
+      `❌ Error fetching Journey URL for Lead ID ${leadId}:`,
       error.response?.data || error.message,
     );
-    offersResponse.message = error.response?.data?.message || error.message;
-    offersResponse.data = error.response?.data || null;
+    return { status: "failure", message: error.message };
   }
-  return offersResponse;
 }
 
-async function fetchOffers(leadId, token) {
-  let offersResponse = {
-    status: "failure",
-    message: "Unknown error fetching offers",
-  };
-  try {
-    console.log(`\n💰 [OFFERS REQUEST] Lead ID => ${leadId}`);
-    const response = await axios.get(`${OFFERS_API}/${leadId}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    console.log(
-      "[OFFERS RESPONSE] =>",
-      JSON.stringify(response.data, null, 2),
-      "\n",
-    );
-
-    // ✅ Additions start here
-    if (
-      response.data.status === "success" &&
-      response.data.message === "success"
-    ) {
-      successfulOffersCount++;
-      console.log(
-        `🎯 Current Successful Offers Count: ${successfulOffersCount}`,
-      );
-      if (successfulOffersCount >= OFFER_LEADS) {
-        // Throw an error to signal the main loop to stop
-        throw new Error("🎯 Max successful offer count reached");
-      }
-    }
-    // ✅ Additions end here
-
-    offersResponse = { status: "success", data: response.data };
-  } catch (error) {
-    // If the error is our custom "Max successful offer count reached", re-throw it
-    // so the main Loop can catch and break appropriately.
-    if (error.message === "🎯 Max successful offer count reached") {
-      throw error;
-    }
-
-    console.error(
-      `❌ Error fetching offers for Lead ID ${leadId}:`,
-      error.response?.data || error.message,
-    );
-    offersResponse.message = error.response?.data?.message || error.message;
-    offersResponse.data = error.response?.data || null;
-  }
-  return offersResponse;
-}
-const successfulOffersCount = 0;
 async function processBatch(leads, token) {
   const promises = leads.map(async (lead) => {
     let apiResponsesToSave = {};
@@ -359,7 +349,7 @@ async function processBatch(leads, token) {
         !lead.pincode
       ) {
         finalMessage = "Incomplete data for lead";
-        console.error(`❌ ${finalMessage}: ${lead.phone}. Skipping.`);
+        console.error(`❌ ${finalMessage}: ${lead.phone}`);
         await UserDB.updateOne(
           { phone: lead.phone },
           {
@@ -413,8 +403,7 @@ async function processBatch(leads, token) {
 
       const userDoc = await UserDB.findOne({ phone: lead.phone });
       if (userDoc?.RefArr?.some((ref) => ref.name === "MoneyView")) {
-        finalMessage = "Lead already processed";
-        console.log(`⛔ ${finalMessage}: ${lead.phone}`);
+        console.log(`⛔ Lead already processed: ${lead.phone}`);
         return;
       }
 
@@ -425,19 +414,15 @@ async function processBatch(leads, token) {
         dedupeResult.status === "success" &&
         dedupeResult.message === "Duplicate lead found in MV"
       ) {
-        finalStatus = "skipped";
-        finalMessage = "Duplicate lead found in MV (dedupe)";
-        console.log(
-          `⛔ ${finalMessage} for ${lead.phone}. Skipping lead submission, offers, and journey URL.`,
-        );
+        console.log(`⛔ Duplicate lead found in MV: ${lead.phone}`);
         await UserDB.updateOne(
           { phone: lead.phone },
           {
             $push: {
               apiResponse: {
                 dedupe: apiResponsesToSave.moneyViewDedupe,
-                status: finalStatus,
-                message: finalMessage,
+                status: "skipped",
+                message: "Duplicate lead",
                 createdAt: new Date().toISOString(),
               },
               RefArr: {
@@ -452,7 +437,6 @@ async function processBatch(leads, token) {
       }
 
       const moneyViewAllResponses = await sendToMoneyView(lead, token);
-
       apiResponsesToSave.moneyViewLeadSubmission =
         moneyViewAllResponses.leadSubmission.data;
       apiResponsesToSave.moneyViewOffers = moneyViewAllResponses.offers.data;
@@ -465,27 +449,11 @@ async function processBatch(leads, token) {
         successCount++;
         console.log(`✅ ${finalMessage}: ${lead.phone}`);
       } else {
-        finalStatus = "failed";
         finalMessage = moneyViewAllResponses.message || "API processing failed";
         console.log(`⛔ ${finalMessage} for ${lead.phone}`);
       }
     } catch (err) {
-      finalStatus = "failed";
-      finalMessage = `Error during processing: ${err.message}`;
-      console.error(`❌ ${finalMessage} for ${lead.phone}`);
-      await UserDB.updateOne(
-        { phone: lead.phone },
-        {
-          $push: {
-            RefArr: {
-              name: "SkippedMoneyView",
-              reason: finalMessage,
-              createdAt: new Date().toISOString(),
-            },
-          },
-        },
-      );
-      return;
+      console.error(`❌ Error processing: ${err.message} for ${lead.phone}`);
     }
 
     await UserDB.updateOne(
@@ -516,18 +484,14 @@ async function Loop() {
 
   while (true) {
     if (successfulOffersCount >= OFFER_LEADS) {
-      console.log(
-        `🎯 Reached ${OFFER_LEADS} successful offers. Stopping loop.`,
-      );
-      break; // This breaks out of the while(true) loop
+      console.log(`🎯 Reached ${OFFER_LEADS} successful offers. Stopping.`);
+      break;
     }
 
     console.log("\n📦 Fetching next batch...");
     const leads = await UserDB.aggregate([
       {
-        $match: {
-          "RefArr.name": { $nin: ["MoneyView", "SkippedMoneyView"] },
-        },
+        $match: { "RefArr.name": { $nin: ["MoneyView", "SkippedMoneyView"] } },
       },
       { $limit: BATCH_SIZE },
     ]);
@@ -537,25 +501,20 @@ async function Loop() {
       break;
     }
 
-    // --- RECOMMENDED ADDITION START ---
     try {
       await processBatch(leads, token);
     } catch (err) {
-      // Catch the "Max successful offer count reached" error to break the loop
       if (err.message === "🎯 Max successful offer count reached") {
-        console.log(err.message); // Logs the message from the error
-        break; // Breaks out of the while(true) loop
+        console.log(err.message);
+        break;
       }
       console.error("❌ Error during batch processing:", err.message);
-      // You might consider adding a mechanism to gracefully handle other errors
-      // or to prevent infinite loops if unhandled errors constantly occur.
     }
-    // --- RECOMMENDED ADDITION END ---
 
     totalLeads += leads.length;
 
     console.log(
-      `📊 Total Processed: ${totalLeads}, ✅ Successful Lead Submissions: ${successCount}, 🎯 Successful Offers: ${successfulOffersCount}`, // Adjusted log message
+      `📊 Total Processed: ${totalLeads}, ✅ Successful Leads: ${successCount}, 🎯 Successful Offers: ${successfulOffersCount}`,
     );
   }
 
