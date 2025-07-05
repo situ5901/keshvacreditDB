@@ -7,7 +7,13 @@ const Users = require("../models/checkdata"); // Ensure correct path
 
 mongoose.set("strictQuery", true);
 const db = mongoose.connection;
-
+function chunkArray(array, size) {
+  const result = [];
+  for (let i = 0; i < array.length; i += size) {
+    result.push(array.slice(i, i + size));
+  }
+  return result;
+}
 router.get("/get-all", async (req, res) => {
   try {
     const ramfinLeads = await db
@@ -80,26 +86,28 @@ router.post("/check-data", async (req, res) => {
       return res.status(400).json({ message: "Please enter a number array" });
     }
 
-    const foundUser = await Users.find({
-      phone: { $in: phone },
-    }).select("phone");
+    const phones = phone.map((p) => Number(p)); // Ensure number format
+    const BATCH_SIZE = 200;
+    const chunks = chunkArray(phones, BATCH_SIZE);
+    const duplicateNumbers = new Set();
 
-    if (!foundUser || foundUser.length === 0) {
-      return res.json({
-        data: phone.map((num) => ({ phone: num, status: "Not Duplicate" })),
-      });
+    // Batch find to avoid memory overload
+    for (const batch of chunks) {
+      const foundUsers = await Users.find({
+        phone: { $in: batch },
+      }).select("phone");
+
+      foundUsers.forEach((user) => duplicateNumbers.add(user.phone));
     }
 
-    const foundNumbers = foundUser.map((user) => user.phone);
-
-    const response = phone.map((num) => ({
+    const response = phones.map((num) => ({
       phone: num,
-      status: foundNumbers.includes(num) ? "Duplicate" : "Not Duplicate",
+      status: duplicateNumbers.has(num) ? "Duplicate" : "Not Duplicate",
     }));
 
     res.json({ data: response });
   } catch (error) {
-    console.error("Error in /check-data", error); // detailed log
+    console.error("Error in /check-data", error);
     res.status(500).json({ message: "Internal Server Error" });
   }
 });
