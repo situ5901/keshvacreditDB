@@ -1,19 +1,14 @@
 const express = require("express");
 const router = express.Router();
 const mongoose = require("mongoose");
+const pLimit = require("p-limit");
 require("dotenv").config();
 const User = require("../models/user.model"); // Ensure correct path
 const Users = require("../models/checkdata"); // Ensure correct path
 
 mongoose.set("strictQuery", true);
 const db = mongoose.connection;
-function chunkArray(array, size) {
-  const result = [];
-  for (let i = 0; i < array.length; i += size) {
-    result.push(array.slice(i, i + size));
-  }
-  return result;
-}
+
 router.get("/get-all", async (req, res) => {
   try {
     const ramfinLeads = await db
@@ -78,37 +73,60 @@ router.get("/Test", async (req, res) => {
   res.send("Hello CRM");
 });
 
+function chunkArray(array, size) {
+  const result = [];
+  for (let i = 0; i < array.length; i += size) {
+    result.push(array.slice(i, i + size));
+  }
+  return result;
+}
 router.post("/check-data", async (req, res) => {
   try {
     const { phone } = req.body;
 
-    if (!Array.isArray(phone)) {
-      return res.status(400).json({ message: "Please enter a number array" });
+    if (!Array.isArray(phone) || phone.length === 0) {
+      return res.status(400).json({
+        message: "Please enter a valid phone number array",
+      });
     }
 
-    const phones = phone.map((p) => Number(p)); // Ensure number format
+    const phones = phone.map((p) => String(p));
     const BATCH_SIZE = 200;
+    const CONCURRENCY = 5;
     const chunks = chunkArray(phones, BATCH_SIZE);
     const duplicateNumbers = new Set();
 
-    // Batch find to avoid memory overload
-    for (const batch of chunks) {
-      const foundUsers = await Users.find({
-        phone: { $in: batch },
-      }).select("phone");
+    const limit = pLimit(CONCURRENCY);
 
-      foundUsers.forEach((user) => duplicateNumbers.add(user.phone));
-    }
+    const tasks = chunks.map((batch, idx) =>
+      limit(async () => {
+        console.time(`Batch-${idx}`);
+        const foundUsers = await Users.find(
+          { phone: { $in: batch } },
+          { phone: 1 },
+        );
+        foundUsers.forEach((user) => duplicateNumbers.add(user.phone));
+        console.timeEnd(`Batch-${idx}`);
+      }),
+    );
+
+    await Promise.all(tasks);
 
     const response = phones.map((num) => ({
       phone: num,
       status: duplicateNumbers.has(num) ? "Duplicate" : "Not Duplicate",
     }));
 
-    res.json({ data: response });
+    res.json({
+      totalRequested: phones.length,
+      totalDuplicate: duplicateNumbers.size,
+      data: response,
+    });
   } catch (error) {
-    console.error("Error in /check-data", error);
-    res.status(500).json({ message: "Internal Server Error" });
+    console.error("❌ Error in /check-data:", error);
+    res
+      .status(500)
+      .json({ message: "Internal Server Error", error: error.message });
   }
 });
 module.exports = router;

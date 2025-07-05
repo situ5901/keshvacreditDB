@@ -1,10 +1,11 @@
 const express = require("express");
 const router = express.Router();
 const mongoose = require("mongoose");
-require("dotenv").config();
+const pLimit = require("p-limit");
 
 mongoose.set("strictQuery", true);
 
+// chunk helper
 function chunkArray(array, size) {
   const result = [];
   for (let i = 0; i < array.length; i += size) {
@@ -23,47 +24,49 @@ router.post("/filterdata", async (req, res) => {
   ) {
     return res.status(400).json({
       success: false,
-      message: "Valid phone number array is required",
+      message: "phones[] must be a valid number array",
     });
   }
 
-  phones = phones.map((p) => Number(p));
+  console.log(`✅ Received total ${phones.length} numbers`);
 
-  const BATCH_SIZE = 200;
+  phones = phones.map(Number);
+
+  const BATCH_SIZE = 1000; // 1000 per query
+  const CONCURRENCY_LIMIT = 5; // 5 queries in parallel
   const chunks = chunkArray(phones, BATCH_SIZE);
+  const limit = pLimit(CONCURRENCY_LIMIT);
   const allResults = [];
 
   try {
-    for (const batch of chunks) {
-      const results = await mongoose.connection
-        .collection("userdb")
-        .find(
-          { phone: { $in: batch } },
-          { projection: { RefArr: 0, apiResponse: 0 } },
-        )
-        .toArray();
+    const tasks = chunks.map((batch, idx) =>
+      limit(async () => {
+        console.time(`Batch-${idx}`);
+        const results = await mongoose.connection
+          .collection("userdb")
+          .find(
+            { phone: { $in: batch } },
+            { projection: { RefArr: 0, apiResponse: 0 } },
+          )
+          .toArray();
+        console.timeEnd(`Batch-${idx}`);
+        allResults.push(...results);
+      }),
+    );
 
-      allResults.push(...results);
-    }
+    await Promise.all(tasks);
 
-    if (!allResults.length) {
-      return res.status(404).json({
-        success: false,
-        message: "No data found for the provided phone numbers",
-      });
-    }
-
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       totalRecords: allResults.length,
       data: allResults,
     });
-  } catch (error) {
-    console.error("Error:", error.message);
+  } catch (err) {
+    console.error("❌ Error:", err);
     res.status(500).json({
       success: false,
-      message: "Internal Server Error",
-      error: error.message,
+      message: "Internal server error",
+      error: err.message,
     });
   }
 });
