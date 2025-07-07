@@ -12,8 +12,8 @@ mongoose
   .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
 
 const UserDB = mongoose.model(
-  "MVcollection",
-  new mongoose.Schema({}, { collection: "MVcollection", strict: false }),
+  "Test",
+  new mongoose.Schema({}, { collection: "Test", strict: false }),
 );
 
 const Healthcheck_API = "https://atlas.whizdm.com/atlas/v1/health";
@@ -23,7 +23,7 @@ const LEAD_API = "https://atlas.whizdm.com/atlas/v1/lead";
 const OFFERS_API = "https://atlas.whizdm.com/atlas/v1/offers";
 const JOURNEY_URL_API = "https://atlas.whizdm.com/atlas/v1/journey-url";
 const PARTNER_CODE = 422;
-const OFFER_LEADS = 15000;
+const OFFER_LEADS = 20000;
 const BATCH_SIZE = 25;
 const PINCODE_FILE_PATH = path.join(__dirname, "..", "xlsx", "mv.xlsx");
 
