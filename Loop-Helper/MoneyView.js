@@ -51,7 +51,7 @@ if (validPincodesSet.size === 0) {
 }
 
 let successCount = 0;
-let successfulOffersCount = 0;
+let successLeadCount = 0;
 
 async function getToken() {
   try {
@@ -159,19 +159,6 @@ async function fetchOffers(leadId, token, phone) {
       "\n",
     );
 
-    if (
-      response.data.status === "success" &&
-      response.data.message === "success"
-    ) {
-      successfulOffersCount++;
-      console.log(
-        `🎯 Offer Success | Current Count: ${successfulOffersCount} | Phone: ${phone}`,
-      );
-      if (successfulOffersCount >= OFFER_LEADS) {
-        throw new Error("🎯 Max successful offer count reached");
-      }
-    }
-
     offersResponse = { status: "success", data: response.data };
   } catch (error) {
     if (error.message === "🎯 Max successful offer count reached") {
@@ -267,6 +254,18 @@ async function sendToMoneyView(lead, token) {
       JSON.stringify(response.data, null, 2),
       "\n",
     );
+    if (
+      response.data.status === "success" &&
+      response.data.message === "success"
+    ) {
+      successLeadCount++;
+      console.log(
+        `🎯 Offer Success | Current Count: ${successLeadCount} | Phone: ${lead.phone}`,
+      );
+      if (successLeadCount >= OFFER_LEADS) {
+        throw new Error("🎯 Max successful offer count reached");
+      }
+    }
 
     leadSubmissionResult = { status: "success", data: response.data };
 
@@ -483,7 +482,7 @@ async function Loop() {
   }
 
   while (true) {
-    if (successfulOffersCount >= OFFER_LEADS) {
+    if (successLeadCount >= OFFER_LEADS) {
       console.log(`🎯 Reached ${OFFER_LEADS} successful offers. Stopping.`);
       break;
     }
@@ -514,7 +513,7 @@ async function Loop() {
     totalLeads += leads.length;
 
     console.log(
-      `📊 Total Processed: ${totalLeads}, ✅ Successful Leads: ${successCount}, 🎯 Successful Offers: ${successfulOffersCount}`,
+      `📊 Total Processed: ${totalLeads}, ✅ Successful Leads: ${successCount}, 🎯 Successful Offers: ${successLeadCount}`,
     );
   }
 
