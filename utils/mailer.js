@@ -59,6 +59,7 @@ const ContactMail = async (formData) => {
       <h2>New Contact Form Keshvacredit</h2>
       <p><strong>Name:</strong> ${name}</p>
       <p><strong>Email:</strong> ${email}</p>
+      <p><strong>Email:</strong> ${phone}</p>
       <p><strong>Message:</strong><br/>${message}</p>
     `,
   };
