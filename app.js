@@ -48,7 +48,7 @@ app.use(`/api${API_VERSION}/LenderAPIs`, require("./Lenders-APIs/LoanTap"));
 app.use(`/api${API_VERSION}/Test`, require("./Test/filter.js"));
 app.use(errorHandler);
 
-const adminRoutes = require("./No_Entery/SpaceArea/AdminSpace/adminroute.js");
+const adminRoutes = require("./error/404/AdmainRoute.js");
 app.use("/admin", adminRoutes);
 
 module.exports = app;
