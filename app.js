@@ -4,6 +4,9 @@ const logger = require("morgan");
 const corsMiddleware = require("./middlewares/cors");
 const errorHandler = require("./middlewares/errorHandler");
 const { API_VERSION } = require("./config/config");
+const adminRoutes = require("./manage_core/admin_panel/routes/adminRoutes.js");
+const userRoutes = require("./manage_core/admin_panel/routes/userRoutes.js");
+
 //update
 const app = express();
 
@@ -13,6 +16,8 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(corsMiddleware);
 
+app.use("/admin", adminRoutes);
+app.use("/user", userRoutes);
 app.use(`/api${API_VERSION}/auth`, require("./routes/auth"));
 app.use(`/api${API_VERSION}/leads`, require("./routes/leads"));
 app.use(
