@@ -49,7 +49,7 @@ const sendMail = async (formData) => {
 
 // Function to send contact form message
 const ContactMail = async (formData) => {
-  const { name, email, message } = formData;
+  const { name, email, phone, message } = formData;
 
   const mailOptions = {
     from: `"ContactBot 📬" <${process.env.EMAIL}>`,
