@@ -42,10 +42,10 @@ router.post("/leaveMail", async (req, res) => {
 });
 
 router.post("/contactMail", async (req, res) => {
-  const { name, email, message } = req.body; // fixed typo here
+  const { name, email, phone, message } = req.body; // fixed typo here
 
   try {
-    await ContactMail({ name, email, message });
+    await ContactMail({ name, email, phone, message });
     res.status(200).send("Thank you! We will contact you shortly");
   } catch (err) {
     console.error(" Error sending email:", err);
