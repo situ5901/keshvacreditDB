@@ -4,8 +4,6 @@ const logger = require("morgan");
 const corsMiddleware = require("./middlewares/cors");
 const errorHandler = require("./middlewares/errorHandler");
 const { API_VERSION } = require("./config/config");
-const adminRoutes = require("./manage_core/admin_panel/routes/adminRoutes.js");
-const userRoutes = require("./manage_core/admin_panel/routes/userRoutes.js");
 
 const app = express();
 
@@ -15,8 +13,6 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(corsMiddleware);
 
-app.use("/admin", adminRoutes);
-app.use("/user", userRoutes);
 app.use(`/api${API_VERSION}/auth`, require("./routes/auth"));
 app.use(`/api${API_VERSION}/leads`, require("./routes/leads"));
 app.use(
@@ -46,11 +42,13 @@ app.use(
   `/api${API_VERSION}/LenderAPIs`,
   require("./Lenders-APIs/salaryontime"),
 );
-
 app.use(`/api${API_VERSION}/LenderAPIs`, require("./Lenders-APIs/FatakPayDCL"));
 app.use(`/api${API_VERSION}/LenderAPIs`, require("./Lenders-APIs/FatakPay"));
 app.use(`/api${API_VERSION}/LenderAPIs`, require("./Lenders-APIs/LoanTap"));
 app.use(`/api${API_VERSION}/Test`, require("./Test/filter.js"));
 app.use(errorHandler);
+
+const adminRoutes = require("./manage_core/spaceArea/route/adminRoutes");
+app.use("/admin", adminRoutes);
 
 module.exports = app;
