@@ -7,7 +7,6 @@ const { API_VERSION } = require("./config/config");
 const adminRoutes = require("./manage_core/admin_panel/routes/adminRoutes.js");
 const userRoutes = require("./manage_core/admin_panel/routes/userRoutes.js");
 
-//update
 const app = express();
 
 app.use(logger("dev"));

@@ -2,7 +2,7 @@ const jwt = require("jsonwebtoken");
 const fs = require("fs");
 const path = require("path");
 require("dotenv").config();
-
+const bcrypt = require("bcrypt");
 const Member = require("../../models/Member");
 
 exports.login = (req, res) => {
@@ -40,10 +40,12 @@ exports.createUser = async (req, res) => {
       return res.status(400).json({ message: "❌ Member already exists" });
     }
 
-    const member = new Member({ userId, password });
+    const hashedPassword = await bcrypt.hash(password, 10); // 🔐 hash password
+
+    const member = new Member({ userId, password: hashedPassword });
     await member.save();
 
-    res.json({ message: "✅ Member created successfully" });
+    res.json({ message: "✅ Member created securely" });
   } catch (error) {
     console.error("❌ Error creating member:", error);
     res.status(500).json({ message: "❌ Server error" });
