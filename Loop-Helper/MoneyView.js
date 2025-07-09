@@ -49,7 +49,7 @@ const validPincodesSet = loadValidPincodes(PINCODE_FILE_PATH);
 if (validPincodesSet.size === 0) {
   console.warn("⚠️ No valid pincodes loaded. Skipping all leads.");
 }
-
+//udpate code 
 let successCount = 0;
 let successLeadCount = 0;
 
@@ -513,7 +513,7 @@ async function Loop() {
     totalLeads += leads.length;
 
     console.log(
-      `📊 Total Processed: ${totalLeads}, ✅ Successful Leads: ${successCount}, 🎯 Successful Offers: ${successLeadCount}`,
+      `📊 Total Processed: ${totalLeads}, ✅ Successful Leads: ${successCount}, 🎯 Successful Submite Lead: ${successLeadCount}`,
     );
   }
 
