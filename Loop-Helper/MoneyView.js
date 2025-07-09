@@ -49,7 +49,7 @@ const validPincodesSet = loadValidPincodes(PINCODE_FILE_PATH);
 if (validPincodesSet.size === 0) {
   console.warn("⚠️ No valid pincodes loaded. Skipping all leads.");
 }
-//udpate code 
+//udpate co 
 let successCount = 0;
 let successLeadCount = 0;
 
