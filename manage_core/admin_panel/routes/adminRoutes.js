@@ -5,6 +5,6 @@ const adminAuth = require("../middlewares/adminAuth");
 
 router.post("/login", adminController.login);
 router.get("/dashboard", adminAuth, adminController.dashboard);
-// router.post("/create-user", adminAuth, adminController.createUser);
+router.post("/create-user", adminAuth, adminController.createUser);
 
 module.exports = router;

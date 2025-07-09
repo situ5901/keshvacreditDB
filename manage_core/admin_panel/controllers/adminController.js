@@ -1,24 +1,25 @@
 const jwt = require("jsonwebtoken");
 const fs = require("fs");
 const path = require("path");
+const nodemailer = require("nodemailer");
 require("dotenv").config();
 const bcrypt = require("bcrypt");
 const Member = require("../../models/Member");
-const sendAdminLoginAlert = reqire("./mailverify")
-
+const {
+  sendAdminLoginAlert,
+  sendAdminCreatedAlert,
+} = require("./mailverify.js");
 exports.login = (req, res) => {
   const { adminMail, password } = req.body;
 
   const adminDataPath = path.join(__dirname, "../data/admin.json");
   const adminData = JSON.parse(fs.readFileSync(adminDataPath, "utf-8"));
 
-  if (username === adminData.username && password === adminData.password) {
+  if (adminMail === adminData.adminMail && password === adminData.password) {
     const token = jwt.sign(
-      { role: "admin", username },
+      { role: "admin", username: adminMail },
       process.env.JWT_SECRET,
-      {
-        expiresIn: "1h",
-      },
+      { expiresIn: "1h" },
     );
 
     sendAdminLoginAlert(adminMail);
@@ -33,18 +34,28 @@ exports.dashboard = (req, res) => {
 };
 
 exports.createUser = async (req, res) => {
-  const { userId, password } = req.body;
+  const { username, userMail, password } = req.body;
 
   try {
-    const existing = await Member.findOne({ userId });
+    if (!userMail || !username || !password) {
+      return res.status(400).json({ message: "❌ Missing fields" });
+    }
+
+    const existing = await Member.findOne({ userMail });
     if (existing) {
       return res.status(400).json({ message: "❌ Member already exists" });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10); // 🔐 hash password
-
-    const member = new Member({ userId, password: hashedPassword });
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const member = new Member({ username, userMail, password: hashedPassword });
     await member.save();
+
+    const token = req.headers.authorization?.split(" ")[1];
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const createdBy = decoded.username || "unknown";
+
+    console.log("📧 Sending alert >>", createdBy, userMail);
+    await sendAdminCreatedAlert(createdBy, userMail);
 
     res.json({ message: "✅ Member created securely" });
   } catch (error) {
@@ -52,29 +63,3 @@ exports.createUser = async (req, res) => {
     res.status(500).json({ message: "❌ Server error" });
   }
 };
-
-exports.getUsers = async (req, res) => {
-  try {
-    const users = await Member.find();
-    res.json(users);
-  } catch (error) {
-    console.error("❌ Error getting users:", error);
-    res.status(500).json({ message: "❌ Server error" });
-  }
-};
-
-
-exports.deleteUser = async (req,res) =>{
-    const {userId} = req.body;
-    try {
-	const user = await Member.findOneAndDelete({userId})
-        res.json({message:"✅ User deleted successfully",user})
-	if(!user){
-	    return res.status(404).json({message:"❌ User not found"}) 
-	}
-    } catch (error) {
-	console.error("❌ Error deleting user:",error)
-	res.status(500).json({message:"❌ Server error"})		
-	}
-    }
-}
