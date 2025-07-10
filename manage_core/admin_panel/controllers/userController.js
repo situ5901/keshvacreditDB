@@ -49,6 +49,7 @@ exports.login = async (req, res) => {
 
     res.status(200).json({
       status: true,
+      role: "Member",
       message: "✅ User logged in securely",
       token,
     });

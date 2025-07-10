@@ -20,11 +20,12 @@ exports.login = (req, res) => {
     const token = jwt.sign(
       { role: "admin", username: adminMail },
       process.env.JWT_SECRET,
-      { expiresIn: "1h" },
+      { expiresIn: "1h" }
     );
 
     sendAdminLoginAlert(adminMail);
-    res.json({ message: "✅ Admin logged in", token });
+
+    res.json({ role: "SuperAdmin", message: "✅ Admin logged in", token });
   } else {
     res.status(401).json({ message: "❌ Invalid admin credentials" });
   }
