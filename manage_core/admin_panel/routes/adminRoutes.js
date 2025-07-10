@@ -2,9 +2,9 @@ const express = require("express");
 const router = express.Router();
 const adminController = require("../controllers/adminController");
 const adminAuth = require("../middlewares/adminAuth");
-
 router.post("/login", adminController.login);
-router.get("/dashboard", adminAuth, adminController.dashboard);
+router.post("/delete/user", adminAuth, adminController.deleteUser);
 router.post("/create-user", adminAuth, adminController.createUser);
-
+router.post("/create/agent", adminAuth, adminController.createAgent);
+router.post("/delete/agent", adminAuth, adminController.deleteAgents);
 module.exports = router;

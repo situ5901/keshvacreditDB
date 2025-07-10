@@ -47,10 +47,16 @@ app.use(`/api${API_VERSION}/LenderAPIs`, require("./Lenders-APIs/FatakPay"));
 app.use(`/api${API_VERSION}/LenderAPIs`, require("./Lenders-APIs/LoanTap"));
 app.use(`/api${API_VERSION}/Test`, require("./Test/filter.js"));
 app.use(errorHandler);
-
+//............LeadBridge Working............//
 const adminRoutes = require("./manage_core/admin_panel/routes/adminRoutes.js");
 app.use(`/api${API_VERSION}/admin`, adminRoutes);
-
+//............Member Working............//
 const memberRoutes = require("./manage_core/admin_panel/routes/userRoutes.js");
 app.use(`/api${API_VERSION}/member`, memberRoutes);
+
+//............Agent Working............//
+app.use(
+  `/api${API_VERSION}/agent`,
+  require("./manage_core/admin_panel/routes/agentRoute.js"),
+);
 module.exports = app;

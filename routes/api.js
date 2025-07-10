@@ -5,7 +5,7 @@ const jwt = require("jsonwebtoken");
 const User = require("../models/user.model"); // Ensure correct path
 const Lead = require("../models/RamFinSch");
 const mongoose = require("mongoose");
-
+const nodemailer = require("nodemailer");
 require("dotenv").config();
 
 const otpStorage = new Map();
@@ -49,7 +49,7 @@ router.post("/send-otp", async (req, res) => {
         },
       },
     );
-   console.log("otp",otp);
+    console.log("otp", otp);
     res.status(200).json({
       status: "Success",
       message: "OTP sent successfully",
@@ -95,7 +95,7 @@ router.post("/userinfo", async (req, res) => {
       pincode,
       loanAmount,
       income,
-      dob,            // fixed
+      dob, // fixed
     } = req.body;
 
     let missingFields = [];
@@ -168,7 +168,7 @@ router.post("/userinfo", async (req, res) => {
       phone,
       email,
       employeeType,
-      pan: pan.toUpperCase(),   // save uppercase PAN
+      pan: pan.toUpperCase(), // save uppercase PAN
       pincode,
       loanAmount,
       income,
@@ -446,6 +446,66 @@ router.post("/zypewebapi", async (req, res) => {
 
 router.get("/MoneyView", async (req, res) => {
   console.log("MoneyView");
+});
+
+router.post("/partner/page", async (req, res) => {
+  try {
+    const {
+      name,
+      phone,
+      email,
+      contact,
+      natureofbusiness,
+      profile,
+      products,
+      bussinessvolume,
+      website,
+      pincode,
+      soucreoflocation,
+      partnerType,
+    } = req.body;
+
+    if (!["DSA", "Aggregator", "Other"].includes(partnerType)) {
+      return res.status(400).json({ message: "Invalid partner type" });
+    }
+
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.EMAIL,
+        pass: process.env.APP_PASSWORD,
+      },
+    });
+
+    const mailOptions = {
+      from: process.env.EMAIL,
+      to: process.env.EMAIL,
+      subject: "New Partner Request",
+      html: `
+        <h2>📩 New Partner Request Received</h2>
+        <p><strong>Name:</strong> ${name}</p>
+        <p><strong>Phone:</strong> ${phone}</p>
+        <p><strong>Email:</strong> ${email}</p>
+        <p><strong>Contact:</strong> ${contact}</p>
+        <p><strong>Partner Type:</strong> ${partnerType}</p>
+        <p><strong>Nature of Business:</strong> ${natureofbusiness}</p>
+        <p><strong>Profile:</strong> ${profile}</p>
+        <p><strong>Products:</strong> ${products}</p>
+        <p><strong>Business Volume:</strong> ${bussinessvolume}</p>
+        <p><strong>Website:</strong> ${website}</p>
+        <p><strong>Pincode:</strong> ${pincode}</p>
+        <p><strong>Source of Location:</strong> ${soucreoflocation}</p>
+        <p><em>This request came from the partner page form.</em></p>
+      `,
+    };
+
+    await transporter.sendMail(mailOptions);
+
+    res.status(200).json({ message: "Partner request received. Email sent!" });
+  } catch (error) {
+    console.error("❌ Error sending partner email:", error);
+    res.status(500).json({ message: "Something went wrong" });
+  }
 });
 
 module.exports = router;

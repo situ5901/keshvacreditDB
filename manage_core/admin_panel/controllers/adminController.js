@@ -5,6 +5,7 @@ const nodemailer = require("nodemailer");
 require("dotenv").config();
 const bcrypt = require("bcrypt");
 const Member = require("../../models/Member");
+const AgentModel = require("../../models/AgentModel.js");
 const {
   sendAdminLoginAlert,
   sendAdminCreatedAlert,
@@ -61,5 +62,73 @@ exports.createUser = async (req, res) => {
   } catch (error) {
     console.error("❌ Error creating member:", error);
     res.status(500).json({ message: "❌ Server error" });
+  }
+};
+
+exports.createAgent = async (req, res) => {
+  const { AgentMail, Agentname, AgentPassword } = req.body;
+
+  if (!AgentMail || !Agentname || !AgentPassword) {
+    return res.status(400).json({ message: "❌ Missing fields" });
+  }
+
+  try {
+    const existing = await AgentModel.findOne({
+      $or: [{ AgentMail }, { Agentname }],
+    });
+
+    if (existing) {
+      return res.status(400).json({ message: "❌ Agent already exists" });
+    }
+
+    const hashedPassword = await bcrypt.hash(AgentPassword, 10);
+
+    const newAgent = new AgentModel({
+      AgentMail,
+      Agentname,
+      AgentPassword: hashedPassword,
+    });
+
+    await newAgent.save();
+
+    res.status(201).json({ message: "✅ Agent created successfully" });
+  } catch (error) {
+    console.error("❌ Error creating agent:", error);
+    res.status(500).json({ message: "❌ Server error" });
+  }
+};
+
+exports.deleteAgents = async (req, res) => {
+  const { AgentMail, Agentname } = req.body;
+  try {
+    const { AgentMail, Agentname } = req.body;
+    const agents = await AgentModel.findOneAndDelete({ AgentMail, Agentname });
+    if (!agents) return res.status(404).json({ message: "❌ Agent not found" });
+    return res.status(200).json({ message: "✅ Agent deleted successfully" });
+  } catch (error) {
+    console.error("❌ Error getting agents:", error);
+    res.status(500).json({ message: "❌ Server error" });
+  }
+};
+exports.deleteUser = async (req, res) => {
+  const { userMail, username } = req.body;
+
+  if (!userMail || !username) {
+    return res
+      .status(400)
+      .json({ message: "Enter valid userMail and username" });
+  }
+
+  try {
+    const user = await Member.findOneAndDelete({ userMail, username });
+
+    if (!user) {
+      return res.status(404).json({ message: "❌ Member not found" });
+    }
+
+    return res.status(200).json({ message: "✅ Member deleted successfully" });
+  } catch (error) {
+    console.error("❌ Error deleting member:", error);
+    return res.status(500).json({ message: "❌ Server error" });
   }
 };
