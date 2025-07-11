@@ -53,7 +53,7 @@ if (validPincodesSet.size === 0) {
 }
 //udpate co
 let successCount = 0;
-let successLeadCount = 0;
+let noDedupeCount = 0;
 
 async function getToken() {
   try {
@@ -98,6 +98,7 @@ async function dedupeCheck(lead, token) {
   };
 
   try {
+    // ✅ Check for required fields
     if (!lead.pan || !lead.phone || !lead.email) {
       console.error("❌ Missing required fields in lead object:", {
         panNo: lead.pan,
@@ -116,11 +117,12 @@ async function dedupeCheck(lead, token) {
 
     console.log(`\n🧾 [DEDUPE REQUEST] =>`, payload);
 
+    // ❌ PROBLEM HERE: you're closing the `axios.post()` too early before the headers are set properly.
     const response = await axios.post(DEDUPE_API, payload, {
       headers: {
         token,
         "Content-Type": "application/json",
-      },
+      }, // ✅ Remove comma here (or ensure it's closed correctly)
     });
 
     console.log(
@@ -129,9 +131,20 @@ async function dedupeCheck(lead, token) {
       "\n",
     );
 
+    // ✅ Check for specific response condition
+    if (response.data.message === "No dedupe found") {
+      noDedupeCount++;
+      console.log(`⛔ No dedupe found for ${lead.pan} and ${lead.phone}`);
+      if (noDedupeCount >= OFFER_LEADS) {
+        console.log(`🎯 Reached ${OFFER_LEADS} successful offers. Stopping.`);
+        throw new Error("🎯 Max successful offer count reached");
+      }
+    }
+
+    // ✅ Update response structure
     dedupeResponse = {
-      status: response.data.status || "success",
-      message: response.data.message || "Dedupe check completed",
+      status: response.data.status,
+      message: response.data.message,
       data: response.data,
     };
   } catch (error) {
@@ -256,19 +269,6 @@ async function sendToMoneyView(lead, token) {
       JSON.stringify(response.data, null, 2),
       "\n",
     );
-    if (
-      response.data.status === "success" &&
-      response.data.message === "success"
-    ) {
-      successLeadCount++;
-      console.log(
-        `🎯 Offer Success | Current Count: ${successLeadCount} | Phone: ${lead.phone}`,
-      );
-      if (successLeadCount >= OFFER_LEADS) {
-        throw new Error("🎯 Max successful offer count reached");
-      }
-    }
-
     leadSubmissionResult = { status: "success", data: response.data };
 
     const leadId = response.data.leadId;
@@ -484,7 +484,7 @@ async function Loop() {
   }
 
   while (true) {
-    if (successLeadCount >= OFFER_LEADS) {
+    if (noDedupeCount >= OFFER_LEADS) {
       console.log(`🎯 Reached ${OFFER_LEADS} successful offers. Stopping.`);
       break;
     }
@@ -515,7 +515,7 @@ async function Loop() {
     totalLeads += leads.length;
 
     console.log(
-      `📊 Total Processed: ${totalLeads}, ✅ Successful Leads: ${successCount}, 🎯 Successful Submite Lead: ${successLeadCount}`,
+      `📊 Total Processed: ${totalLeads}, ✅ Successful Leads: ${successCount}, 🎯 No Dedupe Lead: ${noDedupeCount}`,
     );
   }
 
