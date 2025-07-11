@@ -513,7 +513,7 @@ async function Loop() {
     totalLeads += leads.length;
 
     console.log(
-      `📊 Total Processed: ${totalLeads}, ✅ Successful Leads: ${successCount}, 🎯 Successful Submite Lead: ${successLeadCount}`,
+      `📊 Total Processed: ${totalLeads}, ✅ Successful Submite Lead: ${successLeadCount}`,
     );
   }
 
