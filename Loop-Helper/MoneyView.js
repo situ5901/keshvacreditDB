@@ -519,7 +519,6 @@ async function processBatch(leads, token) {
 
       if (moneyViewAllResponses.status === "success") {
         finalStatus = "success";
-        finalMessage = "Lead processed successfully";
         successCount++;
         console.log(`✅ ${finalMessage}: ${lead.phone}`);
       } else {
@@ -554,7 +553,6 @@ async function processBatch(leads, token) {
               name:
                 finalStatus === "success" ? "MoneyView" : "SkippedMoneyView",
               createdAt: new Date().toISOString(),
-              reason: finalMessage, // Store the reason for skipped leads
             },
           },
           $unset: { accounts: "" },
