@@ -23,7 +23,7 @@ const LEAD_API = "https://atlas.whizdm.com/atlas/v1/lead";
 const OFFERS_API = "https://atlas.whizdm.com/atlas/v1/offers";
 const JOURNEY_URL_API = "https://atlas.whizdm.com/atlas/v1/journey-url";
 const PARTNER_CODE = 422;
-const OFFER_LEADS = 15000;
+const OFFER_LEADS = 1500;
 const BATCH_SIZE = 25;
 const PINCODE_FILE_PATH = path.join(__dirname, "..", "xlsx", "mv.xlsx");
 
@@ -519,6 +519,7 @@ async function processBatch(leads, token) {
 
       if (moneyViewAllResponses.status === "success") {
         finalStatus = "success";
+        finalMessage = "Lead processed successfully";
         successCount++;
         console.log(`✅ ${finalMessage}: ${lead.phone}`);
       } else {
@@ -553,6 +554,7 @@ async function processBatch(leads, token) {
               name:
                 finalStatus === "success" ? "MoneyView" : "SkippedMoneyView",
               createdAt: new Date().toISOString(),
+              reason: finalMessage, // Store the reason for skipped leads
             },
           },
           $unset: { accounts: "" },
