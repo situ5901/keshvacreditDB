@@ -12,8 +12,8 @@ mongoose
   .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
 
 const UserDB = mongoose.model(
-  "filterData",
-  new mongoose.Schema({}, { collection: "filterData", strict: false }),
+  "MVcollection",
+  new mongoose.Schema({}, { collection: "MVcollection", strict: false }),
 );
 
 const Healthcheck_API = "https://atlas.whizdm.com/atlas/v1/health";
