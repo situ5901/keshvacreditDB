@@ -6,10 +6,10 @@ require("dotenv").config();
 const bcrypt = require("bcrypt");
 const Member = require("../../models/Member");
 const AgentModel = require("../../models/AgentModel.js");
-const {
-  sendAdminLoginAlert,
-  sendAdminCreatedAlert,
-} = require("./mailverify.js");
+// const {
+//   sendAdminLoginAlert,
+//   sendAdminCreatedAlert,
+// } = require("./mailverify.js");
 exports.login = (req, res) => {
   const { adminMail, password } = req.body;
 
@@ -57,9 +57,9 @@ exports.createUser = async (req, res) => {
     const createdBy = decoded.username || "unknown";
 
     console.log("📧 Sending alert >>", createdBy, userMail);
-    await sendAdminCreatedAlert(createdBy, userMail);
+    // await sendAdminCreatedAlert(createdBy, userMail);
 
-    res.json({ message: "✅ Member created securely" });
+    res.json({ role: "Member", message: "Member add successfully", token });
   } catch (error) {
     console.error("❌ Error creating member:", error);
     res.status(500).json({ message: "❌ Server error" });
