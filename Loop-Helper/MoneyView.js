@@ -12,8 +12,8 @@ mongoose
   .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
 
 const UserDB = mongoose.model(
-  "MVcollection",
-  new mongoose.Schema({}, { collection: "MVcollection", strict: false }),
+  "filterData",
+  new mongoose.Schema({}, { collection: "filterData", strict: false }),
 );
 
 const Healthcheck_API = "https://atlas.whizdm.com/atlas/v1/health";
@@ -23,11 +23,9 @@ const LEAD_API = "https://atlas.whizdm.com/atlas/v1/lead";
 const OFFERS_API = "https://atlas.whizdm.com/atlas/v1/offers";
 const JOURNEY_URL_API = "https://atlas.whizdm.com/atlas/v1/journey-url";
 const PARTNER_CODE = 422;
-const OFFER_LEADS = 1500;
+const OFFER_LEADS = 15000;
 const BATCH_SIZE = 25;
 const PINCODE_FILE_PATH = path.join(__dirname, "..", "xlsx", "mv.xlsx");
-
-//update code
 
 function loadValidPincodes(filePath) {
   try {
@@ -49,9 +47,11 @@ function loadValidPincodes(filePath) {
 
 const validPincodesSet = loadValidPincodes(PINCODE_FILE_PATH);
 if (validPincodesSet.size === 0) {
-  console.warn("⚠️ No valid pincodes loaded. Skipping all leads.");
+  console.warn(
+    "⚠️ No valid pincodes loaded. All leads with pincode checks will be skipped.",
+  );
 }
-//udpate co
+
 let successCount = 0;
 let noDedupeCount = 0;
 
@@ -61,7 +61,11 @@ async function getToken() {
     if (healthCheck.status === 200) {
       console.log("✅ Healthcheck API is up and running");
     } else {
-      console.error("❌ Healthcheck API is not up and running");
+      console.error(
+        "❌ Healthcheck API is not up and running (Status:",
+        healthCheck.status,
+        ")",
+      );
     }
 
     const tokenPayload = {
@@ -81,7 +85,7 @@ async function getToken() {
   } catch (error) {
     console.error(
       "❌ Error fetching token:",
-      error.response?.data || error.message,
+      error.response?.data?.message || error.message,
     );
     return null;
   }
@@ -95,17 +99,18 @@ async function dedupeCheck(lead, token) {
   let dedupeResponse = {
     status: "failure",
     message: "Unknown error during dedupe",
+    data: null, // Initialize data as null
   };
 
   try {
     // ✅ Check for required fields
     if (!lead.pan || !lead.phone || !lead.email) {
-      console.error("❌ Missing required fields in lead object:", {
+      console.error("❌ Missing required fields in lead object for dedupe:", {
         panNo: lead.pan,
         mobileNo: lead.phone,
         email: lead.email,
       });
-      dedupeResponse.message = "Missing pan, phone, or email in lead object";
+      dedupeResponse.message = "Missing pan, phone, or email for dedupe";
       return dedupeResponse;
     }
 
@@ -117,12 +122,11 @@ async function dedupeCheck(lead, token) {
 
     console.log(`\n🧾 [DEDUPE REQUEST] =>`, payload);
 
-    // ❌ PROBLEM HERE: you're closing the `axios.post()` too early before the headers are set properly.
     const response = await axios.post(DEDUPE_API, payload, {
       headers: {
         token,
         "Content-Type": "application/json",
-      }, // ✅ Remove comma here (or ensure it's closed correctly)
+      },
     });
 
     console.log(
@@ -148,7 +152,10 @@ async function dedupeCheck(lead, token) {
       data: response.data,
     };
   } catch (error) {
-    console.error(`❌ Dedupe Error:`, error.response?.data || error.message);
+    console.error(
+      `❌ Dedupe Error for ${lead.phone}:`,
+      error.response?.data || error.message,
+    );
     dedupeResponse.message = error.response?.data?.message || error.message;
     dedupeResponse.data = error.response?.data || null;
   }
@@ -160,6 +167,7 @@ async function fetchOffers(leadId, token, phone) {
   let offersResponse = {
     status: "failure",
     message: "Unknown error fetching offers",
+    data: null, // Initialize data as null
   };
   try {
     console.log(
@@ -194,8 +202,8 @@ async function sendToMoneyView(lead, token) {
     partnerCode: 422,
     partnerRef: "keshvacredit",
     name: lead.name.trim(),
-    gender: lead.gender.toLowerCase(),
-    phone: lead.phone.toString(),
+    gender: lead.gender ? lead.gender.toLowerCase() : "male", // Default if gender is missing
+    phone: String(lead.phone),
     pan: lead.pan.trim().toUpperCase(),
     dateOfBirth: lead.dob,
     bureauPermission: true,
@@ -206,16 +214,16 @@ async function sendToMoneyView(lead, token) {
         : lead.employment,
     incomeMode: "online",
     declaredIncome: parseInt(lead.income),
-    educationLevel: "GRADUATION",
-    maritalStatus: "Married",
+    educationLevel: "GRADUATION", // Default as per original code
+    maritalStatus: "Married", // Default as per original code
     addressList: [
       {
         addressLine1: "NA",
-        pincode: lead.pincode,
-        residenceType: "rented",
+        pincode: String(lead.pincode),
+        residenceType: "rented", // Default as per original code
         addressType: "current",
-        city: lead.city,
-        state: lead.state,
+        city: lead.city || "NA", // Default if city is missing
+        state: lead.state || "NA", // Default if state is missing
       },
     ],
     emailList: [
@@ -224,7 +232,7 @@ async function sendToMoneyView(lead, token) {
         type: "primary_user",
       },
     ],
-    loanPurpose: "Travel",
+    loanPurpose: "Travel", // Default as per original code
     consent: {
       consentDecision: true,
       deviceTimeStamp: new Date().toISOString(),
@@ -249,14 +257,17 @@ async function sendToMoneyView(lead, token) {
   let leadSubmissionResult = {
     status: "failure",
     message: "Lead not attempted",
+    data: null,
   };
   let offersResult = {
     status: "skipped",
     message: "Lead submission failed/skipped",
+    data: null,
   };
   let journeyUrlResult = {
     status: "skipped",
     message: "offers failed/skipped",
+    data: null,
   };
 
   try {
@@ -277,11 +288,13 @@ async function sendToMoneyView(lead, token) {
       if (offersResult.status === "success" && offersResult.data) {
         journeyUrlResult = await fetchJourneyUrl(leadId, token);
       } else {
-        console.warn("NO lead received");
+        console.warn(
+          `⚠️ Offers not fetched for lead ${lead.phone}. Reason: ${offersResult.message}`,
+        );
       }
     } else {
       console.warn(
-        "⚠️ No leadId received from lead submission. Skipping offers.",
+        "⚠️ No leadId received from lead submission. Skipping offers and journey URL.",
       );
     }
 
@@ -312,6 +325,11 @@ async function sendToMoneyView(lead, token) {
 }
 
 async function fetchJourneyUrl(leadId, token) {
+  let journeyUrlResponse = {
+    status: "failure",
+    message: "Unknown error fetching journey URL",
+    data: null,
+  };
   try {
     console.log(`🌐 [JOURNEY URL REQUEST] Lead ID => ${leadId}`);
     const response = await axios.get(`${JOURNEY_URL_API}/${leadId}`, {
@@ -322,14 +340,16 @@ async function fetchJourneyUrl(leadId, token) {
       JSON.stringify(response.data, null, 2),
       "\n",
     );
-    return { status: "success", data: response.data };
+    journeyUrlResponse = { status: "success", data: response.data };
   } catch (error) {
     console.error(
       `❌ Error fetching Journey URL for Lead ID ${leadId}:`,
       error.response?.data || error.message,
     );
-    return { status: "failure", message: error.message };
+    journeyUrlResponse.message = error.response?.data?.message || error.message;
+    journeyUrlResponse.data = error.response?.data || null;
   }
+  return journeyUrlResponse;
 }
 
 async function processBatch(leads, token) {
@@ -339,6 +359,10 @@ async function processBatch(leads, token) {
     let finalMessage = "Processing initiated";
 
     try {
+      // Ensure phone is a string
+      lead.phone = String(lead.phone);
+
+      // Trim and uppercase PAN, trim pincode
       lead.pan = lead.pan?.toUpperCase().trim();
       lead.pincode = String(lead.pincode).trim();
 
@@ -347,9 +371,12 @@ async function processBatch(leads, token) {
         !lead.name ||
         !lead.dob ||
         !lead.pan ||
-        !lead.pincode
+        !lead.pincode ||
+        !lead.email || // Email is required for dedupe
+        !lead.income
       ) {
-        finalMessage = "Incomplete data for lead";
+        finalMessage =
+          "Incomplete data for lead (missing phone, name, dob, pan, pincode, email, or income)";
         console.error(`❌ ${finalMessage}: ${lead.phone}`);
         await UserDB.updateOne(
           { phone: lead.phone },
@@ -361,14 +388,16 @@ async function processBatch(leads, token) {
                 createdAt: new Date().toISOString(),
               },
             },
+            $set: { "apiResponse.moneyViewSkippedReason": finalMessage }, // Store reason in apiResponse
           },
+          { upsert: true }, // Create if not exists
         );
         return;
       }
 
       if (!isValidPAN(lead.pan)) {
         finalMessage = `Invalid PAN format: ${lead.pan}`;
-        console.error(`❌ ${finalMessage}`);
+        console.error(`❌ ${finalMessage} for phone: ${lead.phone}`);
         await UserDB.updateOne(
           { phone: lead.phone },
           {
@@ -379,7 +408,9 @@ async function processBatch(leads, token) {
                 createdAt: new Date().toISOString(),
               },
             },
+            $set: { "apiResponse.moneyViewSkippedReason": finalMessage },
           },
+          { upsert: true },
         );
         return;
       }
@@ -397,14 +428,24 @@ async function processBatch(leads, token) {
                 createdAt: new Date().toISOString(),
               },
             },
+            $set: { "apiResponse.moneyViewSkippedReason": finalMessage },
           },
+          { upsert: true },
         );
         return;
       }
 
       const userDoc = await UserDB.findOne({ phone: lead.phone });
       if (userDoc?.RefArr?.some((ref) => ref.name === "MoneyView")) {
-        console.log(`⛔ Lead already processed: ${lead.phone}`);
+        console.log(
+          `⛔ Lead already processed successfully (MoneyView tag found): ${lead.phone}`,
+        );
+        return;
+      }
+      if (userDoc?.RefArr?.some((ref) => ref.name === "SkippedMoneyView")) {
+        console.log(
+          `⛔ Lead previously skipped (SkippedMoneyView tag found): ${lead.phone}`,
+        );
         return;
       }
 
@@ -421,18 +462,50 @@ async function processBatch(leads, token) {
           {
             $push: {
               apiResponse: {
-                dedupe: apiResponsesToSave.moneyViewDedupe,
+                type: "moneyViewDedupe",
+                data: apiResponsesToSave.moneyViewDedupe,
                 status: "skipped",
                 message: "Duplicate lead",
                 createdAt: new Date().toISOString(),
               },
               RefArr: {
-                name: "MoneyView",
+                name: "MoneyView", // Mark as MoneyView even if duplicate found
+                createdAt: new Date().toISOString(),
+              },
+            },
+            $unset: { accounts: "" }, // Unset the accounts field as per original logic
+          },
+          { upsert: true },
+        );
+        return;
+      }
+      // If dedupe was not successful and not "No dedupe found", then skip processing further
+      if (
+        dedupeResult.status === "failure" &&
+        dedupeResult.message !== "No dedupe found"
+      ) {
+        finalMessage = `Dedupe check failed: ${dedupeResult.message}`;
+        console.error(`❌ ${finalMessage} for ${lead.phone}`);
+        await UserDB.updateOne(
+          { phone: lead.phone },
+          {
+            $push: {
+              apiResponse: {
+                type: "moneyViewDedupe",
+                data: apiResponsesToSave.moneyViewDedupe,
+                status: "failure",
+                message: finalMessage,
+                createdAt: new Date().toISOString(),
+              },
+              RefArr: {
+                name: "SkippedMoneyView",
+                reason: finalMessage,
                 createdAt: new Date().toISOString(),
               },
             },
             $unset: { accounts: "" },
           },
+          { upsert: true },
         );
         return;
       }
@@ -450,26 +523,45 @@ async function processBatch(leads, token) {
         successCount++;
         console.log(`✅ ${finalMessage}: ${lead.phone}`);
       } else {
+        finalStatus = "failure";
         finalMessage = moneyViewAllResponses.message || "API processing failed";
         console.log(`⛔ ${finalMessage} for ${lead.phone}`);
       }
     } catch (err) {
-      console.error(`❌ Error processing: ${err.message} for ${lead.phone}`);
-    }
-
-    await UserDB.updateOne(
-      { phone: lead.phone },
-      {
-        $push: {
-          apiResponse: {
-            ...apiResponsesToSave,
-            createdAt: new Date().toISOString(),
+      console.error(`❌ Error processing lead ${lead.phone}: ${err.message}`);
+      finalStatus = "error";
+      finalMessage = `Script error: ${err.message}`;
+      if (err.message === "🎯 Max successful offer count reached") {
+        throw err; // Re-throw to stop the main loop
+      }
+    } finally {
+      // Always update the document with the final status and API responses
+      await UserDB.updateOne(
+        { phone: lead.phone },
+        {
+          $push: {
+            apiResponse: {
+              type: "moneyViewFullProcess",
+              dedupe: apiResponsesToSave.moneyViewDedupe,
+              leadSubmission: apiResponsesToSave.moneyViewLeadSubmission,
+              offers: apiResponsesToSave.moneyViewOffers,
+              journeyUrl: apiResponsesToSave.moneyViewJourneyUrl,
+              status: finalStatus,
+              message: finalMessage,
+              createdAt: new Date().toISOString(),
+            },
+            RefArr: {
+              name:
+                finalStatus === "success" ? "MoneyView" : "SkippedMoneyView",
+              createdAt: new Date().toISOString(),
+              reason: finalMessage, // Store the reason for skipped leads
+            },
           },
-          RefArr: { name: "MoneyView", createdAt: new Date().toISOString() },
+          $unset: { accounts: "" },
         },
-        $unset: { accounts: "" },
-      },
-    );
+        { upsert: true }, // Ensure the document exists or is created
+      );
+    }
   });
 
   await Promise.allSettled(promises);
@@ -485,14 +577,22 @@ async function Loop() {
 
   while (true) {
     if (noDedupeCount >= OFFER_LEADS) {
-      console.log(`🎯 Reached ${OFFER_LEADS} successful offers. Stopping.`);
+      console.log(
+        `🎯 Reached ${OFFER_LEADS} successful offers (no dedupe). Stopping.`,
+      );
       break;
     }
 
     console.log("\n📦 Fetching next batch...");
     const leads = await UserDB.aggregate([
       {
-        $match: { "RefArr.name": { $nin: ["MoneyView", "SkippedMoneyView"] } },
+        $match: {
+          $or: [
+            { "RefArr.name": { $nin: ["MoneyView", "SkippedMoneyView"] } },
+            { RefArr: { $exists: false } }, // Match if RefArr does not exist
+            { RefArr: { $size: 0 } }, // Match if RefArr is an empty array
+          ],
+        },
       },
       { $limit: BATCH_SIZE },
     ]);
@@ -515,11 +615,12 @@ async function Loop() {
     totalLeads += leads.length;
 
     console.log(
-      `📊 Total Processed: ${totalLeads}, ✅ Successful Leads: ${successCount}, 🎯 No Dedupe Lead: ${noDedupeCount}`,
+      `📊 Total Processed (in batches): ${totalLeads}, ✅ Successfully Submitted to MV: ${successCount}, 🎯 No Dedupe Leads: ${noDedupeCount}`,
     );
   }
   console.log("🔌 Closing DB connection...");
   await mongoose.connection.close();
+  console.log("✅ DB connection closed.");
 }
 
 Loop();
