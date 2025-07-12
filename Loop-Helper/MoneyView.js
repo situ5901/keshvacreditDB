@@ -130,13 +130,10 @@ async function dedupeCheck(lead, token) {
     );
 
     // ✅ Check for success
-    if (
-      response.data.status === "success" &&
-      response.data.message === "success"
-    ) {
+    if (response.data.message === "No dedupe found") {
       NoDedupeCount++;
       console.log(
-        `🎯 Offer Success | Current Count: ${NoDedupeCount} | Phone: ${lead.phone}`,
+        `No Dedupe: ${NoDedupeCount} | Phone: ${lead.phone}`,
       );
       if (NoDedupeCount >= OFFER_LEADS) {
         throw new Error("🎯 Max successful offer count reached");
@@ -517,7 +514,7 @@ async function Loop() {
     totalLeads += leads.length;
 
     console.log(
-      `📊 Total Processed: ${totalLeads}, ✅ Successful Leads: ${successCount}, 🎯 Successful Submite Lead: ${NoDedupeCount}`,
+      `📊 Total Processed: ${totalLeads}, ✅ Successful Leads: ${successCount}, 🎯 Count No Dedupe: ${NoDedupeCount}`,
     );
   }
 
