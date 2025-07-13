@@ -23,11 +23,9 @@ const LEAD_API = "https://atlas.whizdm.com/atlas/v1/lead";
 const OFFERS_API = "https://atlas.whizdm.com/atlas/v1/offers";
 const JOURNEY_URL_API = "https://atlas.whizdm.com/atlas/v1/journey-url";
 const PARTNER_CODE = 422;
-const OFFER_LEADS = 15000;
-const BATCH_SIZE = 25;
+const OFFER_LEADS = 15000; // Target for 'No dedupe found' leads
+const BATCH_SIZE = 50;
 const PINCODE_FILE_PATH = path.join(__dirname, "..", "xlsx", "mv.xlsx");
-
-//update code
 
 function loadValidPincodes(filePath) {
   try {
@@ -51,9 +49,9 @@ const validPincodesSet = loadValidPincodes(PINCODE_FILE_PATH);
 if (validPincodesSet.size === 0) {
   console.warn("⚠️ No valid pincodes loaded. Skipping all leads.");
 }
-//udpate co
+
 let successCount = 0;
-let NoDedupeCount = 0;
+let NoDedupeCount = 0; // This tracks 'No dedupe found' responses
 
 async function getToken() {
   try {
@@ -129,13 +127,16 @@ async function dedupeCheck(lead, token) {
       "\n",
     );
 
-    // ✅ Check for success
+    // Check for "No dedupe found" and increment count
     if (response.data.message === "No dedupe found") {
       NoDedupeCount++;
-      console.log(
-        `No Dedupe: ${NoDedupeCount} | Phone: ${lead.phone}`,
-      );
+      console.log(`No Dedupe: ${NoDedupeCount} | Phone: ${lead.phone}`);
+
+      // If NoDedupeCount reaches the limit, throw an error to break the main loop
       if (NoDedupeCount >= OFFER_LEADS) {
+        console.log(
+          "🚨 15 'No Dedupe Found' leads reached. Initiating loop break.",
+        );
         throw new Error("🎯 Max successful offer count reached");
       }
     }
@@ -146,9 +147,12 @@ async function dedupeCheck(lead, token) {
       data: response.data,
     };
   } catch (error) {
-    console.error(`❌ Dedupe Error:`, error.response?.data || error.message);
     dedupeResponse.message = error.response?.data?.message || error.message;
     dedupeResponse.data = error.response?.data || null;
+    // Re-throw the specific error to be caught by the main loop for termination
+    if (error.message === "🎯 Max successful offer count reached") {
+      throw error;
+    }
   }
 
   return dedupeResponse;
@@ -174,6 +178,7 @@ async function fetchOffers(leadId, token, phone) {
 
     offersResponse = { status: "success", data: response.data };
   } catch (error) {
+    // Re-throw the specific error if it came from dedupeCheck
     if (error.message === "🎯 Max successful offer count reached") {
       throw error;
     }
@@ -276,7 +281,7 @@ async function sendToMoneyView(lead, token) {
       if (offersResult.status === "success" && offersResult.data) {
         journeyUrlResult = await fetchJourneyUrl(leadId, token);
       } else {
-        console.warn("NO lead received");
+        console.warn("NO lead received in offers response.");
       }
     } else {
       console.warn(
@@ -291,6 +296,10 @@ async function sendToMoneyView(lead, token) {
       journeyUrl: journeyUrlResult,
     };
   } catch (error) {
+    // Re-throw the specific error if it came from dedupeCheck or fetchOffers
+    if (error.message === "🎯 Max successful offer count reached") {
+      throw error;
+    }
     console.error(
       `❌ Submission failed for PAN: ${lead.pan}, Phone: ${lead.phone}`,
       error.response?.data || error.message,
@@ -332,7 +341,16 @@ async function fetchJourneyUrl(leadId, token) {
 }
 
 async function processBatch(leads, token) {
-  const promises = leads.map(async (lead) => {
+  // Process leads sequentially within the batch to respect OFFER_LEADS more strictly
+  for (const lead of leads) {
+    // Add a check at the start of each lead processing
+    if (NoDedupeCount >= OFFER_LEADS) {
+      console.log(
+        "🚨 'No dedupe found' limit reached during batch processing. Stopping current batch early.",
+      );
+      throw new Error("🎯 Max successful offer count reached"); // Re-throw to break main loop
+    }
+
     let apiResponsesToSave = {};
     let finalStatus = "failed";
     let finalMessage = "Processing initiated";
@@ -362,7 +380,7 @@ async function processBatch(leads, token) {
             },
           },
         );
-        return;
+        continue; // Move to the next lead in the batch
       }
 
       if (!isValidPAN(lead.pan)) {
@@ -380,7 +398,7 @@ async function processBatch(leads, token) {
             },
           },
         );
-        return;
+        continue; // Move to the next lead in the batch
       }
 
       if (!validPincodesSet.has(lead.pincode)) {
@@ -398,23 +416,32 @@ async function processBatch(leads, token) {
             },
           },
         );
-        return;
+        continue; // Move to the next lead in the batch
       }
 
       const userDoc = await UserDB.findOne({ phone: lead.phone });
       if (userDoc?.RefArr?.some((ref) => ref.name === "MoneyView")) {
         console.log(`⛔ Lead already processed: ${lead.phone}`);
-        return;
+        continue; // Move to the next lead in the batch
       }
 
       const dedupeResult = await dedupeCheck(lead, token);
       apiResponsesToSave.moneyViewDedupe = dedupeResult.data;
+
+      // Check after dedupe but before full submission if we hit the limit
+      if (NoDedupeCount >= OFFER_LEADS) {
+        console.log(
+          "🚨 'No dedupe found' limit reached after dedupe check. Stopping current batch early.",
+        );
+        throw new Error("🎯 Max successful offer count reached"); // Re-throw to break main loop
+      }
 
       if (
         dedupeResult.status === "success" &&
         dedupeResult.message === "Duplicate lead found in MV"
       ) {
         console.log(`⛔ Duplicate lead found in MV: ${lead.phone}`);
+
         await UserDB.updateOne(
           { phone: lead.phone },
           {
@@ -433,9 +460,10 @@ async function processBatch(leads, token) {
             $unset: { accounts: "" },
           },
         );
-        return;
+        continue; // Move to the next lead in the batch
       }
 
+      // Proceed only if dedupe check passed or "No dedupe found"
       const moneyViewAllResponses = await sendToMoneyView(lead, token);
       apiResponsesToSave.moneyViewLeadSubmission =
         moneyViewAllResponses.leadSubmission.data;
@@ -453,7 +481,10 @@ async function processBatch(leads, token) {
         console.log(`⛔ ${finalMessage} for ${lead.phone}`);
       }
     } catch (err) {
-      console.error(`❌ Error processing: ${err.message} for ${lead.phone}`);
+      // Re-throw the specific error to be caught by the main loop for termination
+      if (err.message === "🎯 Max successful offer count reached") {
+        throw err; // This will break out of the for...of loop and be caught by Loop()
+      }
     }
 
     await UserDB.updateOne(
@@ -469,9 +500,7 @@ async function processBatch(leads, token) {
         $unset: { accounts: "" },
       },
     );
-  });
-
-  await Promise.allSettled(promises);
+  }
 }
 
 let totalLeads = 0;
@@ -483,8 +512,11 @@ async function Loop() {
   }
 
   while (true) {
+    // This check is the primary one to break the loop based on NoDedupeCount
     if (NoDedupeCount >= OFFER_LEADS) {
-      console.log(`🎯 Reached ${OFFER_LEADS} successful offers. Stopping.`);
+      console.log(
+        `🎯 Reached ${OFFER_LEADS} 'No dedupe found' leads. Stopping.`,
+      );
       break;
     }
 
@@ -497,21 +529,28 @@ async function Loop() {
     ]);
 
     if (leads.length === 0) {
-      console.log("✅ All leads processed.");
+      console.log("✅ All leads processed or no more leads to process.");
       break;
     }
 
     try {
-      await processBatch(leads, token);
+      await processBatch(leads, token); // Now processBatch processes sequentially
     } catch (err) {
+      // This catches the error thrown from dedupeCheck or processBatch if 15 no-dedupe leads are found
       if (err.message === "🎯 Max successful offer count reached") {
-        console.log(err.message);
-        break;
+        console.log(
+          "🚨 Loop terminated: 15 'No Dedupe Found' leads processed.",
+        );
+        break; // Breaks the while(true) loop
       }
       console.error("❌ Error during batch processing:", err.message);
     }
 
-    totalLeads += leads.length;
+    // Only update totalLeads if the loop wasn't broken by a `NoDedupeCount` limit hit
+    // This ensures totalProcessed count is accurate if a batch was partially processed
+    if (NoDedupeCount < OFFER_LEADS) {
+      totalLeads += leads.length;
+    }
 
     console.log(
       `📊 Total Processed: ${totalLeads}, ✅ Successful Leads: ${successCount}, 🎯 Count No Dedupe: ${NoDedupeCount}`,
@@ -520,6 +559,10 @@ async function Loop() {
 
   console.log("🔌 Closing DB connection...");
   await mongoose.connection.close();
+  // Final confirmation log after the loop has exited and DB connection is closing
+  console.log(
+    `\n🎉 Process Finished! Final 🎯 Count No Dedupe: ${NoDedupeCount}`,
+  );
 }
 
 Loop();
