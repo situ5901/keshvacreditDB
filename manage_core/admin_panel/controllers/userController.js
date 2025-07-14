@@ -9,23 +9,32 @@ exports.login = async (req, res) => {
   const { username, userMail, password } = req.body;
 
   try {
+    // 🔍 Find user with both email and username
     const user = await Member.findOne({ userMail, username });
 
     if (!user) {
       return res.status(401).json({ message: "❌ Invalid email or username" });
     }
 
+    // 🔐 Compare password
     const passwordMatch = await bcrypt.compare(password, user.password);
     if (!passwordMatch) {
       return res.status(401).json({ message: "❌ Invalid password" });
     }
 
+    // 🔑 Generate token (using _id is more reliable than user.userId)
     const token = jwt.sign(
-      { role: "user", userId: user.userId, username: user.username },
+      {
+        role: "user",
+        userId: user._id, // ✅ Use MongoDB's default _id
+        username: user.username,
+      },
       process.env.JWT_SECRET,
       { expiresIn: "1h" },
     );
 
+    // 📧 Optional: Send email on login
+    /*
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
@@ -46,7 +55,9 @@ exports.login = async (req, res) => {
 
     await transporter.sendMail(mailOptions);
     console.log(`✅ User login alert email sent: ${userMail}`);
+    */
 
+    // ✅ Send login success response
     res.status(200).json({
       status: true,
       role: "Member",

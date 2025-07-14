@@ -35,35 +35,76 @@ exports.dashboard = (req, res) => {
   res.send("✅ Welcome to Admin Dashboard");
 };
 
-exports.createUser = async (req, res) => {
-  const { username, userMail, password } = req.body;
+exports.createMember = async (req, res) => {
+  const { Membername, MemberMail, MemberPassword } = req.body;
 
   try {
-    if (!userMail || !username || !password) {
+    // Validate required fields
+    if (!Membername || !MemberMail || !MemberPassword) {
       return res.status(400).json({ message: "❌ Missing fields" });
     }
 
-    const existing = await Member.findOne({ userMail });
+    // Check if the member already exists
+    const existing = await Member.findOne({ MemberMail });
     if (existing) {
       return res.status(400).json({ message: "❌ Member already exists" });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const member = new Member({ username, userMail, password: hashedPassword });
+    // Hash the password
+    const hashedPassword = await bcrypt.hash(MemberPassword, 10);
+
+    // Create new member
+    const member = new Member({
+      Membername,
+      MemberMail,
+      MemberPassword: hashedPassword,
+    });
+
     await member.save();
 
+    // Decode who created the member from the token
     const token = req.headers.authorization?.split(" ")[1];
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const createdBy = decoded.username || "unknown";
+    let createdBy = "unknown";
 
-    console.log("📧 Sending alert >>", createdBy, userMail);
-    // await sendAdminCreatedAlert(createdBy, userMail);
-	// 4565
+    if (token) {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      createdBy = decoded.username || "unknown";
+    }
 
-    res.json({ role: "Member", message: "Member add successfully", token });
+    console.log("📧 Sending alert >>", createdBy, MemberMail);
+    // await sendAdminCreatedAlert(createdBy, MemberMail);
+
+    res.json({
+      role: "Member",
+      message: "✅ Member added successfully",
+      createdBy,
+    });
   } catch (error) {
     console.error("❌ Error creating member:", error);
     res.status(500).json({ message: "❌ Server error" });
+  }
+};
+
+exports.deleteMember = async (req, res) => {
+  const { MemberMail, Membername } = req.body;
+
+  if (!MemberMail || !Membername) {
+    return res
+      .status(400)
+      .json({ message: "Enter valid userMail and username" });
+  }
+
+  try {
+    const user = await Member.findOneAndDelete({ userMail, username });
+
+    if (!user) {
+      return res.status(404).json({ message: "❌ Member not found" });
+    }
+
+    return res.status(200).json({ message: "✅ Member deleted successfully" });
+  } catch (error) {
+    console.error("❌ Error deleting member:", error);
+    return res.status(500).json({ message: "❌ Server error" });
   }
 };
 
@@ -110,27 +151,5 @@ exports.deleteAgents = async (req, res) => {
   } catch (error) {
     console.error("❌ Error getting agents:", error);
     res.status(500).json({ message: "❌ Server error" });
-  }
-};
-exports.deleteUser = async (req, res) => {
-  const { userMail, username } = req.body;
-
-  if (!userMail || !username) {
-    return res
-      .status(400)
-      .json({ message: "Enter valid userMail and username" });
-  }
-
-  try {
-    const user = await Member.findOneAndDelete({ userMail, username });
-
-    if (!user) {
-      return res.status(404).json({ message: "❌ Member not found" });
-    }
-
-    return res.status(200).json({ message: "✅ Member deleted successfully" });
-  } catch (error) {
-    console.error("❌ Error deleting member:", error);
-    return res.status(500).json({ message: "❌ Server error" });
   }
 };
