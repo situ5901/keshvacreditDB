@@ -95,7 +95,7 @@ exports.deleteMember = async (req, res) => {
   }
 
   try {
-    const user = await Member.findOneAndDelete({ userMail, username });
+    const user = await Member.findOneAndDelete({ MemberMail, Membername });
 
     if (!user) {
       return res.status(404).json({ message: "❌ Member not found" });
