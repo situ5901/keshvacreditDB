@@ -27,7 +27,7 @@ exports.login = async (req, res) => {
         .json({ message: "❌ Invalid email, name, or password" });
     }
 
-    return res.status(200).send("✅ Welcome to Agent Dashboard");
+    return res.status(200).send(role:"Agent",message:"Login Successful");
   } catch (err) {
     console.error("❌ Login error:", err);
     return res.status(500).json({ message: "❌ Server error" });
