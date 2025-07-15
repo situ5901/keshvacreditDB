@@ -9,7 +9,6 @@ exports.login = async (req, res) => {
   const { Membername, MemberMail, MemberPassword } = req.body;
 
   try {
-    // 🔍 Find user by email or username
     const user = await Member.findOne({
       $or: [{ MemberMail }, { Membername }],
     });
@@ -17,8 +16,6 @@ exports.login = async (req, res) => {
     if (!user) {
       return res.status(401).json({ message: "❌ Invalid email or username" });
     }
-
-    // 🔐 Compare password
     const passwordMatch = await bcrypt.compare(
       MemberPassword,
       user.MemberPassword,
@@ -52,7 +49,17 @@ exports.login = async (req, res) => {
   }
 };
 
-// ✅ User Dashboard
-exports.dashboard = (req, res) => {
-  res.send(`✅ Welcome ${req.user.username}, this is your dashboard`);
+exports.getMamber = async (req, res) => {
+  try {
+    const allMembers = await Member.find();
+    if (allMembers.length > 0) {
+      res.status(200).json(allMembers);
+    } else {
+      res.status(404).json({ message: "❌ No Members found" });
+    }
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "❌ Failed to fetch members", error: error.message });
+  }
 };
