@@ -1,5 +1,6 @@
 const bcrypt = require("bcrypt");
 const AgentModel = require("../../models/AgentModel.js");
+const jwt = require("jsonwebtoken");
 
 exports.login = async (req, res) => {
   try {
@@ -16,7 +17,7 @@ exports.login = async (req, res) => {
     if (!agent) {
       return res
         .status(401)
-        .json({ message: "❌ Invalid credentials" });
+        .json({ message: "❌ Invalid email, name, or password" });
     }
 
     const isMatch = await bcrypt.compare(AgentPassword, agent.AgentPassword);
@@ -24,14 +25,14 @@ exports.login = async (req, res) => {
     if (!isMatch) {
       return res
         .status(401)
-        .json({ message: "❌ Invalid credentials" });
+        .json({ message: "❌ Invalid email, name, or password" });
     }
 
-    // Optional: create JWT token
+    // ✅ Generate JWT token
     const token = jwt.sign(
-      { id: agent._id, role: "Agent" },
-      process.env.JWT_SECRET,
-      { expiresIn: "1d" }
+      { id: agent._id, role: "Agent", name: agent.Agentname },
+      process.env.JWT_SECRET || "default_secret", // fallback if env var is missing
+      { expiresIn: "1d" },
     );
 
     return res.status(200).json({
@@ -39,7 +40,6 @@ exports.login = async (req, res) => {
       message: "Login Successful",
       token,
     });
-
   } catch (err) {
     console.error("❌ Login error:", err);
     return res.status(500).json({ message: "❌ Server error" });
