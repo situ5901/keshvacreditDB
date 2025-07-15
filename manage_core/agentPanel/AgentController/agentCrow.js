@@ -16,7 +16,7 @@ exports.login = async (req, res) => {
     if (!agent) {
       return res
         .status(401)
-        .json({ message: "❌ Invalid email, name, or password" });
+        .json({ message: "❌ Invalid credentials" });
     }
 
     const isMatch = await bcrypt.compare(AgentPassword, agent.AgentPassword);
@@ -24,10 +24,22 @@ exports.login = async (req, res) => {
     if (!isMatch) {
       return res
         .status(401)
-        .json({ message: "❌ Invalid email, name, or password" });
+        .json({ message: "❌ Invalid credentials" });
     }
 
-    return res.status(200).send(role:"Agent",message:"Login Successful");
+    // Optional: create JWT token
+    const token = jwt.sign(
+      { id: agent._id, role: "Agent" },
+      process.env.JWT_SECRET,
+      { expiresIn: "1d" }
+    );
+
+    return res.status(200).json({
+      role: "Agent",
+      message: "Login Successful",
+      token,
+    });
+
   } catch (err) {
     console.error("❌ Login error:", err);
     return res.status(500).json({ message: "❌ Server error" });
