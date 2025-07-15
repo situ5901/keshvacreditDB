@@ -45,3 +45,13 @@ exports.login = async (req, res) => {
     return res.status(500).json({ message: "❌ Server error" });
   }
 };
+
+exports.getAgents = async (req, res) => {
+  try {
+    const getAgents = await AgentModel.find();
+    if (getAgents.length > 0) return res.status(200).json(getAgents);
+  } catch (err) {
+    console.error("❌ Login error:", err);
+    return res.status(500).json({ message: "❌ Server error" });
+  }
+};
