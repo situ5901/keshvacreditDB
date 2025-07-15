@@ -13,21 +13,46 @@ const AgentModel = require("../../models/AgentModel.js");
 exports.login = (req, res) => {
   const { adminName, adminMail, password } = req.body;
 
-  const adminDataPath = path.join(__dirname, "../data/admin.json");
-  const adminData = JSON.parse(fs.readFileSync(adminDataPath, "utf-8"));
+  if (!adminName || !adminMail || !password) {
+    return res
+      .status(400)
+      .json({ message: "❌ Admin name, email, and password are required" });
+  }
 
-  if (adminMail === adminData.adminMail && password === adminData.password) {
+  const adminDataPath = path.join(__dirname, "../data/admin.json");
+
+  // Check if file exists
+  if (!fs.existsSync(adminDataPath)) {
+    return res.status(500).json({ message: "❌ Admin data file not found" });
+  }
+
+  let adminData;
+  try {
+    const fileContent = fs.readFileSync(adminDataPath, "utf-8");
+    adminData = JSON.parse(fileContent);
+  } catch (err) {
+    return res.status(500).json({ message: "❌ Failed to read admin data" });
+  }
+
+  // Validate credentials
+  if (
+    adminName === adminData.adminName &&
+    adminMail === adminData.adminMail &&
+    password === adminData.password
+  ) {
     const token = jwt.sign(
       { role: "admin", username: adminMail },
-      process.env.JWT_SECRET,
+      process.env.JWT_SECRET || "defaultsecret",
       { expiresIn: "24h" },
     );
 
-    // sendAdminLoginAlert(adminMail);
-
-    res.json({ role: "SuperAdmin", message: "✅ Admin logged in", token });
+    return res.json({
+      role: "SuperAdmin",
+      message: "✅ Admin logged in",
+      token,
+    });
   } else {
-    res.status(401).json({ message: "❌ Invalid admin credentials" });
+    return res.status(401).json({ message: "❌ Invalid admin credentials" });
   }
 };
 
