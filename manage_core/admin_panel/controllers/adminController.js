@@ -11,7 +11,7 @@ const AgentModel = require("../../models/AgentModel.js");
 //   sendAdminCreatedAlert,
 // } = require("./mailverify.js");
 exports.login = (req, res) => {
-  const { adminMail, password } = req.body;
+  const { adminName, adminMail, password } = req.body;
 
   const adminDataPath = path.join(__dirname, "../data/admin.json");
   const adminData = JSON.parse(fs.readFileSync(adminDataPath, "utf-8"));
@@ -20,7 +20,7 @@ exports.login = (req, res) => {
     const token = jwt.sign(
       { role: "admin", username: adminMail },
       process.env.JWT_SECRET,
-      { expiresIn: "1h" },
+      { expiresIn: "24h" },
     );
 
     // sendAdminLoginAlert(adminMail);
