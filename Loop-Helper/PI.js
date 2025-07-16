@@ -29,15 +29,22 @@ async function getAuthToken() {
       client_id: "keshvacredit",
       client_secret: "AW21Bu)jQ15eiDf[",
     };
-    const response = await axios.post(TokenAPIs, payload, {
+
+    const { data } = await axios.post(TokenAPIs, payload, {
       headers: { "Content-Type": "application/json" },
     });
-    if (!response.data) {
-      throw new Error("No data in response");
+
+    const token = data?.auth_token || data?.data?.auth_token;
+    if (!token) {
+      throw new Error(`❌ Token missing in response: ${JSON.stringify(data)}`);
     }
-    return response.data.auth_token;
+
+    console.log("✅ Token generated successfully");
+    return token;
   } catch (err) {
     console.error("❌ Token error:", err.response?.data || err.message);
     throw err;
   }
 }
+
+getAuthToken();
