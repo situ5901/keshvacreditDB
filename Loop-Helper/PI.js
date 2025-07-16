@@ -2,24 +2,22 @@ const axios = require("axios");
 const mongoose = require("mongoose");
 require("dotenv").config();
 
-const MONGODB_URIVISH = process.env.MONGODB_URIVISH;
+const MONGODB_SITU = process.env.MONGODB_SITU;
+
+mongoose
+  .connect(MONGODB_SITU)
+  .then(() => console.log("✅ MongoDB Connected Successfully"))
+  .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
+
+const UserDB = mongoose.model(
+  "Componant",
+  new mongoose.Schema({}, { collection: "Componant", strict: false }),
+);
+
 const TOKEN_API_URL = "https://vnotificationgw.uat.pointz.in/v1/auth/token";
 const LEAD_CREATE_API_URL =
   "https://vnotificationgw.uat.pointz.in/v1/leads/loans/create";
 const BATCH_SIZE = 1; // increase in prod
-
-/* ---------- Mongo ----------------------------------------------------- */
-mongoose
-  .connect(MONGODB_URIVISH)
-  .then(() => console.log("✅ MongoDB Connected"))
-  .catch((err) => console.error("🚫 MongoDB Error:", err));
-
-const UserDB = mongoose.model(
-  "smcoll",
-  new mongoose.Schema({}, { collection: "smcoll", strict: false }),
-);
-
-/* ---------- Utility: build payload from a Mongo document -------------- */
 function buildLeadPayload(doc) {
   return {
     client_request_id: doc.client_request_id ?? `REQ${Date.now()}`,
@@ -47,7 +45,6 @@ function buildLeadPayload(doc) {
   };
 }
 
-/* ---------- Step 1: get auth token ----------------------------------- */
 async function getAuthToken() {
   try {
     const body = {
@@ -70,21 +67,17 @@ async function getAuthToken() {
   }
 }
 
-/* ---------- Step 2: create leads in batches --------------------------- */
 async function createLeads() {
   const token = await getAuthToken();
 
-  // Pull BATCH_SIZE fresh docs (adjust query as required)
   const docs = await UserDB.find({ pushed_to_api: { $ne: true } })
     .limit(BATCH_SIZE)
     .lean();
 
   if (!docs.length) return console.log("ℹ️  No new leads to push.");
 
-  // Transform docs → payloads
   const payloads = docs.map(buildLeadPayload);
 
-  // Hit the lead‑creation API
   for (const payload of payloads) {
     try {
       const { data } = await axios.post(LEAD_CREATE_API_URL, payload, {
@@ -94,7 +87,6 @@ async function createLeads() {
         },
       });
       console.log("✅ Lead pushed:", data);
-      // Mark record so we don’t send again
       await UserDB.updateOne(
         { client_request_id: payload.client_request_id },
         { $set: { pushed_to_api: true } },
