@@ -52,7 +52,7 @@ async function sendToPI(user, token) {
     pan: user.pan,
     dob: formatDate(user.dob),
     current_address: {
-      pincode: user.pincode,
+      pincode: String(user.pincode || "110001"),
     },
     employment_details: {
       employment_type: user.employment,
