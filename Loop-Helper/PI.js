@@ -46,16 +46,16 @@ async function pushLeads(token) {
 
     for (const doc of docs) {
       const payload = {
-        client_request_id: doc.client_request_id ?? `REQ${Date.now()}`,
+        client_request_id: "REQ123456789",
         name: {
-          first: "ohn",
+          first: "John",
           middle: "William",
           last: "Doe",
         },
-        phone_number: "9360123456",
-        email: "on@example.com",
-        pan: "CMPPR6789L",
-        dob: "1990-01-21",
+        phone_number: "9876543210",
+        email: "john.doe@example.com",
+        pan: "ABCDE1234F",
+        dob: "1990-01-15",
         current_address: {
           pincode: "400001",
         },
@@ -68,11 +68,11 @@ async function pushLeads(token) {
         },
         custom_fields: {
           utm_source: "whatsapp",
-          agent_code: "SITU001",
-          ref_campaign: "keshva-credit-july",
+          agent_code: "AGT001",
+          ref_campaign: "july-loan",
         },
+        evaluation_type: "BASIC",
       };
-
       console.log("📤 Sending Payload to API:", payload);
 
       const response = await axios.post(LEAD_CREATE_API_URL, payload, {
