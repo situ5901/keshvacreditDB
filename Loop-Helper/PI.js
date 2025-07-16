@@ -38,7 +38,7 @@ async function getAuthToken() {
     if (!token) {
       throw new Error(`❌ Token missing in response: ${JSON.stringify(data)}`);
     }
-
+    return token;
     console.log("✅ Token generated successfully");
     return token;
   } catch (err) {
