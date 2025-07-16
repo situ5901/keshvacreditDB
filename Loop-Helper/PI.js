@@ -18,7 +18,7 @@ const UserDB = mongoose.model(
   new mongoose.Schema({}, { collection: "smcoll", strict: false }),
 );
 
-const BATCH_SIZE = 1;
+// const BATCH_SIZE = 1;
 const TokenAPIs = "https://vnotificationgw.uat.pointz.in/v1/auth/token";
 const LeadCreateAPIs =
   "https://vnotificationgw.uat.pointz.in/v1/leads/loans/create";
