@@ -3,140 +3,198 @@ const axios = require("axios");
 require("dotenv").config();
 
 const MONGODB_URIVISH = process.env.MONGODB_URIVISH;
-const TOKEN_API_URL = "https://vnotificationgw.uat.pointz.in/v1/auth/token";
-const LEAD_API_URL =
-  "https://vnotificationgw.uat.pointz.in/v1/leads/loans/create";
-
-const BATCH_SIZE = 10;
-const REF_NAME = "PI";
 
 mongoose
   .connect(MONGODB_URIVISH)
-  .then(() => console.log("✅ MongoDB Connected"))
-  .catch((err) => console.error("❌ MongoDB Error:", err));
+  .then(() => console.log("✅ MongoDB Connected Successfully"))
+  .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
 
 const UserDB = mongoose.model(
   "smcoll",
   new mongoose.Schema({}, { collection: "smcoll", strict: false }),
 );
-async function getAuthToken() {
-  const payload = {
-    client_id: "keshvacredit",
-    client_secret: "AW21Bu)jQ15eiDf[",
-  };
-  const { data } = await axios.post(TOKEN_API_URL, payload, {
-    headers: { "Content-Type": "application/json" },
-  });
-  return data?.auth_token || data?.data?.auth_token;
-}
 
-function formatDate(dob) {
-  try {
-    const date = new Date(dob);
-    if (isNaN(date)) return null;
-    return date.toISOString().split("T")[0]; // YYYY-MM-DD
-  } catch {
-    return null;
+const BATCH_SIZE = 10; // Set your batch size
+const PartnerID = "a8ce06a0-4fbd-489f-8d75-345548fb98a8";
+const ELIGIBILITY_API =
+  "https://prod.zype.co.in/attribution-service/api/v1/underwriting/customerEligibility";
+const PRE_APPROVAL_API =
+  "https://prod.zype.co.in/attribution-service/api/v1/underwriting/preApprovalOffer";
+
+async function processIncome(user) {
+  if (typeof user.income === "string") {
+    const parsedIncome = parseFloat(user.income);
+    if (!isNaN(parsedIncome)) {
+      user.income = parsedIncome;
+    } else {
+      throw new Error("INCOME_SHOULD_BE_NUMBER");
+    }
   }
 }
-// 📤 Send Single Lead to Pointz API
-async function sendToPI(user, token) {
-  const payload = {
-    client_request_id: "REQ202507160001",
-    name: {
-      first: user.name,
-      last: "Sharma",
-    },
-    phone_number: user.phone,
-    email: user.email,
-    pan: user.pan,
-    dob: formatDate(user.dob),
-    current_address: {
-      pincode: user.pincode,
-    },
-    employment_details: {
-      employment_type: user.employment,
-      monthly_income: user.income,
-    },
-    loan_requirement: {
-      desired_loan_amount: String(user.desired_loan_amount || 350000),
-    },
-    custom_fields: {
-      utm_source: "google_ads",
-      agent_code: "AGT777",
-      ref_campaign: "monsoon-offer-2025",
-    },
-    evaluation_type: "BASIC",
-  };
 
+async function sendToNewAPI(user) {
   try {
-    const { data } = await axios.post(LEAD_API_URL, payload, {
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
+    await processIncome(user);
+
+    const payload = {
+      mobileNumber: String(user.phone),
+      panNumber: user.pan,
+      partnerId: PartnerID,
+    };
+
+    console.log("📤 Sending Eligibility Payload:", payload);
+
+    const response = await axios.post(ELIGIBILITY_API, payload, {
+      headers: { "Content-Type": "application/json" },
     });
 
-    // ✅ Full response printed
-    console.log("✅ Full API Response:\n", JSON.stringify(data, null, 2));
-    return { success: true, data };
+    console.log("✅ Eligibility Response:", response.data);
+    return response.data;
   } catch (err) {
-    const errorData = err.response?.data || { message: err.message };
-    console.error("❌ API Error:\n", JSON.stringify(errorData, null, 2));
-    return { success: false, data: errorData };
+    console.error(
+      "❌ Eligibility API Error:",
+      err.response?.data || err.message,
+    );
+    return {
+      status: "FAILED",
+      message: err.response?.data?.message || err.message || "Unknown Error",
+    };
   }
 }
 
-// 🔁 Process Batch of Leads
-async function processBatch(users, token) {
-  await Promise.all(
+async function getPreApproval(user) {
+  try {
+    const payload = {
+      mobileNumber: String(user.phone),
+      email: user.email,
+      panNumber: user.pan,
+      name: user.name,
+      // dob: user.dob ? new Date(user.dob).toISOString().split("T")[0] : null, // ✅ DOB formatted here
+      dob: user.dob,
+      income: user.income,
+      employmentType: user.employment,
+      orgName: "Infosys Ltd",
+      partnerId: PartnerID,
+      bureauType: 1,
+      bureauName: "experian",
+      bureauData: JSON.stringify({ score: 765, reportDate: "2024-03-20" }),
+    };
+
+    console.log("📤 Sending PreApproval Payload:", payload);
+
+    const response = await axios.post(PRE_APPROVAL_API, payload, {
+      headers: { "Content-Type": "application/json" },
+    });
+
+    console.log("✅ PreApproval Response:", response.data);
+    return response.data;
+  } catch (err) {
+    console.error(
+      "❌ PreApproval API Error:",
+      err.response?.data || err.message,
+    );
+    return {
+      status: "FAILED",
+      message: err.response?.data?.message || err.message || "Unknown Error",
+    };
+  }
+}
+
+async function processBatch(users) {
+  const results = await Promise.allSettled(
     users.map(async (user) => {
-      const result = await sendToPI(user, token);
+      const userDoc = await UserDB.findOne({ phone: user.phone });
+      const updates = {};
+      let needUpdate = false;
+
+      if (userDoc.apiResponse && !Array.isArray(userDoc.apiResponse)) {
+        updates.apiResponse = [userDoc.apiResponse];
+        needUpdate = true;
+      }
+
+      if (userDoc.preApproval && !Array.isArray(userDoc.preApproval)) {
+        updates.preApproval = [userDoc.preApproval];
+        needUpdate = true;
+      }
+
+      if (needUpdate) {
+        await UserDB.updateOne({ phone: user.phone }, { $set: updates });
+      }
+
+      const response = await sendToNewAPI(user);
 
       const updateDoc = {
         $push: {
           apiResponse: {
-            PIResponse: result.data, // ✅ Full API response saved
-            status: result.data?.status?.code || "UNKNOWN",
-            message: result.data?.status?.message || "",
+            ZypeResponse: {
+              ...response,
+              Zype: true,
+            },
+            status: response.status,
+            amount: response.amount,
             createdAt: new Date().toISOString(),
           },
           RefArr: {
-            name: REF_NAME,
+            name: "Zype",
             createdAt: new Date().toISOString(),
           },
         },
+        $unset: { accounts: "" },
       };
+
+      if (response.status === "ACCEPT") {
+        const preApproval = await getPreApproval(user);
+
+        updateDoc.$push.apiResponse = {
+          ZypeResponse: preApproval,
+          status: preApproval.status,
+          amount: preApproval.amount,
+          message: preApproval.message,
+          createdAt: new Date().toISOString(),
+        };
+      } else {
+        console.log(`⛔ No PreApproval — Status: ${response.status}`);
+      }
 
       await UserDB.updateOne({ phone: user.phone }, updateDoc);
     }),
   );
+
+  // Handle any errors or log the results
+  results.forEach((result, index) => {
+    if (result.status === "rejected") {
+      console.error(`Error processing user at index ${index}:`, result.reason);
+    } else {
+      console.log(`Successfully processed user at index ${index}`);
+    }
+  });
 }
-
-// ▶️ Main Loop
-async function main() {
+let processedCount = 0;
+async function Loop() {
   try {
-    const token = await getAuthToken();
-
     while (true) {
+      console.log("📦 Fetching leads...");
+
       const leads = await UserDB.aggregate([
-        { $match: { "RefArr.name": { $ne: REF_NAME } } },
+        { $match: { "RefArr.name": { $ne: "Zype" } } },
         { $limit: BATCH_SIZE },
       ]);
 
       if (leads.length === 0) {
-        console.log("✅ All leads processed.");
+        console.log("✅ No more leads left. Stopping.");
         break;
       }
 
-      await processBatch(leads, token);
-      console.log(`✅ Processed ${leads.length} leads`);
+      await processBatch(leads);
+
+      console.log(`✅ Processed batch of: ${leads.length}`);
     }
-  } catch (err) {
-    console.error("❌ Error:", err.message);
+  } catch (error) {
+    console.error("❌ Error occurred:", error.message);
   } finally {
+    console.log("🔌 Closing DB connection...");
     mongoose.connection.close();
   }
 }
 
-main();
+Loop();
