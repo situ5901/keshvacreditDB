@@ -30,21 +30,26 @@ async function getAuthToken() {
       client_secret: "AW21Bu)jQ15eiDf[",
     };
 
+    // 🔹 Call the token API
     const { data } = await axios.post(TokenAPIs, payload, {
       headers: { "Content-Type": "application/json" },
     });
 
+    // 🔹 Print the full API response
+    console.log("🔸 Raw token API response:", JSON.stringify(data, null, 2));
+
     const token = data?.auth_token || data?.data?.auth_token;
     if (!token) {
-      throw new Error(`❌ Token missing in response: ${JSON.stringify(data)}`);
+      throw new Error(`❌ Token missing in response`);
     }
-    return token;
-    console.log("✅ Token generated successfully");
-    return token;
+
+    console.log("✅ Token generated successfully:", token); // print token too
+    return token; // <-- single return
   } catch (err) {
     console.error("❌ Token error:", err.response?.data || err.message);
     throw err;
   }
 }
 
+getAuthToken(); // will print the response & token in your console
 getAuthToken();
