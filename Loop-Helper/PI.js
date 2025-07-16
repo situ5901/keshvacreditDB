@@ -52,9 +52,9 @@ async function pushLeads(token) {
           middle: "William",
           last: "Doe",
         },
-        phone_number: "9806543214",
-        email: "ohn@example.com",
-        pan: "RFTPP9876M",
+        phone_number: "9360123456",
+        email: "on@example.com",
+        pan: "CMPPR6789L",
         dob: "1990-01-21",
         current_address: {
           pincode: "400001",
@@ -62,6 +62,14 @@ async function pushLeads(token) {
         employment_details: {
           employment_type: "SALARIED",
           monthly_income: "75000",
+        },
+        loan_requirement: {
+          desired_loan_amount: "500000",
+        },
+        custom_fields: {
+          utm_source: "whatsapp",
+          agent_code: "SITU001",
+          ref_campaign: "keshva-credit-july",
         },
       };
 
