@@ -72,7 +72,7 @@ async function sendToPI(user, token) {
     },
     evaluation_type: "BASIC",
   };
-
+  console.log("📤 Sending Payload to API:", payload);
   try {
     const { data } = await axios.post(LEAD_API_URL, payload, {
       headers: {
