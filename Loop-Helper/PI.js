@@ -10,19 +10,15 @@ const LEAD_API_URL =
 const BATCH_SIZE = 10;
 const REF_NAME = "PI";
 
-// 🔗 Connect MongoDB
 mongoose
   .connect(MONGODB_URIVISH)
   .then(() => console.log("✅ MongoDB Connected"))
   .catch((err) => console.error("❌ MongoDB Error:", err));
 
-// 📦 Mongoose Schema
 const UserDB = mongoose.model(
   "smcoll",
   new mongoose.Schema({}, { collection: "smcoll", strict: false }),
 );
-
-// 🔐 Get Token
 async function getAuthToken() {
   const payload = {
     client_id: "keshvacredit",
@@ -34,7 +30,6 @@ async function getAuthToken() {
   return data?.auth_token || data?.data?.auth_token;
 }
 
-// 📅 Format DOB
 function formatDate(dob) {
   try {
     const date = new Date(dob);
@@ -45,13 +40,31 @@ function formatDate(dob) {
   }
 }
 
-// 📤 Send Single Lead
 async function sendToPI(user, token) {
+  const fullName = user.name ? user.name.trim() : "";
+
+  let firstName = "";
+  let lastName = "";
+
+  if (fullName === "") {
+    firstName = "";
+    lastName = "";
+  } else {
+    const nameParts = fullName.split(" ");
+    if (nameParts.length === 1) {
+      firstName = nameParts[0];
+      lastName = "Sharma";
+    } else {
+      firstName = nameParts.shift();
+      lastName = nameParts.join(" ");
+    }
+  }
+
   const payload = {
     client_request_id: `REQ${Date.now()}${Math.floor(Math.random() * 1000)}`, // ✅ Unique ID
     name: {
-      first: user.name,
-      last: "Sharma",
+      first: firstName,
+      last: lastName,
     },
     phone_number: user.phone,
     email: user.email,
@@ -88,7 +101,6 @@ async function sendToPI(user, token) {
         Authorization: `Bearer ${token}`,
       },
     });
-
     console.log("✅ Full API Response:\n", JSON.stringify(data, null, 2));
     return { success: true, data };
   } catch (err) {
@@ -97,8 +109,6 @@ async function sendToPI(user, token) {
     return { success: false, data: errorData };
   }
 }
-
-// 🔁 Process One Batch
 async function processBatch(users, token) {
   for (const user of users) {
     const result = await sendToPI(user, token);
@@ -112,15 +122,10 @@ async function processBatch(users, token) {
         },
       },
     };
-
     await UserDB.updateOne({ phone: user.phone }, updateDoc);
-
-    // 🕐 Wait 1 second before next API call
     await new Promise((resolve) => setTimeout(resolve, 1000));
   }
 }
-
-// ▶️ Main Loop
 async function main() {
   try {
     const token = await getAuthToken();
@@ -145,5 +150,4 @@ async function main() {
     mongoose.connection.close();
   }
 }
-
 main();
