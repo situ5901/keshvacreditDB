@@ -8,7 +8,6 @@ const LEAD_CREATE_API_URL =
   "https://vnotificationgw.uat.pointz.in/v1/leads/loans/create";
 const BATCH_SIZE = 1; // increase in prod
 
-/* ---------- Mongo ----------------------------------------------------- */
 mongoose
   .connect(MONGODB_URIVISH)
   .then(() => console.log("✅ MongoDB Connected"))
@@ -19,95 +18,25 @@ const UserDB = mongoose.model(
   new mongoose.Schema({}, { collection: "smcoll", strict: false }),
 );
 
-/* ---------- Utility: build payload from a Mongo document -------------- */
-function buildLeadPayload(doc) {
-  return {
-    client_request_id: doc.client_request_id ?? `REQ${Date.now()}`,
-    name: {
-      first: doc.first_name ?? "John",
-      middle: doc.middle_name ?? "William",
-      last: doc.last_name ?? "Doe",
-    },
-    phone_number: doc.phone ?? "9876543210",
-    email: doc.email ?? "john.doe@example.com",
-    pan: doc.pan ?? "PPPPP0000P",
-    dob: "1990-01-01",
-    current_address: {
-      pincode: String(doc.pincode ?? "400001"), // 🔧 fix here
-    },
-    employment_details: {
-      employment_type: doc.employment_type ?? "SALARIED",
-      monthly_income: doc.monthly_income ?? "75000",
-    },
-    loan_requirement: {
-      desired_loan_amount: doc.desired_loan_amount ?? "500000",
-    },
-    custom_fields: {},
-    evaluation_type: "BASIC",
-  };
-}
+const BATCH_SIZE = 1;
+const TokenAPIs = "https://vnotificationgw.uat.pointz.in/v1/auth/token";
+const LeadCreateAPIs =
+  "https://vnotificationgw.uat.pointz.in/v1/leads/loans/create";
 
-/* ---------- Step 1: get auth token ----------------------------------- */
-async function getAuthToken() {
-  try {
-    const body = {
-      client_id: "keshvacredit",
-      client_secret: "AW21Bu)jQ15eiDf[",
-    };
-
-    const { data } = await axios.post(TOKEN_API_URL, body, {
-      headers: { "Content-Type": "application/json" },
-    });
-
-    const token = data?.auth_token ?? data?.data?.auth_token;
-    if (!token)
-      throw new Error(`Unexpected token response: ${JSON.stringify(data)}`);
-    console.log("✅ Token generated");
-    return token;
-  } catch (err) {
-    console.error("❌ Token error:", err.response?.data || err.message);
-    throw err;
-  }
-}
-
-/* ---------- Step 2: create leads in batches --------------------------- */
-async function createLeads() {
-  const token = await getAuthToken();
-
-  // Pull BATCH_SIZE fresh docs (adjust query as required)
-  const docs = await UserDB.find({ pushed_to_api: { $ne: true } })
-    .limit(BATCH_SIZE)
-    .lean();
-
-  if (!docs.length) return console.log("ℹ️  No new leads to push.");
-
-  // Transform docs → payloads
-  const payloads = docs.map(buildLeadPayload);
-
-  // Hit the lead‑creation API
-  for (const payload of payloads) {
+async functio getAuthToken(){
     try {
-      const { data } = await axios.post(LEAD_CREATE_API_URL, payload, {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      console.log("✅ Lead pushed:", data);
-      // Mark record so we don’t send again
-      await UserDB.updateOne(
-        { client_request_id: payload.client_request_id },
-        { $set: { pushed_to_api: true } },
-      );
-    } catch (err) {
-      console.error(
-        "❌ Lead push error:",
-        err.response?.data || err.message,
-        "\nPayload:",
-        payload,
-      );
-    }
-  }
+	const payload = {
+	    client_id: "keshvacredit",
+	    client_secret: "AW21Bu)jQ15eiDf[",
+	};
+	const response = await axios.post(TokenAPIs, payload, {
+	    headers: { "Content-Type": "application/json" },
+	});
+	if(!response.data){
+	    throw new Error("No data in response");
+	}return response.data.auth_token;
+	}catch(err){
+	console.error("❌ Token error:", err.response?.data || err.message);
+	throw err;
+	}
 }
-
-createLeads();
