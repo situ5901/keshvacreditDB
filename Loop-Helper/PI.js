@@ -20,37 +20,42 @@ const LEAD_CREATE_API_URL =
   "https://vnotificationgw.uat.pointz.in/v1/leads/loans/create"; // Uncommented this line, as it was commented out in your snippet
 
 async function sendToToken() {
+  console.log("🔄 Requesting auth token...");
   try {
     const payload = {
       client_id: "keshvacredit",
-      client_secret: "AW21Bu)jQ15eiDf[", // Ensure this is the correct secret for UAT
+      client_secret: "AW21Bu)jQ15eiDf[",
     };
 
-    const response = await axios.post(TOKEN_API_URL, payload, {
-      headers: {
-        "Content-Type": "application/json",
-      },
+    const { data } = await axios.post(TOKEN_API_URL, payload, {
+      headers: { "Content-Type": "application/json" },
+      timeout: 15_000, // good practice
     });
 
-    // Check the response structure based on the provided Epifi documentation
-    if (response.data.status && response.data.status.code === 0) {
-      console.log("✅ Token generated successfully:", response.data.auth_token);
-      return response.data.auth_token;
-    } else {
-      console.error(
-        "❌ Error generating token:",
-        response.data.status
-          ? response.data.status.message
-          : "Unknown error or unexpected response structure",
-      );
-      return null;
+    // --- Normalise response --------------------------------------------
+    const statusCode = data?.status?.code ?? data?.code ?? -1;
+    const statusMsg = data?.status?.message ?? data?.message ?? "Unknown";
+    const tokenInRoot = data?.auth_token;
+    const tokenInData = data?.data?.auth_token ?? data?.data?.token;
+    const authToken = tokenInRoot || tokenInData;
+    // -------------------------------------------------------------------
+
+    if (statusCode === 0 && authToken) {
+      console.log("✅ Token generated successfully:", authToken);
+      return authToken;
     }
-  } catch (error) {
+
+    // If we reach here, the API didn’t give us a usable token
+    console.error(`❌ API responded with code ${statusCode}: ${statusMsg}`);
+    console.error("Full payload:", JSON.stringify(data, null, 2));
+    return null;
+  } catch (err) {
     console.error(
       "❌ Token generation failed:",
-      error.response ? error.response.data : error.message,
+      err.response ? err.response.data : err.message,
     );
     return null;
   }
 }
+
 sendToToken();
