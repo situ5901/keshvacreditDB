@@ -1,61 +1,119 @@
-const mongoose = require("mongoose");
 const axios = require("axios");
+const mongoose = require("mongoose");
 require("dotenv").config();
 
 const MONGODB_URIVISH = process.env.MONGODB_URIVISH;
+const TOKEN_API_URL = "https://vnotificationgw.uat.pointz.in/v1/auth/token";
+const LEAD_CREATE_API_URL =
+  "https://vnotificationgw.uat.pointz.in/v1/leads/loans/create";
+const BATCH_SIZE = 1; // increase in prod
 
+/* ---------- Mongo ----------------------------------------------------- */
 mongoose
   .connect(MONGODB_URIVISH)
-  .then(() => console.log("✅ MongoDB Connected Successfully"))
-  .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
+  .then(() => console.log("✅ MongoDB Connected"))
+  .catch((err) => console.error("🚫 MongoDB Error:", err));
 
 const UserDB = mongoose.model(
   "smcoll",
   new mongoose.Schema({}, { collection: "smcoll", strict: false }),
 );
 
-const BATCH_SIZE = 1; // You might want to increase this for production
-const TOKEN_API_URL = "https://vnotificationgw.uat.pointz.in/v1/auth/token";
-const LEAD_CREATE_API_URL =
-  "https://vnotificationgw.uat.pointz.in/v1/leads/loans/create"; // Uncommented this line, as it was commented out in your snippet
+/* ---------- Utility: build payload from a Mongo document -------------- */
+function buildLeadPayload(doc) {
+  return {
+    client_request_id: doc.client_request_id ?? `REQ${Date.now()}`,
+    name: {
+      first: doc.first_name ?? "John",
+      middle: doc.middle_name ?? "William",
+      last: doc.last_name ?? "Doe",
+    },
+    phone_number: doc.phone ?? "9876543210",
+    email: doc.email ?? "john.doe@example.com",
+    pan: doc.pan ?? "PPPPP0000P",
+    dob: doc.dob ?? "1990-01-15",
+    current_address: {
+      pincode: doc.pincode ?? "400001",
+    },
+    employment_details: {
+      employment_type: doc.employment_type ?? "SALARIED",
+      monthly_income: doc.monthly_income ?? "75000",
+    },
+    loan_requirement: {
+      desired_loan_amount: doc.desired_loan_amount ?? "500000",
+    },
+    custom_fields: {}, // add any extra key‑values here
+    evaluation_type: "BASIC", // or whatever your flow needs
+  };
+}
 
-async function sendToToken() {
-  console.log("🔄 Requesting auth token...");
+/* ---------- Step 1: get auth token ----------------------------------- */
+async function getAuthToken() {
   try {
-    const payload = {
+    const body = {
       client_id: "keshvacredit",
       client_secret: "AW21Bu)jQ15eiDf[",
     };
 
-    const { data } = await axios.post(TOKEN_API_URL, payload, {
+    const { data } = await axios.post(TOKEN_API_URL, body, {
       headers: { "Content-Type": "application/json" },
-      timeout: 15_000, // good practice
     });
 
-    // --- Normalise response --------------------------------------------
-    const statusCode = data?.status?.code ?? data?.code ?? -1;
-    const statusMsg = data?.status?.message ?? data?.message ?? "Unknown";
-    const tokenInRoot = data?.auth_token;
-    const tokenInData = data?.data?.auth_token ?? data?.data?.token;
-    const authToken = tokenInRoot || tokenInData;
-    // -------------------------------------------------------------------
-
-    if (statusCode === 0 && authToken) {
-      console.log("✅ Token generated successfully:", authToken);
-      return authToken;
-    }
-
-    // If we reach here, the API didn’t give us a usable token
-    console.error(`❌ API responded with code ${statusCode}: ${statusMsg}`);
-    console.error("Full payload:", JSON.stringify(data, null, 2));
-    return null;
+    const token = data?.auth_token ?? data?.data?.auth_token;
+    if (!token)
+      throw new Error(`Unexpected token response: ${JSON.stringify(data)}`);
+    console.log("✅ Token generated");
+    return token;
   } catch (err) {
-    console.error(
-      "❌ Token generation failed:",
-      err.response ? err.response.data : err.message,
-    );
-    return null;
+    console.error("❌ Token error:", err.response?.data || err.message);
+    throw err;
   }
 }
 
-sendToToken();
+/* ---------- Step 2: create leads in batches --------------------------- */
+async function createLeads() {
+  const token = await getAuthToken();
+
+  // Pull BATCH_SIZE fresh docs (adjust query as required)
+  const docs = await UserDB.find({ pushed_to_api: { $ne: true } })
+    .limit(BATCH_SIZE)
+    .lean();
+
+  if (!docs.length) return console.log("ℹ️  No new leads to push.");
+
+  // Transform docs → payloads
+  const payloads = docs.map(buildLeadPayload);
+
+  // Hit the lead‑creation API
+  for (const payload of payloads) {
+    try {
+      const { data } = await axios.post(LEAD_CREATE_API_URL, payload, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      console.log("✅ Lead pushed:", data);
+      // Mark record so we don’t send again
+      await UserDB.updateOne(
+        { client_request_id: payload.client_request_id },
+        { $set: { pushed_to_api: true } },
+      );
+    } catch (err) {
+      console.error(
+        "❌ Lead push error:",
+        err.response?.data || err.message,
+        "\nPayload:",
+        payload,
+      );
+    }
+  }
+}
+
+/* ---------- Run script ------------------------------------------------ */
+createLeads()
+  .then(() => {
+    console.log("🏁 Done");
+    mongoose.disconnect();
+  })
+  .catch(() => mongoose.disconnect());
