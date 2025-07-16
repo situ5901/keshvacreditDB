@@ -23,20 +23,21 @@ const TokenAPIs = "https://vnotificationgw.uat.pointz.in/v1/auth/token";
 const LeadCreateAPIs =
   "https://vnotificationgw.uat.pointz.in/v1/leads/loans/create";
 
-async functio getAuthToken(){
-    try {
-	const payload = {
-	    client_id: "keshvacredit",
-	    client_secret: "AW21Bu)jQ15eiDf[",
-	};
-	const response = await axios.post(TokenAPIs, payload, {
-	    headers: { "Content-Type": "application/json" },
-	});
-	if(!response.data){
-	    throw new Error("No data in response");
-	}return response.data.auth_token;
-	}catch(err){
-	console.error("❌ Token error:", err.response?.data || err.message);
-	throw err;
-	}
+async function getAuthToken() {
+  try {
+    const payload = {
+      client_id: "keshvacredit",
+      client_secret: "AW21Bu)jQ15eiDf[",
+    };
+    const response = await axios.post(TokenAPIs, payload, {
+      headers: { "Content-Type": "application/json" },
+    });
+    if (!response.data) {
+      throw new Error("No data in response");
+    }
+    return response.data.auth_token;
+  } catch (err) {
+    console.error("❌ Token error:", err.response?.data || err.message);
+    throw err;
+  }
 }
