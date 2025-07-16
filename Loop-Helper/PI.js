@@ -19,12 +19,10 @@ const UserDB = mongoose.model(
   "smcoll",
   new mongoose.Schema({}, { collection: "smcoll", strict: false }),
 );
-
-//add
 async function getAuthToken() {
   const payload = {
     client_id: "keshvacredit",
-    client_secret: "usH-ew;mcv5lk7<4",
+    client_secret: "AW21Bu)jQ15eiDf[",
   };
   const { data } = await axios.post(TOKEN_API_URL, payload, {
     headers: { "Content-Type": "application/json" },
