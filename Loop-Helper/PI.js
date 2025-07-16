@@ -48,9 +48,9 @@ async function pushLeads(token) {
       const payload = {
         client_request_id: doc.client_request_id ?? `REQ${Date.now()}`,
         name: {
-          first: doc.first_name ?? "John",
-          middle: doc.middle_name ?? "William",
-          last: doc.last_name ?? "Doe",
+          first: "John",
+          middle: "William",
+          last: "Doe",
         },
         phone_number: "9876543210",
         email: "john.doe@example.com",
@@ -64,7 +64,7 @@ async function pushLeads(token) {
           monthly_income: "75000",
         },
       };
-
+      console.log("📤 Sending Payload to API:" payload);
       const response = await axios.post(LEAD_CREATE_API_URL, payload, {
         headers: {
           "Content-Type": "application/json",
