@@ -87,30 +87,30 @@ async function sendToPI(user, token) {
   }
 }
 
-// 🔁 Process Batch of Leads
 async function processBatch(users, token) {
-  await Promise.all(
-    users.map(async (user) => {
-      const result = await sendToPI(user, token);
+  for (const user of users) {
+    const result = await sendToPI(user, token);
 
-      const updateDoc = {
-        $push: {
-          apiResponse: {
-            PIResponse: result.data, // ✅ Full API response saved
-            status: result.data?.status?.code || "UNKNOWN",
-            message: result.data?.status?.message || "",
-            createdAt: new Date().toISOString(),
-          },
-          RefArr: {
-            name: REF_NAME,
-            createdAt: new Date().toISOString(),
-          },
+    const updateDoc = {
+      $push: {
+        apiResponse: {
+          PIResponse: result.data, // ✅ Full API response saved
+          status: result.data?.status?.code || "UNKNOWN",
+          message: result.data?.status?.message || "",
+          createdAt: new Date().toISOString(),
         },
-      };
+        RefArr: {
+          name: REF_NAME,
+          createdAt: new Date().toISOString(),
+        },
+      },
+    };
 
-      await UserDB.updateOne({ phone: user.phone }, updateDoc);
-    }),
-  );
+    await UserDB.updateOne({ phone: user.phone }, updateDoc);
+
+    // 🕒 Delay of 1 second between each request
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+  }
 }
 
 // ▶️ Main Loop
