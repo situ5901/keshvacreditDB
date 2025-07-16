@@ -19,8 +19,6 @@ const UserDB = mongoose.model(
   "smcoll",
   new mongoose.Schema({}, { collection: "smcoll", strict: false }),
 );
-
-// 🔐 Get Auth Token
 async function getAuthToken() {
   const payload = {
     client_id: "keshvacredit",
@@ -31,8 +29,17 @@ async function getAuthToken() {
   });
   return data?.auth_token || data?.data?.auth_token;
 }
-//toDateString();
 
+function formatDate(dob) {
+  try {
+    const date = new Date(dob);
+    if (isNaN(date)) return null;
+    return date.toISOString().split("T")[0]; // YYYY-MM-DD
+  } catch {
+    return null;
+  }
+}
+// 📤 Send Single Lead to Pointz API
 async function sendToPI(user, token) {
   const payload = {
     client_request_id: "REQ202507160001",
@@ -40,19 +47,19 @@ async function sendToPI(user, token) {
       first: user.name,
       last: "Sharma",
     },
-    phone_number: String(user.phone),
+    phone_number: user.phone,
     email: user.email,
     pan: user.pan,
-    dob: user.dob,
+    dob: formatDate(user.dob),
     current_address: {
       pincode: user.pincode,
     },
     employment_details: {
       employment_type: user.employment,
-      monthly_income: String(user.income),
+      monthly_income: user.income,
     },
     loan_requirement: {
-      desired_loan_amount: String(user.desired_loan_amount || 35000),
+      desired_loan_amount: String(user.desired_loan_amount || 350000),
     },
     custom_fields: {
       utm_source: "google_ads",
@@ -70,12 +77,13 @@ async function sendToPI(user, token) {
       },
     });
 
+    // ✅ Full response printed
+    console.log("✅ Full API Response:\n", JSON.stringify(data, null, 2));
     return { success: true, data };
   } catch (err) {
-    return {
-      success: false,
-      data: err.response?.data || { message: err.message },
-    };
+    const errorData = err.response?.data || { message: err.message };
+    console.error("❌ API Error:\n", JSON.stringify(errorData, null, 2));
+    return { success: false, data: errorData };
   }
 }
 
@@ -84,10 +92,13 @@ async function processBatch(users, token) {
   await Promise.all(
     users.map(async (user) => {
       const result = await sendToPI(user, token);
+
       const updateDoc = {
         $push: {
           apiResponse: {
-            PIResponse: result.data,
+            PIResponse: result.data, // ✅ Full API response saved
+            status: result.data?.status?.code || "UNKNOWN",
+            message: result.data?.status?.message || "",
             createdAt: new Date().toISOString(),
           },
           RefArr: {
@@ -96,6 +107,7 @@ async function processBatch(users, token) {
           },
         },
       };
+
       await UserDB.updateOne({ phone: user.phone }, updateDoc);
     }),
   );
