@@ -33,7 +33,7 @@ function buildLeadPayload(doc) {
     pan: doc.pan ?? "PPPPP0000P",
     dob: doc.dob ?? "1990-01-15",
     current_address: {
-      pincode: doc.pincode ?? "400001",
+      pincode: doc.pincode ?? "110001",
     },
     employment_details: {
       employment_type: doc.employment_type ?? "SALARIED",
