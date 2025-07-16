@@ -110,10 +110,4 @@ async function createLeads() {
   }
 }
 
-/* ---------- Run script ------------------------------------------------ */
-createLeads()
-  .then(() => {
-    console.log("🏁 Done");
-    mongoose.disconnect();
-  })
-  .catch(() => mongoose.disconnect());
+createLeads();
