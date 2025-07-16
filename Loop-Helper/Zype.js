@@ -31,6 +31,7 @@ async function getAuthToken() {
   });
   return data?.auth_token || data?.data?.auth_token;
 }
+//toDateString();
 
 async function sendToPI(user, token) {
   const payload = {
