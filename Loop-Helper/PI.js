@@ -10,15 +10,19 @@ const LEAD_API_URL =
 const BATCH_SIZE = 10;
 const REF_NAME = "PI";
 
+// 🔗 Connect MongoDB
 mongoose
   .connect(MONGODB_URIVISH)
   .then(() => console.log("✅ MongoDB Connected"))
   .catch((err) => console.error("❌ MongoDB Error:", err));
 
+// 📦 Mongoose Schema
 const UserDB = mongoose.model(
   "smcoll",
   new mongoose.Schema({}, { collection: "smcoll", strict: false }),
 );
+
+// 🔐 Get Token
 async function getAuthToken() {
   const payload = {
     client_id: "keshvacredit",
@@ -30,6 +34,7 @@ async function getAuthToken() {
   return data?.auth_token || data?.data?.auth_token;
 }
 
+// 📅 Format DOB
 function formatDate(dob) {
   try {
     const date = new Date(dob);
@@ -39,10 +44,11 @@ function formatDate(dob) {
     return null;
   }
 }
-// 📤 Send Single Lead to Pointz API
+
+// 📤 Send Single Lead
 async function sendToPI(user, token) {
   const payload = {
-    client_request_id: "REQ202507160001",
+    client_request_id: `REQ${Date.now()}${Math.floor(Math.random() * 1000)}`, // ✅ Unique ID
     name: {
       first: user.name,
       last: "Sharma",
@@ -59,7 +65,7 @@ async function sendToPI(user, token) {
         user.employment?.toUpperCase(),
       )
         ? user.employment.toUpperCase()
-        : "SALARIED", // fallback
+        : "SALARIED",
       monthly_income: String(user.income || "0"),
     },
     loan_requirement: {
@@ -72,7 +78,9 @@ async function sendToPI(user, token) {
     },
     evaluation_type: "BASIC",
   };
+
   console.log("📤 Sending Payload to API:", payload);
+
   try {
     const { data } = await axios.post(LEAD_API_URL, payload, {
       headers: {
@@ -81,7 +89,6 @@ async function sendToPI(user, token) {
       },
     });
 
-    // ✅ Full response printed
     console.log("✅ Full API Response:\n", JSON.stringify(data, null, 2));
     return { success: true, data };
   } catch (err) {
@@ -91,6 +98,7 @@ async function sendToPI(user, token) {
   }
 }
 
+// 🔁 Process One Batch
 async function processBatch(users, token) {
   for (const user of users) {
     const result = await sendToPI(user, token);
@@ -98,7 +106,7 @@ async function processBatch(users, token) {
     const updateDoc = {
       $push: {
         apiResponse: {
-          PIResponse: result.data, // ✅ Full API response saved
+          PIResponse: result.data,
           status: result.data?.status?.code || "UNKNOWN",
           message: result.data?.status?.message || "",
           createdAt: new Date().toISOString(),
@@ -112,7 +120,7 @@ async function processBatch(users, token) {
 
     await UserDB.updateOne({ phone: user.phone }, updateDoc);
 
-    // 🕒 Delay of 1 second between each request
+    // 🕐 Wait 1 second before next API call
     await new Promise((resolve) => setTimeout(resolve, 1000));
   }
 }
