@@ -55,8 +55,12 @@ async function sendToPI(user, token) {
       pincode: String(user.pincode || "110001"),
     },
     employment_details: {
-      employment_type: user.employment,
-      monthly_income: user.income,
+      employment_type: ["SALARIED", "SELF_EMPLOYED"].includes(
+        user.employment?.toUpperCase(),
+      )
+        ? user.employment.toUpperCase()
+        : "SALARIED", // fallback
+      monthly_income: String(user.income || "0"),
     },
     loan_requirement: {
       desired_loan_amount: String(user.desired_loan_amount || 350000),
