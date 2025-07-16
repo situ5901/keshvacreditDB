@@ -48,13 +48,13 @@ async function pushLeads(token) {
       const payload = {
         client_request_id: doc.client_request_id ?? `REQ${Date.now()}`,
         name: {
-          first: "sit",
+          first: "ohn",
           middle: "William",
           last: "Doe",
         },
-        phone_number: "9176543214",
-        email: "jhn@example.com",
-        pan: "BXZPP2345K",
+        phone_number: "9806543214",
+        email: "ohn@example.com",
+        pan: "RFTPP9876M",
         dob: "1990-01-21",
         current_address: {
           pincode: "400001",
@@ -74,11 +74,11 @@ async function pushLeads(token) {
         },
       });
 
-      // ✅ Extract and print full response
-      const resData = response.data;
       console.log(`✅ Lead Pushed for ${doc.phone || "N/A"}`);
-      console.log("📦 Response Status:", resData.status);
-      console.log("🏦 Available Lender Types:", resData.available_lender_types);
+      console.log(
+        "📦 Full API Response:\n",
+        JSON.stringify(response.data, null, 2),
+      );
     }
   } catch (error) {
     console.error("❌ Lead push error:", error.response?.data || error.message);
