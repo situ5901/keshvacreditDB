@@ -48,13 +48,13 @@ async function pushLeads(token) {
       const payload = {
         client_request_id: doc.client_request_id ?? `REQ${Date.now()}`,
         name: {
-          first: "John",
+          first: "sit",
           middle: "William",
           last: "Doe",
         },
-        phone_number: "9876543214",
-        email: "john@example.com",
-        pan: "AABPC1234A",
+        phone_number: "9176543214",
+        email: "jhn@example.com",
+        pan: "BXZPP2345K",
         dob: "1990-01-21",
         current_address: {
           pincode: "400001",
