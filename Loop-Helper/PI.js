@@ -31,7 +31,7 @@ function buildLeadPayload(doc) {
     phone_number: doc.phone ?? "9876543210",
     email: doc.email ?? "john.doe@example.com",
     pan: doc.pan ?? "PPPPP0000P",
-    dob: doc.dob ?? "1990-01-15",
+    dob: "1990-01-01",
     current_address: {
       pincode: String(doc.pincode ?? "400001"), // 🔧 fix here
     },
