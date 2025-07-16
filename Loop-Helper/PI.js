@@ -46,30 +46,30 @@ async function pushLeads(token) {
 
     for (const doc of docs) {
       const payload = {
-        client_request_id: "REQ123456789",
+        client_request_id: "REQ202507160001", // updated unique ID
         name: {
-          first: "John",
-          middle: "William",
-          last: "Doe",
+          first: "Rahul",
+          middle: "Kumar",
+          last: "Sharma",
         },
-        phone_number: "9816543210",
-        email: "johndoe@example.com",
-        pan: "ZXYPP9876R",
-        dob: "1990-01-15",
+        phone_number: "9898989898", // new phone
+        email: "rahul.sharma@example.com", // new email
+        pan: "ABCPP1234A", // new valid PAN (4th letter = P)
+        dob: "1992-03-10", // changed DOB
         current_address: {
-          pincode: "400001",
+          pincode: "110001", // Delhi CP pincode (for example)
         },
         employment_details: {
           employment_type: "SALARIED",
-          monthly_income: "75000",
+          monthly_income: "85000", // new income
         },
         loan_requirement: {
-          desired_loan_amount: "500000",
+          desired_loan_amount: "350000", // new loan amount
         },
         custom_fields: {
-          utm_source: "whatsapp",
-          agent_code: "ALT001",
-          ref_campaign: "july-loan",
+          utm_source: "google_ads", // new UTM
+          agent_code: "AGT777", // new agent code
+          ref_campaign: "monsoon-offer-2025", // new campaign
         },
         evaluation_type: "BASIC",
       };
