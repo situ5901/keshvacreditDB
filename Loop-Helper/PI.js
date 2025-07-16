@@ -52,9 +52,9 @@ async function pushLeads(token) {
           middle: "William",
           last: "Doe",
         },
-        phone_number: "9876543210",
-        email: "john.doe@example.com",
-        pan: "MNSPP3456K",
+        phone_number: "9816543210",
+        email: "johndoe@example.com",
+        pan: "ZXYPP9876R",
         dob: "1990-01-15",
         current_address: {
           pincode: "400001",
@@ -68,7 +68,7 @@ async function pushLeads(token) {
         },
         custom_fields: {
           utm_source: "whatsapp",
-          agent_code: "AGT001",
+          agent_code: "ALT001",
           ref_campaign: "july-loan",
         },
         evaluation_type: "BASIC",
