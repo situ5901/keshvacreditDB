@@ -52,16 +52,16 @@ async function pushLeads(token) {
           middle: doc.middle_name ?? "William",
           last: doc.last_name ?? "Doe",
         },
-        phone_number: doc.phone ?? "9876543210",
-        email: doc.email ?? "john.doe@example.com",
-        pan: doc.pan ?? "PPPPP0000P",
+        phone_number: "9876543210",
+        email: "john.doe@example.com",
+        pan: "PPPPP0000P",
         dob: "1990-01-01",
         current_address: {
-          pincode: String(doc.pincode ?? "400001"),
+          pincode: "400001", // 🔧 fix here
         },
         employment_details: {
-          employment_type: doc.employment_type ?? "SALARIED",
-          monthly_income: doc.monthly_income ?? "75000",
+          employment_type: "SALARIED",
+          monthly_income: "75000",
         },
       };
 
