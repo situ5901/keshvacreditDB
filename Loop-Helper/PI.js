@@ -19,6 +19,8 @@ const UserDB = mongoose.model(
   "smcoll",
   new mongoose.Schema({}, { collection: "smcoll", strict: false }),
 );
+
+//add
 async function getAuthToken() {
   const payload = {
     client_id: "keshvacredit",
