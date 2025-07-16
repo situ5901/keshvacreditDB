@@ -3,21 +3,17 @@ const app = express();
 const mongoose = require("mongoose");
 const axios = require("axios");
 
-// Environment variable for MongoDB URI
 const MONGODB_URIVISH = process.env.MONGODB_URIVISH;
 
-// MongoDB Connection
 mongoose
   .connect(MONGODB_URIVISH)
   .then(() => console.log("✅ MongoDB Connected Successfully"))
   .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
 
-// Mongoose Schema and Model for UserDB (smcoll collection)
 const UserDB = mongoose.model(
   "smcoll",
   new mongoose.Schema({}, { collection: "smcoll", strict: false }),
 );
-
 // Constants
 const BATCH_SIZE = 100;
 const TOKEN_API_URL = "https://vnotificationgw.uat.pointz.in/v1/auth/token";
