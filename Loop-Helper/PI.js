@@ -33,7 +33,7 @@ function buildLeadPayload(doc) {
     pan: doc.pan ?? "PPPPP0000P",
     dob: doc.dob ?? "1990-01-15",
     current_address: {
-      pincode: doc.pincode ?? 226008,
+      pincode: String(doc.pincode ?? "400001"), // 🔧 fix here
     },
     employment_details: {
       employment_type: doc.employment_type ?? "SALARIED",
@@ -42,8 +42,8 @@ function buildLeadPayload(doc) {
     loan_requirement: {
       desired_loan_amount: doc.desired_loan_amount ?? "500000",
     },
-    custom_fields: {}, // add any extra key‑values here
-    evaluation_type: "BASIC", // or whatever your flow needs
+    custom_fields: {},
+    evaluation_type: "BASIC",
   };
 }
 
