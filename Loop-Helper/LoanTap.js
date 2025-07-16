@@ -3,16 +3,16 @@ const mongoose = require("mongoose");
 const crypto = require("crypto");
 require("dotenv").config();
 
-const MONGODB_URINEW = process.env.MONGODB_URINEW;
+const MONGODB_SITU = process.env.MONGODB_SITU;
 
 mongoose
-  .connect(MONGODB_URINEW)
+  .connect(MONGODB_SITU)
   .then(() => console.log("✅ MongoDB Connected Successfully"))
   .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
 
 const UserDB = mongoose.model(
-  "LoanTap",
-  new mongoose.Schema({}, { collection: "LoanTap", strict: false }),
+  "Componant",
+  new mongoose.Schema({}, { collection: "Componant", strict: false }),
 );
 
 const MetaDB = mongoose.model(
