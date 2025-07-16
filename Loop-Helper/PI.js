@@ -52,10 +52,10 @@ async function pushLeads(token) {
           middle: "William",
           last: "Doe",
         },
-        phone_number: "9876543210",
-        email: "john.doe@example.com",
-        pan: "PPPPP0000P",
-        dob: "1990-01-01",
+        phone_number: "9876543214",
+        email: "john@example.com",
+        pan: "ABCDL1201L",
+        dob: "1990-01-21",
         current_address: {
           pincode: "400001", // 🔧 fix here
         },
