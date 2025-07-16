@@ -2,6 +2,8 @@ const axios = require("axios");
 const mongoose = require("mongoose");
 const dotenv = require("dotenv");
 
+dotenv.config(); // <--- ADD THIS LINE
+
 const MONGODB_SITU = process.env.MONGODB_SITU;
 
 mongoose
