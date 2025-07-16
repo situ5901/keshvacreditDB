@@ -6,7 +6,7 @@ const MONGODB_URIVISH = process.env.MONGODB_URIVISH;
 const TOKEN_API_URL = "https://vnotificationgw.uat.pointz.in/v1/auth/token";
 const LEAD_CREATE_API_URL =
   "https://vnotificationgw.uat.pointz.in/v1/leads/loans/create";
-const BATCH_SIZE = 1; // increase in prod
+const BATCH_SIZE = 1;
 
 mongoose
   .connect(MONGODB_URIVISH)
@@ -18,26 +18,20 @@ const UserDB = mongoose.model(
   new mongoose.Schema({}, { collection: "smcoll", strict: false }),
 );
 
-const TokenAPIs = "https://vnotificationgw.uat.pointz.in/v1/auth/token";
-const LeadCreateAPIs =
-  "https://vnotificationgw.uat.pointz.in/v1/leads/loans/create";
-
 async function getAuthToken() {
   try {
     const payload = {
       client_id: "keshvacredit",
       client_secret: "AW21Bu)jQ15eiDf[",
     };
-    const { data } = await axios.post(TokenAPIs, payload, {
+    const { data } = await axios.post(TOKEN_API_URL, payload, {
       headers: { "Content-Type": "application/json" },
     });
 
-    console.log("🔸 Raw token API response:", JSON.stringify(data, null, 2));
+    console.log("🔸 Token Response:", JSON.stringify(data, null, 2));
 
     const token = data?.auth_token || data?.data?.auth_token;
-    if (!token) {
-      throw new Error(`❌ Token missing in response`);
-    }
+    if (!token) throw new Error("❌ Token missing in response");
 
     return token;
   } catch (err) {
@@ -46,4 +40,52 @@ async function getAuthToken() {
   }
 }
 
-getAuthToken();
+async function pushLeads(token) {
+  try {
+    const docs = await UserDB.find().limit(BATCH_SIZE);
+
+    for (const doc of docs) {
+      const payload = {
+        client_request_id: doc.client_request_id ?? `REQ${Date.now()}`,
+        name: {
+          first: doc.first_name ?? "John",
+          middle: doc.middle_name ?? "William",
+          last: doc.last_name ?? "Doe",
+        },
+        phone_number: doc.phone ?? "9876543210",
+        email: doc.email ?? "john.doe@example.com",
+        pan: doc.pan ?? "PPPPP0000P",
+        dob: doc.dob ?? "1990-01-01",
+        current_address: {
+          pincode: String(doc.pincode ?? "400001"),
+        },
+        employment_details: {
+          employment_type: doc.employment_type ?? "SALARIED",
+          monthly_income: doc.monthly_income ?? "75000",
+        },
+      };
+
+      const response = await axios.post(LEAD_CREATE_API_URL, payload, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      console.log(`✅ Lead Pushed for ${doc.phone}:`, response.data);
+    }
+  } catch (error) {
+    console.error("❌ Lead push error:", error.response?.data || error.message);
+  }
+}
+
+// Main function
+(async () => {
+  try {
+    const token = await getAuthToken();
+    await pushLeads(token);
+    mongoose.disconnect();
+  } catch (err) {
+    console.error("❌ Error:", err.message);
+  }
+})();
