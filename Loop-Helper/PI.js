@@ -107,9 +107,10 @@ async function processBatch(users, token) {
       $push: {
         apiResponse: {
           PIResponse: result.data,
-          status: result.data?.status?.code || "UNKNOWN",
-          message: result.data?.status?.message || "",
-          createdAt: new Date().toISOString(),
+          status: result.data?.status?.code ?? null,
+          message: result.data?.status?.message ?? null,
+          lender_types: result.data?.available_lender_types ?? [],
+          createdAt: new Date(),
         },
         RefArr: {
           name: REF_NAME,
