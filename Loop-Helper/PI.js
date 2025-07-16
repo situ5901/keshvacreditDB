@@ -57,14 +57,16 @@ async function pushLeads(token) {
         pan: "AABPC1234A",
         dob: "1990-01-21",
         current_address: {
-          pincode: "400001", // 🔧 fix here
+          pincode: "400001",
         },
         employment_details: {
           employment_type: "SALARIED",
           monthly_income: "75000",
         },
       };
+
       console.log("📤 Sending Payload to API:", payload);
+
       const response = await axios.post(LEAD_CREATE_API_URL, payload, {
         headers: {
           "Content-Type": "application/json",
@@ -72,7 +74,11 @@ async function pushLeads(token) {
         },
       });
 
-      console.log(`✅ Lead Pushed for ${doc.phone}:`, response.data);
+      // ✅ Extract and print full response
+      const resData = response.data;
+      console.log(`✅ Lead Pushed for ${doc.phone || "N/A"}`);
+      console.log("📦 Response Status:", resData.status);
+      console.log("🏦 Available Lender Types:", resData.available_lender_types);
     }
   } catch (error) {
     console.error("❌ Lead push error:", error.response?.data || error.message);
