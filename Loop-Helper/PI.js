@@ -1,6 +1,5 @@
 const mongoose = require("mongoose");
 const axios = require("axios");
-const util = require("util"); // Added for deep inspect
 require("dotenv").config();
 
 const MONGODB_URIVISH = process.env.MONGODB_URIVISH;
@@ -90,18 +89,7 @@ async function sendToPI(user, token) {
       },
     });
 
-    // Complete response logged clearly (pretty print)
-    console.log(
-      "✅ Full API Response (JSON.stringify):\n",
-      JSON.stringify(data, null, 2),
-    );
-
-    // Complete response logged with deep inspect and colors (for Node.js console)
-    console.log(
-      "✅ Full API Response (util.inspect):\n",
-      util.inspect(data, { showHidden: false, depth: null, colors: true }),
-    );
-
+    console.log("✅ Full API Response:\n", JSON.stringify(data, null, 2));
     return { success: true, data };
   } catch (err) {
     const errorData = err.response?.data || { message: err.message };
@@ -119,12 +107,6 @@ async function processBatch(users, token) {
       $push: {
         apiResponse: {
           PIResponse: result.data,
-          status: result.data?.status?.code ?? null,
-          message: result.data?.status?.message ?? null,
-          lender_types: result.data?.available_lender_types ?? [],
-          createdAt: new Date(),
-        },
-        RefArr: {
           name: REF_NAME,
           createdAt: new Date().toISOString(),
         },
