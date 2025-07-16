@@ -64,7 +64,7 @@ async function pushLeads(token) {
           monthly_income: "75000",
         },
       };
-      console.log("📤 Sending Payload to API:" payload);
+      console.log("📤 Sending Payload to API:", payload);
       const response = await axios.post(LEAD_CREATE_API_URL, payload, {
         headers: {
           "Content-Type": "application/json",
