@@ -18,7 +18,6 @@ const UserDB = mongoose.model(
   new mongoose.Schema({}, { collection: "smcoll", strict: false }),
 );
 
-// const BATCH_SIZE = 1;
 const TokenAPIs = "https://vnotificationgw.uat.pointz.in/v1/auth/token";
 const LeadCreateAPIs =
   "https://vnotificationgw.uat.pointz.in/v1/leads/loans/create";
@@ -29,13 +28,10 @@ async function getAuthToken() {
       client_id: "keshvacredit",
       client_secret: "AW21Bu)jQ15eiDf[",
     };
-
-    // 🔹 Call the token API
     const { data } = await axios.post(TokenAPIs, payload, {
       headers: { "Content-Type": "application/json" },
     });
 
-    // 🔹 Print the full API response
     console.log("🔸 Raw token API response:", JSON.stringify(data, null, 2));
 
     const token = data?.auth_token || data?.data?.auth_token;
@@ -43,13 +39,11 @@ async function getAuthToken() {
       throw new Error(`❌ Token missing in response`);
     }
 
-    console.log("✅ Token generated successfully:", token); // print token too
-    return token; // <-- single return
+    return token;
   } catch (err) {
     console.error("❌ Token error:", err.response?.data || err.message);
     throw err;
   }
 }
 
-getAuthToken(); // will print the response & token in your console
 getAuthToken();
