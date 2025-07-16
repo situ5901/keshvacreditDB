@@ -54,7 +54,7 @@ async function pushLeads(token) {
         },
         phone_number: "9876543214",
         email: "john@example.com",
-        pan: "LMNOP4567K",
+        pan: "AABPC1234A",
         dob: "1990-01-21",
         current_address: {
           pincode: "400001", // 🔧 fix here
