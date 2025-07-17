@@ -18,6 +18,36 @@ const UserDB = mongoose.model(
   "smcoll",
   new mongoose.Schema({}, { collection: "smcoll", strict: false }),
 );
+
+// 🔧 Age Calculator
+function calculateAge(dob) {
+  try {
+    const birthDate = new Date(dob);
+    if (isNaN(birthDate)) return null;
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const m = today.getMonth() - birthDate.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    return age;
+  } catch {
+    return null;
+  }
+}
+
+// 🔧 Date Format
+function formatDate(dob) {
+  try {
+    const date = new Date(dob);
+    if (isNaN(date)) return null;
+    return date.toISOString().split("T")[0]; // YYYY-MM-DD
+  } catch {
+    return null;
+  }
+}
+
+// 🔐 Get Auth Token
 async function getAuthToken() {
   const payload = {
     client_id: "keshvacredit",
@@ -29,19 +59,17 @@ async function getAuthToken() {
   return data?.auth_token || data?.data?.auth_token;
 }
 
-function formatDate(dob) {
-  try {
-    const date = new Date(dob);
-    if (isNaN(date)) return null;
-    return date.toISOString().split("T")[0]; // YYYY-MM-DD
-  } catch {
-    return null;
-  }
-}
-
+// 🚀 Send Data to PI (with filtering logic)
 async function sendToPI(user, token) {
-  const fullName = user.name ? user.name.trim() : "";
+  const income = Number(user.income || 0);
+  const age = calculateAge(user.dob);
 
+  if (income < 20000 || !age || age < 21 || age > 57) {
+    console.log(`⏭️ Skipping ${user.phone} (Income: ${income}, Age: ${age})`);
+    return { success: false, data: "Skipped due to income/age criteria" };
+  }
+
+  const fullName = user.name ? user.name.trim() : "";
   let firstName = "";
   let lastName = "";
 
@@ -60,11 +88,8 @@ async function sendToPI(user, token) {
   }
 
   const payload = {
-    client_request_id: `REQ${Date.now()}${Math.floor(Math.random() * 1000)}`, // ✅ Unique ID
-    name: {
-      first: firstName,
-      last: lastName,
-    },
+    client_request_id: `REQ${Date.now()}${Math.floor(Math.random() * 1000)}`,
+    name: { first: firstName, last: lastName },
     phone_number: user.phone,
     email: user.email,
     pan: user.pan,
@@ -78,7 +103,7 @@ async function sendToPI(user, token) {
       )
         ? user.employment.toUpperCase()
         : "SALARIED",
-      monthly_income: String(user.income || "0"),
+      monthly_income: String(income),
     },
     loan_requirement: {
       desired_loan_amount: String(user.desired_loan_amount || 350000),
@@ -108,6 +133,8 @@ async function sendToPI(user, token) {
     return { success: false, data: errorData };
   }
 }
+
+// 🔄 Process 1 batch
 async function processBatch(users, token) {
   for (const user of users) {
     const result = await sendToPI(user, token);
@@ -124,10 +151,13 @@ async function processBatch(users, token) {
         },
       },
     };
+
     await UserDB.updateOne({ phone: user.phone }, updateDoc);
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    await new Promise((resolve) => setTimeout(resolve, 1000)); // Delay for 1 second
   }
 }
+
+// 🚀 Start Main Loop
 async function main() {
   try {
     const token = await getAuthToken();
@@ -152,4 +182,5 @@ async function main() {
     mongoose.connection.close();
   }
 }
+
 main();
