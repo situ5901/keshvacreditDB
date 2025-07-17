@@ -3,16 +3,16 @@ const axios = require("axios");
 const qs = require("qs");
 require("dotenv").config();
 
-const MONGODB_SITU = process.env.MONGODB_SITU;
+const MONGODB_URINEW = process.env.MONGODB_URINEW;
 
 mongoose
-  .connect(MONGODB_SITU)
+  .connect(MONGODB_URINEW)
   .then(() => console.log("✅ MongoDB Connected Successfully"))
   .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
 
 const UserDB = mongoose.model(
-  "smalter",
-  new mongoose.Schema({}, { collection: "smalter", strict: false }),
+  "smcoll",
+  new mongoose.Schema({}, { collection: "smcoll", strict: false }),
 );
 
 const BATCH_SIZE = 10;

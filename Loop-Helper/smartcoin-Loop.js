@@ -11,7 +11,7 @@ mongoose
   .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
 
 const UserDB = mongoose.model(
-  "smcoll", // ✅ Change collection name
+  "smcoll",
   new mongoose.Schema({}, { collection: "smcoll", strict: false }),
 );
 //this is the api key
