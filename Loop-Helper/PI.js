@@ -18,21 +18,15 @@ const UserDB = mongoose.model(
   "smcoll",
   new mongoose.Schema({}, { collection: "smcoll", strict: false }),
 );
-const countSuccess = 0;
-function calculateAge(dob) {
-  try {
-    const birthDate = new Date(dob);
-    if (isNaN(birthDate)) return null;
-    const today = new Date();
-    let age = today.getFullYear() - birthDate.getFullYear();
-    const m = today.getMonth() - birthDate.getMonth();
-    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
-      age--;
-    }
-    return age;
-  } catch {
-    return null;
-  }
+async function getAuthToken() {
+  const payload = {
+    client_id: "keshvacredit",
+    client_secret: "usH-ew;mcv5lk7<4",
+  };
+  const { data } = await axios.post(TOKEN_API_URL, payload, {
+    headers: { "Content-Type": "application/json" },
+  });
+  return data?.auth_token || data?.data?.auth_token;
 }
 
 function formatDate(dob) {
@@ -45,26 +39,9 @@ function formatDate(dob) {
   }
 }
 
-async function getAuthToken() {
-  const payload = {
-    client_id: "keshvacredit",
-    client_secret: "usH-ew;mcv5lk7<4",
-  };
-  const { data } = await axios.post(TOKEN_API_URL, payload, {
-    headers: { "Content-Type": "application/json" },
-  });
-  return data?.auth_token || data?.data?.auth_token;
-}
 async function sendToPI(user, token) {
-  const income = Number(user.income || 0);
-  const age = calculateAge(user.dob);
-
-  if (income >= 20000 || !age || age >= 21 || age <= 57) {
-    console.log(`⏭️ Skipping ${user.phone} (Income: ${income}, Age: ${age})`);
-    return { success: false, data: "Skipped due to income/age criteria" };
-  }
-
   const fullName = user.name ? user.name.trim() : "";
+
   let firstName = "";
   let lastName = "";
 
@@ -83,8 +60,11 @@ async function sendToPI(user, token) {
   }
 
   const payload = {
-    client_request_id: `REQ${Date.now()}${Math.floor(Math.random() * 1000)}`,
-    name: { first: firstName, last: lastName },
+    client_request_id: `REQ${Date.now()}${Math.floor(Math.random() * 1000)}`, // ✅ Unique ID
+    name: {
+      first: firstName,
+      last: lastName,
+    },
     phone_number: user.phone,
     email: user.email,
     pan: user.pan,
@@ -98,7 +78,7 @@ async function sendToPI(user, token) {
       )
         ? user.employment.toUpperCase()
         : "SALARIED",
-      monthly_income: String(income),
+      monthly_income: String(user.income || "0"),
     },
     loan_requirement: {
       desired_loan_amount: String(user.desired_loan_amount || 350000),
@@ -131,31 +111,25 @@ async function sendToPI(user, token) {
 async function processBatch(users, token) {
   for (const user of users) {
     const result = await sendToPI(user, token);
-    if (
-      result.success &&
-      result.data?.message === "Lead created successfully"
-    ) {
-      batchSuccessCount++;
-    }
+
     const updateDoc = {
       $push: {
         apiResponse: {
           PIResponse: result.data,
           createdAt: new Date().toISOString(),
         },
+
         RefArr: {
           name: "PI",
           createdAt: new Date().toISOString(),
         },
       },
     };
-
     await UserDB.updateOne({ phone: user.phone }, updateDoc);
-    await new Promise((resolve) => setTimeout(resolve, 1000)); // Delay for 1 second
+    await new Promise((resolve) => setTimeout(resolve, 1000));
   }
 }
 async function main() {
-  let countSuccess = 0; // ✅ move here and use let
   try {
     const token = await getAuthToken();
 
@@ -165,14 +139,11 @@ async function main() {
         { $limit: BATCH_SIZE },
       ]);
 
-      // if (leads.length === 0) {
-      //   console.log("✅ All leads processed.");
-      //   break;
-      // }
-      if (countSuccess > 10) {
-        console.log("✅ All leads processed.", successCount);
+      if (leads.length === 0) {
+        console.log("✅ All leads processed.");
         break;
       }
+
       await processBatch(leads, token);
       console.log(`✅ Processed ${leads.length} leads`);
     }
@@ -182,6 +153,4 @@ async function main() {
     mongoose.connection.close();
   }
 }
-main();
-
 main();
