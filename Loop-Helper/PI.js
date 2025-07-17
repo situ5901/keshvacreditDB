@@ -18,8 +18,7 @@ const UserDB = mongoose.model(
   "smcoll",
   new mongoose.Schema({}, { collection: "smcoll", strict: false }),
 );
-
-// 🔧 Age Calculator
+const countSuccess = 0;
 function calculateAge(dob) {
   try {
     const birthDate = new Date(dob);
@@ -36,7 +35,6 @@ function calculateAge(dob) {
   }
 }
 
-// 🔧 Date Format
 function formatDate(dob) {
   try {
     const date = new Date(dob);
@@ -47,7 +45,6 @@ function formatDate(dob) {
   }
 }
 
-// 🔐 Get Auth Token
 async function getAuthToken() {
   const payload = {
     client_id: "keshvacredit",
@@ -58,8 +55,6 @@ async function getAuthToken() {
   });
   return data?.auth_token || data?.data?.auth_token;
 }
-
-// 🚀 Send Data to PI (with filtering logic)
 async function sendToPI(user, token) {
   const income = Number(user.income || 0);
   const age = calculateAge(user.dob);
@@ -126,6 +121,10 @@ async function sendToPI(user, token) {
       },
     });
     console.log("✅ Full API Response:\n", JSON.stringify(data, null, 2));
+    if (data.message === "Lead created successfully") {
+      countSuccess++;
+      console.log(`✅ Successfully sent ${countSuccess} leads`);
+    }
     return { success: true, data };
   } catch (err) {
     const errorData = err.response?.data || { message: err.message };
@@ -133,8 +132,6 @@ async function sendToPI(user, token) {
     return { success: false, data: errorData };
   }
 }
-
-// 🔄 Process 1 batch
 async function processBatch(users, token) {
   for (const user of users) {
     const result = await sendToPI(user, token);
@@ -156,8 +153,6 @@ async function processBatch(users, token) {
     await new Promise((resolve) => setTimeout(resolve, 1000)); // Delay for 1 second
   }
 }
-
-// 🚀 Start Main Loop
 async function main() {
   try {
     const token = await getAuthToken();
@@ -168,11 +163,14 @@ async function main() {
         { $limit: BATCH_SIZE },
       ]);
 
-      if (leads.length === 0) {
-        console.log("✅ All leads processed.");
+      // if (leads.length === 0) {
+      //   console.log("✅ All leads processed.");
+      //   break;
+      // }
+      if (successCount > 10) {
+        console.log("✅ All leads processed.", successCount);
         break;
       }
-
       await processBatch(leads, token);
       console.log(`✅ Processed ${leads.length} leads`);
     }
