@@ -182,5 +182,6 @@ async function main() {
     mongoose.connection.close();
   }
 }
+main();
 
 main();
