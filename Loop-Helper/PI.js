@@ -59,7 +59,7 @@ async function sendToPI(user, token) {
   const income = Number(user.income || 0);
   const age = calculateAge(user.dob);
 
-  if (income < 20000 || !age || age < 21 || age > 57) {
+  if (income >= 20000 || !age || age >= 21 || age <= 57) {
     console.log(`⏭️ Skipping ${user.phone} (Income: ${income}, Age: ${age})`);
     return { success: false, data: "Skipped due to income/age criteria" };
   }
