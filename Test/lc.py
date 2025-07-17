@@ -12,7 +12,7 @@ import asyncio
 
 # === Load environment variables ===
 load_dotenv()
-MONGO_URI = os.getenv("MONGODB_URIVISH")
+MONGO_URI = os.getenv("MONGODB_SITU")
 
 # === API Setup ===
 API_URL = "https://dev-tsp-los.lendenclub.com/v2"
@@ -26,7 +26,7 @@ MAX_LEADS = 10
 # === MongoDB Setup ===
 client = MongoClient(MONGO_URI)
 db = client.get_default_database()
-UserDB = db["userdb"]
+UserDB = db["Componant"]
 
 # === Crypto Utility Functions ===
 def pad(data: str) -> bytes:
@@ -83,6 +83,17 @@ def sendToNewAPI(user):
                 "occupation_type": user.get("occupation", "SALARIED"),
                 "income": user.get("income", 25000),
             },
+            "consent_data": {
+            "content": [
+                "CONSENT_TO_SHARE_DATA",
+                "CONSENT_TO_RECEIVE_COMMUNICATIONS"
+            ],
+            "ip_address": "127.0.0.1",
+            "latitude": 18.520430,
+            "longitude": 19.520430,
+            "device_id": "23456789",
+            "consent_dtm": "2024-09-05 12:04:31.132 +0530"
+        }
         },
         "api_code": API_CODE,
     }
