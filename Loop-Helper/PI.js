@@ -3,9 +3,8 @@ const axios = require("axios");
 require("dotenv").config();
 
 const MONGODB_URIVISH = process.env.MONGODB_URIVISH;
-const TOKEN_API_URL = "https://vnotificationgw.epifi.in/v1/auth/token";
-const LEAD_API_URL =
-  "https://vnotificationgw.epifi.in/leads/loans/create";
+const TOKEN_API_URL = "https://vnotificationgw.epifi.in/auth/token";
+const LEAD_API_URL = "https://vnotificationgw.epifi.in/leads/loans/create";
 
 const BATCH_SIZE = 10;
 const REF_NAME = "PI";
@@ -22,7 +21,7 @@ const UserDB = mongoose.model(
 async function getAuthToken() {
   const payload = {
     client_id: "keshvacredit",
-    client_secret: "AW21Bu)jQ15eiDf[",
+    client_secret: "usH-ew;mcv5lk7<4",
   };
   const { data } = await axios.post(TOKEN_API_URL, payload, {
     headers: { "Content-Type": "application/json" },
