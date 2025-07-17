@@ -19,6 +19,7 @@ const UserDB = mongoose.model(
   new mongoose.Schema({}, { collection: "smcoll", strict: false }),
 );
 const countSuccess = 0;
+const BATCH_SIZE = 1;
 function calculateAge(dob) {
   try {
     const birthDate = new Date(dob);
@@ -167,7 +168,7 @@ async function main() {
       //   console.log("✅ All leads processed.");
       //   break;
       // }
-      if (successCount > 10) {
+      if (countSuccess > 10) {
         console.log("✅ All leads processed.", successCount);
         break;
       }
