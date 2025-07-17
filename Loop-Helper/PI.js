@@ -3,9 +3,8 @@ const axios = require("axios");
 require("dotenv").config();
 
 const MONGODB_URIVISH = process.env.MONGODB_URIVISH;
-const TOKEN_API_URL = "https://vnotificationgw.uat.pointz.in/v1/auth/token";
-const LEAD_API_URL =
-  "https://vnotificationgw.uat.pointz.in/v1/leads/loans/create";
+const TOKEN_API_URL = "https://vnotificationgw.epifi.in/v1/auth/token";
+const LEAD_API_URL = "https://vnotificationgw.epifi.in/leads/loans/create";
 
 const BATCH_SIZE = 10;
 const REF_NAME = "PI";
