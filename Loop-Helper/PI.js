@@ -19,7 +19,6 @@ const UserDB = mongoose.model(
   new mongoose.Schema({}, { collection: "smcoll", strict: false }),
 );
 const countSuccess = 0;
-const BATCH_SIZE = 1;
 function calculateAge(dob) {
   try {
     const birthDate = new Date(dob);
@@ -122,10 +121,6 @@ async function sendToPI(user, token) {
       },
     });
     console.log("✅ Full API Response:\n", JSON.stringify(data, null, 2));
-    if (data.message === "Lead created successfully") {
-      countSuccess++;
-      console.log(`✅ Successfully sent ${countSuccess} leads`);
-    }
     return { success: true, data };
   } catch (err) {
     const errorData = err.response?.data || { message: err.message };
@@ -136,7 +131,12 @@ async function sendToPI(user, token) {
 async function processBatch(users, token) {
   for (const user of users) {
     const result = await sendToPI(user, token);
-
+    if (
+      result.success &&
+      result.data?.message === "Lead created successfully"
+    ) {
+      batchSuccessCount++;
+    }
     const updateDoc = {
       $push: {
         apiResponse: {
@@ -155,6 +155,7 @@ async function processBatch(users, token) {
   }
 }
 async function main() {
+  let countSuccess = 0; // ✅ move here and use let
   try {
     const token = await getAuthToken();
 
