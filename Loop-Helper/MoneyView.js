@@ -341,9 +341,7 @@ async function fetchJourneyUrl(leadId, token) {
 }
 
 async function processBatch(leads, token) {
-  // Process leads sequentially within the batch to respect OFFER_LEADS more strictly
   for (const lead of leads) {
-    // Add a check at the start of each lead processing
     if (NoDedupeCount >= OFFER_LEADS) {
       console.log(
         "🚨 'No dedupe found' limit reached during batch processing. Stopping current batch early.",
@@ -546,8 +544,6 @@ async function Loop() {
       console.error("❌ Error during batch processing:", err.message);
     }
 
-    // Only update totalLeads if the loop wasn't broken by a `NoDedupeCount` limit hit
-    // This ensures totalProcessed count is accurate if a batch was partially processed
     if (NoDedupeCount < OFFER_LEADS) {
       totalLeads += leads.length;
     }
@@ -564,5 +560,5 @@ async function Loop() {
     `\n🎉 Process Finished! Final 🎯 Count No Dedupe: ${NoDedupeCount}`,
   );
 }
-
+//Loop-Test
 Loop();
