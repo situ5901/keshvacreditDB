@@ -4,9 +4,10 @@ require("dotenv").config();
 
 const MONGODB_URIVISH = process.env.MONGODB_URIVISH;
 const TOKEN_API_URL = "https://vnotificationgw.epifi.in/auth/token";
-const LEAD_API_URL = "https://vnotificationgw.epifi.in/leads/loans/create";
+const LEAD_API_URL =
+  "https://vnotificationgw.epifi.in/leads/loans/create";
 
-const BATCH_SIZE = 1;
+const BATCH_SIZE = 10;
 const REF_NAME = "PI";
 
 mongoose
