@@ -182,7 +182,7 @@ exports.deleteAgents = async (req, res) => {
 
 exports.getwebUsers = async (req, res) => {
   try {
-    const users = await User.find();
+    const users = await User.countDocuments();
     if (!users) return res.status(404).json({ message: "❌ User not found" });
     return res.status(200).json({ message: "getAllUsers", users });
   } catch (error) {
