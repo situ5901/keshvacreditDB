@@ -5,6 +5,7 @@ const nodemailer = require("nodemailer");
 require("dotenv").config();
 const bcrypt = require("bcrypt");
 const Member = require("../../models/Member");
+const User = require("../../../models/user.model.js"); // Ensure correct path
 const AgentModel = require("../../models/AgentModel.js");
 // const {
 //   sendAdminLoginAlert,
@@ -175,6 +176,17 @@ exports.deleteAgents = async (req, res) => {
     return res.status(200).json({ message: "✅ Agent deleted successfully" });
   } catch (error) {
     console.error("❌ Error getting agents:", error);
+    res.status(500).json({ message: "❌ Server error" });
+  }
+};
+
+exports.getwebUsers = async (req, res) => {
+  try {
+    const users = await User.find();
+    if (!users) return res.status(404).json({ message: "❌ User not found" });
+    return res.status(200).json({ message: "getAllUsers", users });
+  } catch (error) {
+    console.error("❌ Error getting users:", error);
     res.status(500).json({ message: "❌ Server error" });
   }
 };
