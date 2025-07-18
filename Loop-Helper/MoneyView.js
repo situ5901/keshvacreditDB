@@ -12,8 +12,8 @@ mongoose
   .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
 
 const UserDB = mongoose.model(
-  "smcoll",
-  new mongoose.Schema({}, { collection: "smcoll", strict: false }),
+  "MoneyView",
+  new mongoose.Schema({}, { collection: "MoneyView", strict: false }),
 );
 const Healthcheck_API = "https://atlas.whizdm.com/atlas/v1/health";
 const TOKEN_API = "https://atlas.whizdm.com/atlas/v1/token";
