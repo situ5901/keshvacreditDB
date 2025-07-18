@@ -7,5 +7,5 @@ router.post("/delete/member", adminAuth, adminController.deleteMember);
 router.post("/create/member", adminAuth, adminController.createMember);
 router.post("/create/agent", adminAuth, adminController.createAgent);
 router.post("/delete/agent", adminAuth, adminController.deleteAgents);
-router.get("/get/web/users", adminAuth, adminController.getwebUsers);
+router.get("/get/all/users", adminAuth, adminController.getAllUsers);
 module.exports = router;

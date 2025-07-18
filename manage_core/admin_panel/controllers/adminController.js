@@ -6,6 +6,7 @@ require("dotenv").config();
 const bcrypt = require("bcrypt");
 const Member = require("../../models/Member");
 const User = require("../../../models/user.model.js"); // Ensure correct path
+const Users = require("../../../models/checkdata.js"); // adjust path if needed
 const AgentModel = require("../../models/AgentModel.js");
 // const {
 //   sendAdminLoginAlert,
@@ -180,13 +181,24 @@ exports.deleteAgents = async (req, res) => {
   }
 };
 
-exports.getwebUsers = async (req, res) => {
+exports.getAllUsers = async (req, res) => {
   try {
     const users = await User.countDocuments();
-    if (!users) return res.status(404).json({ message: "❌ User not found" });
-    return res.status(200).json({ message: "getAllUsers", users });
+    const users2 = await Users.countDocuments();
+
+    if (users === 0) {
+      return res
+        .status(404)
+        .json({ message: "❌ No users found in User collection" });
+    }
+
+    return res.status(200).json({
+      message: "✅ User counts retrieved successfully",
+      userCount: users,
+      users2Count: users2,
+    });
   } catch (error) {
     console.error("❌ Error getting users:", error);
-    res.status(500).json({ message: "❌ Server error" });
+    res.status(500).json({ message: "❌ Server error", error: error.message });
   }
 };
