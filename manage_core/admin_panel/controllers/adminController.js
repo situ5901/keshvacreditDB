@@ -192,10 +192,13 @@ exports.getAllUsers = async (req, res) => {
         .json({ message: "❌ No users found in User collection" });
     }
 
+    totalUsers = users + users2;
+
     return res.status(200).json({
       message: "✅ User counts retrieved successfully",
       userCount: users,
       users2Count: users2,
+      totalUsers,
     });
   } catch (error) {
     console.error("❌ Error getting users:", error);
