@@ -205,3 +205,72 @@ exports.getAllUsers = async (req, res) => {
     res.status(500).json({ message: "❌ Server error", error: error.message });
   }
 };
+
+exports.analysis = async (req, res) => {
+  try {
+    const analisedata = await Users.aggregate([
+      {
+        $project: {
+          isCorrect: {
+            $and: [
+              {
+                $and: [{ $ifNull: ["$phone", false] }, { $ne: ["$phone", ""] }],
+              },
+              {
+                $and: [
+                  { $ifNull: ["$employment", false] },
+                  { $ne: ["$employment", ""] },
+                ],
+              },
+              { $and: [{ $ifNull: ["$dob", false] }, { $ne: ["$dob", ""] }] },
+              {
+                $and: [{ $ifNull: ["$email", false] }, { $ne: ["$email", ""] }],
+              },
+              {
+                $and: [
+                  { $ifNull: ["$gender", false] },
+                  { $ne: ["$gender", ""] },
+                ],
+              },
+              { $and: [{ $ifNull: ["$name", false] }, { $ne: ["$name", ""] }] },
+              { $and: [{ $ifNull: ["$pan", false] }, { $ne: ["$pan", ""] }] },
+              { $and: [{ $ifNull: ["$city", false] }, { $ne: ["$city", ""] }] },
+              {
+                $and: [
+                  { $ifNull: ["$income", false] },
+                  { $ne: ["$income", ""] },
+                ],
+              },
+              {
+                $and: [
+                  { $ifNull: ["$pincode", false] },
+                  { $ne: ["$pincode", ""] },
+                ],
+              },
+              {
+                $and: [{ $ifNull: ["$state", false] }, { $ne: ["$state", ""] }],
+              },
+            ],
+          },
+        },
+      },
+      {
+        $group: {
+          _id: "$isCorrect",
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+
+    return res.status(200).json({
+      message: "✅ Analysis completed",
+      result: analisedata,
+    });
+  } catch (error) {
+    console.error("❌ Error in analysis:", error);
+    return res.status(500).json({
+      message: "❌ Server Error",
+      error: error.message,
+    });
+  }
+};
