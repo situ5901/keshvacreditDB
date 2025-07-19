@@ -18,6 +18,8 @@ const userSchema = new Schema(
         date: Date,
       },
     ],
+    businessName: { type: String, trim: true },
+    businessType: { type: String, trim: true },
     salaryMode: { type: String, trim: true },
     bankName: { type: String, trim: true },
     salarySlip: { type: String, trim: true },
