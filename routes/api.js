@@ -97,7 +97,7 @@ router.post("/userinfo", async (req, res) => {
       income,
       salaryMode,
       bankName,
-      salarySlip
+      salarySlip,
       state,
       city,
       businessName,
