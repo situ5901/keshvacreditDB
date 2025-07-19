@@ -20,7 +20,7 @@ const userSchema = new Schema(
     ],
     salaryMode: { type: String, trim: true },
     bankName: { type: String, trim: true },
-    salarySlype: { type: String, trim: true },
+    salarySlip: { type: String, trim: true },
     pan: { type: String, trim: true },
     aadhar: { type: String, trim: true },
     dob: { type: String, trim: true },
