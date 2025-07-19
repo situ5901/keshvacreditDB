@@ -95,6 +95,9 @@ router.post("/userinfo", async (req, res) => {
       pincode,
       loanAmount,
       income,
+      salaryMode,
+      bankName,
+      salarySlype,
       dob, // fixed
     } = req.body;
 
@@ -172,6 +175,9 @@ router.post("/userinfo", async (req, res) => {
       pincode,
       loanAmount,
       income,
+      salaryMode
+      bankName
+      salarySlype
       dob,
       partner: "Keshvacredit",
     });
