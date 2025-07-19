@@ -175,9 +175,9 @@ router.post("/userinfo", async (req, res) => {
       pincode,
       loanAmount,
       income,
-      salaryMode
-      bankName
-      salarySlype
+      salaryMode,
+      bankName,
+      salarySlype,
       dob,
       partner: "Keshvacredit",
     });
