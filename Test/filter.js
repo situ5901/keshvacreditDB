@@ -30,7 +30,7 @@ router.post("/filterdata", async (req, res) => {
 
   console.log(`✅ Received total ${phones.length} numbers`);
 
-  phones = phones.map(Number);
+  phones = phones.map((p) => String(p).trim());
 
   const BATCH_SIZE = 1000; // 1000 per query
   const CONCURRENCY_LIMIT = 5; // 5 queries in parallel
