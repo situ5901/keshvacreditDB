@@ -172,4 +172,15 @@ router.post("/moneyview/lead", async (req, res) => {
   }
 });
 
+// router.post("/moneyview/status", async (req, res) => {
+//   const { leadId, eventType, eventStatus, timeStamp, extraDetails } = req.body;
+//   if (!leadId || !eventType || !eventStatus || !timeStamp) {
+//     return res.status(400).json({ message: "Missing required fields" });
+//   }
+//
+//   console.log("MoneyView se callback aaya:", req.body);
+//
+//   return res.status(200).json({ message: "Callback received successfully" });
+// });
+
 module.exports = router;

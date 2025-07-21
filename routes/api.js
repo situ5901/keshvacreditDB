@@ -526,4 +526,94 @@ router.post("/partner/page", async (req, res) => {
   }
 });
 
+const getAtlasToken = async () => {
+  try {
+    const tokenRes = await axios.post(
+      "https://atlas.whizdm.com/atlas/v1/token",
+      {
+        userName: "keshvacredit",
+        password: "Zb'91O(Nhy",
+        partnerCode: 422,
+      },
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      },
+    );
+
+    const token = tokenRes.data.token;
+    return token;
+  } catch (err) {
+    console.error(
+      "❌ Error while getting token:",
+      err?.response?.data || err.message,
+    );
+    throw new Error("Token fetch failed");
+  }
+};
+router.post("/check-leads", async (req, res) => {
+  const { leadIds } = req.body;
+
+  if (!Array.isArray(leadIds) || leadIds.length === 0) {
+    return res.status(400).json({
+      success: false,
+      message: "leadIds array is required in request body",
+    });
+  }
+
+  try {
+    // 🔐 Get token from Atlas
+    const token = await getAtlasToken();
+
+    // 🔄 Fetch lead status for each lead ID
+    const results = await Promise.all(
+      leadIds.map(async (leadId) => {
+        try {
+          const response = await axios.get(
+            `https://atlas.whizdm.com/atlas/v1/lead/status/${leadId}`,
+            {
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
+
+          return {
+            leadId,
+            success: true,
+            status: response.data.status || "unknown",
+            fullResponse: response.data,
+          };
+        } catch (err) {
+          return {
+            leadId,
+            success: false,
+            statusCode: err?.response?.status || 500,
+            error:
+              typeof err?.response?.data === "string" &&
+              err.response.data.includes("<html")
+                ? "Internal Server Error from Atlas (HTML page received)"
+                : err?.response?.data || err.message,
+          };
+        }
+      })
+    );
+
+    // ✅ Send Final Response
+    res.status(200).json({
+      success: true,
+      totalLeads: leadIds.length,
+      timestamp: new Date().toISOString(),
+      results,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Something went wrong while fetching data",
+      error: error.message,
+    });
+  }
+});
 module.exports = router;
