@@ -3,6 +3,7 @@ const router = express.Router();
 const adminController = require("../controllers/adminController");
 const adminAuth = require("../middlewares/adminAuth");
 const filterDatabase = require("../filterDB/filterDatabase");
+const checkfields = require("../controllers/adminController");
 router.post("/login", adminController.login);
 router.post("/delete/member", adminAuth, adminController.deleteMember);
 router.post("/create/member", adminAuth, adminController.createMember);

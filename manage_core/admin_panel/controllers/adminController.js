@@ -5,9 +5,10 @@ const nodemailer = require("nodemailer");
 require("dotenv").config();
 const bcrypt = require("bcrypt");
 const Member = require("../../models/Member");
-const User = require("../../../models/user.model.js"); // Ensure correct path
-const Users = require("../../../models/checkdata.js"); // adjust path if needed
+const User = require("../../../models/user.model.js");
+const Users = require("../../../models/checkdata.js");
 const AgentModel = require("../../models/AgentModel.js");
+const CheckUser = require("../../models/checkuser");
 // const {
 //   sendAdminLoginAlert,
 //   sendAdminCreatedAlert,
@@ -23,7 +24,6 @@ exports.login = (req, res) => {
 
   const adminDataPath = path.join(__dirname, "../data/admin.json");
 
-  // Check if file exists
   if (!fs.existsSync(adminDataPath)) {
     return res.status(500).json({ message: "❌ Admin data file not found" });
   }
@@ -36,7 +36,6 @@ exports.login = (req, res) => {
     return res.status(500).json({ message: "❌ Failed to read admin data" });
   }
 
-  // Validate credentials
   if (
     adminName === adminData.adminName &&
     adminMail === adminData.adminMail &&
@@ -66,30 +65,21 @@ exports.createMember = async (req, res) => {
   const { Membername, MemberMail, MemberPassword } = req.body;
 
   try {
-    // Validate required fields
     if (!Membername || !MemberMail || !MemberPassword) {
       return res.status(400).json({ message: "❌ Missing fields" });
     }
 
-    // Check if the member already exists
     const existing = await Member.findOne({ MemberMail });
     if (existing) {
       return res.status(400).json({ message: "❌ Member already exists" });
     }
-
-    // Hash the password
     const hashedPassword = await bcrypt.hash(MemberPassword, 10);
-
-    // Create new member
     const member = new Member({
       Membername,
       MemberMail,
       MemberPassword: hashedPassword,
     });
-
     await member.save();
-
-    // Decode who created the member from the token
     const token = req.headers.authorization?.split(" ")[1];
     let createdBy = "unknown";
 
@@ -99,8 +89,6 @@ exports.createMember = async (req, res) => {
     }
 
     console.log("📧 Sending alert >>", createdBy, MemberMail);
-    // await sendAdminCreatedAlert(createdBy, MemberMail);
-
     res.json({
       role: "Member",
       message: "✅ Member added successfully",

@@ -19,6 +19,8 @@ const userSchema = new Schema(
       },
     ],
     businessName: { type: String, trim: true },
+    doesFileITR: { type: String, trim: true },
+    doesFileGST: { type: String, trim: true },
     businessType: { type: String, trim: true },
     salaryMode: { type: String, trim: true },
     bankName: { type: String, trim: true },

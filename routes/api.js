@@ -102,6 +102,8 @@ router.post("/userinfo", async (req, res) => {
       city,
       businessName,
       businessType,
+      doesFileITR,
+      doesFileGST,
       dob, // fixed
     } = req.body;
 
@@ -187,6 +189,8 @@ router.post("/userinfo", async (req, res) => {
       businessType,
       salarySlip,
       dob,
+      doesFileITR,
+      doesFileGST,
       partner: "Keshvacredit",
     });
 
