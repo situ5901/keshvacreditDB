@@ -35,7 +35,7 @@ const userSchema = new Schema(
     city: { type: String, trim: true },
     state: { type: String, trim: true },
     gender: { type: String, trim: true },
-    employment: { type: String, trim: true },
+    employeeType { type: String, trim: true },
     company_name: { type: String, trim: true },
     income: { type: String, trim: true },
     partner: { type: String, default: "None" },
