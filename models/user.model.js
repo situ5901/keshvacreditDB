@@ -38,7 +38,7 @@ const userSchema = new Schema(
     employment: {
       type: String,
       enum: ["Salaried", "Self-employed", "No-employment"],
-      default: "Salaried",
+      // default: "Salaried",
     },
     company_name: { type: String, trim: true },
     income: { type: String, trim: true },
