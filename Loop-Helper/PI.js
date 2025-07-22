@@ -42,6 +42,7 @@ function loadValidPincodes() {
     console.error(`❌ Error loading pincode file: ${error.message}`);
     return new Set();
   }
+}
 
 async function getAuthToken() {
   const payload = {
@@ -99,7 +100,7 @@ async function sendToPI(user, token) {
     },
     employment_details: {
       employment_type: ["SALARIED", "SELF_EMPLOYED"].includes(
-        user.employment?.toUpperCase(),
+        user.employment?.toUpperCase()
       )
         ? user.employment.toUpperCase()
         : "SALARIED",
@@ -131,7 +132,7 @@ async function sendToPI(user, token) {
     const errorData = err.response?.data || { message: err.message };
     console.error(
       `❌ API Error for user ${user.phone}:\n`,
-      JSON.stringify(errorData, null, 2),
+      JSON.stringify(errorData, null, 2)
     );
     return { success: false, data: errorData };
   }
@@ -139,11 +140,13 @@ async function sendToPI(user, token) {
 
 async function processBatch(users, token, validPincodes) {
   for (const user of users) {
-    const userPincode = String(user.pincode).trim(); // Get the user's pincode
+    const userPincode = String(user.pincode).trim();
+
+    let updateDoc;
 
     if (validPincodes.has(userPincode)) {
       console.log(
-        `Pincode ${userPincode} for user ${user.phone} is valid. Sending to PI.`,
+        `Pincode ${userPincode} for user ${user.phone} is valid. Sending to PI.`
       );
       const result = await sendToPI(user, token);
       updateDoc = {
@@ -153,25 +156,26 @@ async function processBatch(users, token, validPincodes) {
             createdAt: new Date().toISOString(),
           },
           RefArr: {
-            name: REF_NAME, // Marked as successfully sent to PI
+            name: REF_NAME,
             createdAt: new Date().toISOString(),
           },
         },
       };
     } else {
       console.log(
-        `Pincode ${userPincode} for user ${user.phone} is NOT valid. Skipping API hit.`,
+        `Pincode ${userPincode} for user ${user.phone} is NOT valid. Skipping API hit.`
       );
       updateDoc = {
         $push: {
           RefArr: {
-            name: "Pincode Not Valid", // Marked as skipped due to invalid pincode
+            name: "Pincode Not Valid",
             message: `Pincode ${userPincode} is not valid.`,
             createdAt: new Date().toISOString(),
           },
         },
       };
     }
+
     await UserDB.updateOne({ phone: user.phone }, updateDoc);
     await new Promise((resolve) => setTimeout(resolve, 1000));
   }
