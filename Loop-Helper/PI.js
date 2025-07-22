@@ -145,7 +145,7 @@ async function processBatch(users, token, validPincodes) {
     let updateDoc;
 
     // 🧾 Income filter
-    if (income <= 25000) {
+    if (income < 25000) {
       console.log(`⛔ Skipping ${user.phone} due to low income: ₹${income}`);
       updateDoc = {
         $push: {
