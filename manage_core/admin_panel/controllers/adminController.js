@@ -9,6 +9,8 @@ const User = require("../../../models/user.model.js");
 const Users = require("../../../models/checkdata.js");
 const AgentModel = require("../../models/AgentModel.js");
 const CheckUser = require("../../models/checkuser");
+const CheckLender = require("../../models/CheckLenderSchema");
+
 // const {
 //   sendAdminLoginAlert,
 //   sendAdminCreatedAlert,
@@ -228,5 +230,17 @@ exports.analysis = async (req, res) => {
 };
 
 exports.getLenderResponse = async (req, res) => {
-  res.send("getLenderResponse");
+  try {
+    const query = {
+      "apiResponse.moneyViewDedupe.message": "No dedupe found",
+    };
+    const count = await CheckLender.countDocuments(query);
+    return res.status(200).json({
+      success: true,
+      message: `"No dedupe found" count`,
+      count: count,
+    });
+  } catch (error) {
+    console.log(error);
+  }
 };

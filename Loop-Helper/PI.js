@@ -150,7 +150,7 @@ async function processBatch(users, token, validPincodes) {
       updateDoc = {
         $push: {
           RefArr: {
-            name: "Income Below Threshold",
+            name: REF_NAME,
             message: `Income ₹${income} is below 25000.`,
             createdAt: new Date().toISOString(),
           },
@@ -199,7 +199,7 @@ async function processBatch(users, token, validPincodes) {
       updateDoc = {
         $push: {
           RefArr: {
-            name: "Pincode Not Valid",
+            name: REF_NAME,
             message: `Pincode ${userPincode} is not valid.`,
             createdAt: new Date().toISOString(),
           },
@@ -228,7 +228,6 @@ async function main() {
           $match: {
             $and: [
               { "RefArr.name": { $ne: REF_NAME } },
-              { "RefArr.name": { $ne: "Pincode Not Valid" } },
             ],
           },
         },
