@@ -6,7 +6,7 @@ require("dotenv").config();
 const MONGODB_URINEW = process.env.MONGODB_URINEW;
 
 mongoose
-  .connect(MONGODB_SITU)
+  .connect(MONGODB_URINEW)
   .then(() => console.log("✅ MongoDB Connected Successfully"))
   .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
 
