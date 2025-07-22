@@ -137,19 +137,16 @@ async function sendToPI(user, token) {
     return { success: false, data: errorData };
   }
 }
-
+let successCount = 0;
 async function processBatch(users, token, validPincodes) {
   for (const user of users) {
     const userPincode = String(user.pincode).trim();
     const income = Number(user.income || 0);
-
     let updateDoc;
 
-    // ✅ Income filter
+    // 🧾 Income filter
     if (income <= 25000) {
-      console.log(
-        `⛔ Skipping user ${user.phone} due to low income: ₹${income}`,
-      );
+      console.log(`⛔ Skipping ${user.phone} due to low income: ₹${income}`);
       updateDoc = {
         $push: {
           RefArr: {
@@ -160,19 +157,33 @@ async function processBatch(users, token, validPincodes) {
         },
       };
       await UserDB.updateOne({ phone: user.phone }, updateDoc);
-      continue; // Skip to next user
+      continue;
     }
 
-    // ✅ Pincode validation
+    // 📍 Pincode check
     if (validPincodes.has(userPincode)) {
       console.log(
-        `✅ Pincode ${userPincode} for user ${user.phone} is valid. Sending to PI.`,
+        `✅ Valid pincode ${userPincode} for user ${user.phone}. Sending to PI...`,
       );
+
       const result = await sendToPI(user, token);
+      const response = result?.data || {};
+
+      // ✅ Check API response status
+      if (response.status?.code === 0) {
+        successCount++;
+        console.log(`🎯 Success count: ${successCount}`);
+
+        if (successCount >= 3000) {
+          console.log("✅✅ Reached 3000 successful API hits. Stopping now.");
+          break;
+        }
+      }
+
       updateDoc = {
         $push: {
           apiResponse: {
-            PIResponse: result.data,
+            PIResponse: response,
             createdAt: new Date().toISOString(),
           },
           RefArr: {
@@ -183,7 +194,7 @@ async function processBatch(users, token, validPincodes) {
       };
     } else {
       console.log(
-        `❌ Pincode ${userPincode} for user ${user.phone} is NOT valid. Skipping API hit.`,
+        `❌ Invalid pincode ${userPincode} for ${user.phone}. Skipping.`,
       );
       updateDoc = {
         $push: {
@@ -197,7 +208,7 @@ async function processBatch(users, token, validPincodes) {
     }
 
     await UserDB.updateOne({ phone: user.phone }, updateDoc);
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    await new Promise((resolve) => setTimeout(resolve, 1000)); // ⏳ 1s delay between hits
   }
 }
 
