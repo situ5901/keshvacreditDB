@@ -14,14 +14,13 @@ const REF_NAME = "PI";
 const MONGODB_URINEW = process.env.MONGODB_URINEW;
 
 mongoose
-  .connect(MONGODB_SITU)
+  .connect(MONGODB_URINEW)
   .then(() => console.log("✅ MongoDB Connected Successfully"))
   .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
 
 const UserDB = mongoose.model(
   "LoanTap",
   new mongoose.Schema({}, { collection: "LoanTap", strict: false }),
-);
 
 function loadValidPincodes() {
   try {
