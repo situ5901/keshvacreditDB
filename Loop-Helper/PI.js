@@ -20,7 +20,7 @@ mongoose
 
 const UserDB = mongoose.model(
   "LoanTap",
-  new mongoose.Schema({}, { collection: "LoanTap", strict: false })
+  new mongoose.Schema({}, { collection: "LoanTap", strict: false }),
 );
 
 function loadValidPincodes() {
@@ -91,7 +91,7 @@ async function sendToPI(user, token) {
       first: firstName,
       last: lastName,
     },
-    phone_number: user.phone,
+    phone_number: String(user.phone),
     email: user.email,
     pan: user.pan,
     dob: formatDate(user.dob),
@@ -100,7 +100,7 @@ async function sendToPI(user, token) {
     },
     employment_details: {
       employment_type: ["SALARIED", "SELF_EMPLOYED"].includes(
-        user.employment?.toUpperCase()
+        user.employment?.toUpperCase(),
       )
         ? user.employment.toUpperCase()
         : "SALARIED",
@@ -132,7 +132,7 @@ async function sendToPI(user, token) {
     const errorData = err.response?.data || { message: err.message };
     console.error(
       `❌ API Error for user ${user.phone}:\n`,
-      JSON.stringify(errorData, null, 2)
+      JSON.stringify(errorData, null, 2),
     );
     return { success: false, data: errorData };
   }
@@ -146,7 +146,7 @@ async function processBatch(users, token, validPincodes) {
 
     if (validPincodes.has(userPincode)) {
       console.log(
-        `Pincode ${userPincode} for user ${user.phone} is valid. Sending to PI.`
+        `Pincode ${userPincode} for user ${user.phone} is valid. Sending to PI.`,
       );
       const result = await sendToPI(user, token);
       updateDoc = {
@@ -163,7 +163,7 @@ async function processBatch(users, token, validPincodes) {
       };
     } else {
       console.log(
-        `Pincode ${userPincode} for user ${user.phone} is NOT valid. Skipping API hit.`
+        `Pincode ${userPincode} for user ${user.phone} is NOT valid. Skipping API hit.`,
       );
       updateDoc = {
         $push: {
