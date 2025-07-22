@@ -1,203 +1,108 @@
+const path = require("path");
 const mongoose = require("mongoose");
 const axios = require("axios");
-const path = require("path");
 const xlsx = require("xlsx");
 require("dotenv").config();
 
-// --- Configuration Constants ---
+const PINCODE_FILE_PATH = path.join(__dirname, "..", "xlsx", "FI_pincode.xlsx");
+const MONGODB_URIVISH = process.env.MONGODB_URIVISH;
 const TOKEN_API_URL = "https://vnotificationgw.epifi.in/v1/auth/token";
 const LEAD_API_URL = "https://vnotificationgw.epifi.in/v1/leads/loans/create";
+
 const BATCH_SIZE = 10;
-const REF_NAME = "PI"; // Reference name for tracking processed leads
-const PINCODE_FILE_PATH = path.join(__dirname, "..", "xlsx", "FI_pincode.xlsx");
-
-// --- MongoDB Connection ---
-const MONGODB_URINEW = process.env.MONGODB_URINEW;
-
-if (!MONGODB_URINEW) {
-  console.error("🚫 MONGODB_URINEW is not defined in .env file.");
-  process.exit(1); // Exit if DB URI is missing
-}
+const REF_NAME = "PI";
 
 mongoose
-  .connect(MONGODB_URINEW)
-  .then(() => console.log("✅ MongoDB Connected Successfully"))
-  .catch((err) => {
-    console.error("🚫 MongoDB Connection Error:", err);
-    process.exit(1); // Exit on DB connection failure
-  });
+  .connect(MONGODB_URIVISH)
+  .then(() => console.log("✅ MongoDB Connected"))
+  .catch((err) => console.error("❌ MongoDB Error:", err));
 
-// Define a Mongoose model for the LoanTap collection
 const UserDB = mongoose.model(
-  "LoanTap",
-  new mongoose.Schema({}, { collection: "LoanTap", strict: false }),
+  "smcoll",
+  new mongoose.Schema({}, { collection: "smcoll", strict: false }),
 );
 
-// --- Pincode Validation Logic ---
-
-/**
- * Loads valid pincodes from an Excel file.
- * @param {string} filePath - The full path to the Excel file.
- * @returns {string[]} An array of valid pincode strings.
- */
-function loadValidPincodes(filePath) {
+function loadValidPincodes() {
   try {
-    // Check if the file exists before attempting to read
-    if (!require("fs").existsSync(filePath)) {
-      console.error(`❌ Pincode file not found at: ${filePath}`);
-      return [];
-    }
+    const workbook = xlsx.readFile(PINCODE_FILE_PATH);
+    const sheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[sheetName];
+    const data = xlsx.utils.sheet_to_json(worksheet, { header: 1 });
 
-    const workbook = xlsx.readFile(filePath);
-    const sheet = workbook.Sheets[workbook.SheetNames[0]];
-    const data = xlsx.utils.sheet_to_json(sheet);
-    // Ensure pincodes are trimmed and converted to string for consistent comparison
-    return data
-      .map((row) => String(row.Pincode || "").trim())
-      .filter((p) => p !== "");
+    const pincodes = new Set();
+    data.forEach((row) => {
+      if (row[0]) {
+        pincodes.add(String(row[0]).trim());
+      }
+    });
+    console.log(`✅ Loaded ${pincodes.size} valid pincodes from Excel.`);
+    return pincodes;
   } catch (error) {
-    console.error(
-      `❌ Error loading valid pincodes from ${filePath}:`,
-      error.message,
-    );
-    return [];
+    console.error(`❌ Error loading pincode file: ${error.message}`);
+    return new Set();
   }
 }
 
-const validPincodes = loadValidPincodes(PINCODE_FILE_PATH);
-
-if (validPincodes.length === 0) {
-  console.warn(
-    "⚠️ No valid pincodes loaded. All leads with pincode validation will be skipped.",
-  );
-} else {
-  console.log(`✅ Loaded ${validPincodes.length} valid pincodes.`);
-}
-
-// --- API Authentication ---
-
-/**
- * Fetches an authentication token from the API.
- * @returns {Promise<string|null>} The authentication token or null if an error occurs.
- */
 async function getAuthToken() {
   const payload = {
     client_id: "keshvacredit",
     client_secret: "usH-ew;mcv5lk7<4",
   };
-  try {
-    const { data } = await axios.post(TOKEN_API_URL, payload, {
-      headers: { "Content-Type": "application/json" },
-    });
-    const authToken = data?.auth_token || data?.data?.auth_token;
-    if (!authToken) {
-      console.error("❌ Auth token not found in response:", data);
-      return null;
-    }
-    console.log("✅ Auth Token obtained.");
-    return authToken;
-  } catch (err) {
-    console.error(
-      "❌ Error getting auth token:",
-      err.response?.data || err.message,
-    );
-    return null;
-  }
+  const { data } = await axios.post(TOKEN_API_URL, payload, {
+    headers: { "Content-Type": "application/json" },
+  });
+  return data?.auth_token || data?.data?.auth_token;
 }
 
-// --- Data Formatting Helpers ---
-
-/**
- * Formats a date string into YYYY-MM-DD.
- * @param {string} dob - Date of birth string.
- * @returns {string|null} Formatted date string or null if invalid.
- */
 function formatDate(dob) {
   try {
     const date = new Date(dob);
-    if (isNaN(date.getTime())) {
-      // Use getTime() to check for valid date object
-      return null;
-    }
-    return date.toISOString().split("T")[0]; // YYYY-MM-DD
-  } catch (e) {
-    console.warn(`⚠️ Could not format DOB "${dob}": ${e.message}`);
+    if (isNaN(date)) return null;
+    return date.toISOString().split("T")[0];
+  } catch {
     return null;
   }
 }
 
-// --- Lead Processing Logic ---
-
-/**
- * Sends a single user lead to the external PI API.
- * Performs pincode validation before sending.
- * @param {object} user - The user object from MongoDB.
- * @param {string} token - The authentication token.
- * @returns {Promise<{success: boolean, data: object}|null>} Result of the API call or null if skipped.
- */
 async function sendToPI(user, token) {
-  const fullName = user.name ? String(user.name).trim() : "";
-  let firstName = "",
-    lastName = "";
+  const fullName = user.name ? user.name.trim() : "";
+
+  let firstName = "";
+  let lastName = "";
 
   if (fullName === "") {
-    firstName = ""; // Or a default like "Applicant"
-    lastName = "Unknown"; // Or a default like "Unknown"
+    firstName = "";
+    lastName = "";
   } else {
     const nameParts = fullName.split(" ");
     if (nameParts.length === 1) {
       firstName = nameParts[0];
-      lastName = "Sharma"; // Default last name if only one part is provided
+      lastName = "Sharma";
     } else {
       firstName = nameParts.shift();
       lastName = nameParts.join(" ");
     }
   }
 
-  const pincode = String(user.pincode || "").trim();
-  const userPhone = String(user.phone || "N/A"); // For better logging
-
-  // Pincode validation: Skip API call if pincode is invalid
-  if (!validPincodes.includes(pincode)) {
-    console.warn(
-      `⚠️ Invalid pincode for phone ${userPhone}: ${pincode}. Skipping API call.`,
-    );
-    const updateDoc = {
-      $push: {
-        RefArr: {
-          name: REF_NAME,
-          message: "pincode not valid",
-          createdAt: new Date().toISOString(),
-        },
-      },
-    };
-    try {
-      await UserDB.updateOne({ phone: user.phone }, updateDoc);
-      console.log(`✅ MongoDB updated for invalid pincode: ${userPhone}`);
-    } catch (dbErr) {
-      console.error(
-        `❌ Error updating DB for invalid pincode ${userPhone}: ${dbErr.message}`,
-      );
-    }
-    return null; // Indicate that the API call was skipped
-  }
-
   const payload = {
     client_request_id: `REQ${Date.now()}${Math.floor(Math.random() * 1000)}`,
-    name: { first: firstName, last: lastName },
-    phone_number: userPhone,
-    email: user.email || "", // Ensure email is not undefined
-    pan: user.pan || "", // Ensure pan is not undefined
+    name: {
+      first: firstName,
+      last: lastName,
+    },
+    phone_number: user.phone,
+    email: user.email,
+    pan: user.pan,
     dob: formatDate(user.dob),
     current_address: {
-      pincode: pincode,
+      pincode: String(user.pincode),
     },
     employment_details: {
       employment_type: ["SALARIED", "SELF_EMPLOYED"].includes(
-        String(user.employment || "").toUpperCase(),
+        user.employment?.toUpperCase(),
       )
-        ? String(user.employment).toUpperCase()
-        : "SALARIED", // Default to SALARIED if not recognized
+        ? user.employment.toUpperCase()
+        : "SALARIED",
       monthly_income: String(user.income || "0"),
     },
     loan_requirement: {
@@ -211,10 +116,7 @@ async function sendToPI(user, token) {
     evaluation_type: "BASIC",
   };
 
-  console.log(
-    `📤 Sending Payload for ${userPhone} to API:`,
-    JSON.stringify(payload, null, 2),
-  );
+  console.log("📤 Sending Payload to API for user:", user.phone);
 
   try {
     const { data } = await axios.post(LEAD_API_URL, payload, {
@@ -223,105 +125,95 @@ async function sendToPI(user, token) {
         Authorization: `Bearer ${token}`,
       },
     });
-    console.log(
-      `✅ API Response for ${userPhone}:\n`,
-      JSON.stringify(data, null, 2),
-    );
+    console.log("✅ Full API Response:\n", JSON.stringify(data, null, 2));
     return { success: true, data };
   } catch (err) {
     const errorData = err.response?.data || { message: err.message };
     console.error(
-      `❌ API Error for ${userPhone}:\n`,
+      `❌ API Error for user ${user.phone}:\n`,
       JSON.stringify(errorData, null, 2),
     );
     return { success: false, data: errorData };
   }
 }
 
-/**
- * Processes a batch of user leads, sending them to the API and updating MongoDB.
- * @param {object[]} users - Array of user objects to process.
- * @param {string} token - Authentication token.
- */
-async function processBatch(users, token) {
+async function processBatch(users, token, validPincodes) {
   for (const user of users) {
-    const result = await sendToPI(user, token);
+    const userPincode = String(user.pincode).trim(); // Get the user's pincode
 
-    // Skip if result is null (pincode not valid, already handled and updated in sendToPI)
-    if (!result) {
-      continue;
-    }
-
-    // Prepare update document for successful/failed API call
-    const updateDoc = {
-      $push: {
-        apiResponse: {
-          PIResponse: result.data,
-          createdAt: new Date().toISOString(),
-        },
-        RefArr: {
-          name: REF_NAME,
-          message: result.success ? "success" : "failed", // Indicate success or failure
-          createdAt: new Date().toISOString(),
-        },
-      },
-    };
-
-    try {
-      await UserDB.updateOne({ phone: user.phone }, updateDoc);
+    if (validPincodes.has(userPincode)) {
       console.log(
-        `✅ MongoDB updated for API response for phone: ${user.phone}`,
+        `Pincode ${userPincode} for user ${user.phone} is valid. Sending to PI.`,
       );
-    } catch (dbErr) {
-      console.error(
-        `❌ Error updating DB after API call for phone ${user.phone}: ${dbErr.message}`,
+      const result = await sendToPI(user, token);
+      updateDoc = {
+        $push: {
+          apiResponse: {
+            PIResponse: result.data,
+            createdAt: new Date().toISOString(),
+          },
+          RefArr: {
+            name: REF_NAME, // Marked as successfully sent to PI
+            createdAt: new Date().toISOString(),
+          },
+        },
+      };
+    } else {
+      console.log(
+        `Pincode ${userPincode} for user ${user.phone} is NOT valid. Skipping API hit.`,
       );
+      updateDoc = {
+        $push: {
+          RefArr: {
+            name: "Pincode Not Valid", // Marked as skipped due to invalid pincode
+            message: `Pincode ${userPincode} is not valid.`,
+            createdAt: new Date().toISOString(),
+          },
+        },
+      };
     }
-
-    // Introduce a delay to avoid overwhelming the API
-    await new Promise((resolve) => setTimeout(resolve, 1000)); // 1-second delay
+    await UserDB.updateOne({ phone: user.phone }, updateDoc);
+    await new Promise((resolve) => setTimeout(resolve, 1000));
   }
 }
 
-// --- Main Execution Flow ---
-
 async function main() {
-  let token = null;
   try {
-    token = await getAuthToken();
-    if (!token) {
-      console.error("🚫 Failed to obtain authentication token. Exiting.");
-      return; // Exit if token is not available
+    const token = await getAuthToken();
+    const validPincodes = loadValidPincodes();
+
+    if (validPincodes.size === 0) {
+      console.error("🚫 No valid pincodes loaded. Exiting.");
+      return;
     }
 
     while (true) {
-      console.log(`🔍 Fetching next batch of ${BATCH_SIZE} leads...`);
       const leads = await UserDB.aggregate([
-        { $match: { "RefArr.name": { $ne: REF_NAME } } }, // Find leads not yet processed by this reference
+        {
+          $match: {
+            $and: [
+              { "RefArr.name": { $ne: REF_NAME } },
+              { "RefArr.name": { $ne: "Pincode Not Valid" } },
+            ],
+          },
+        },
         { $limit: BATCH_SIZE },
       ]);
 
       if (leads.length === 0) {
-        console.log("✅ All eligible leads processed or no new leads found.");
-        break; // Exit loop if no leads are found
+        console.log("✅ All eligible leads processed.");
+        break;
       }
 
-      console.log(`Processing ${leads.length} leads...`);
-      await processBatch(leads, token);
-      console.log(`✅ Finished processing batch of ${leads.length} leads.`);
+      await processBatch(leads, token, validPincodes);
+      console.log(`✅ Processed ${leads.length} leads in this batch`);
     }
   } catch (err) {
-    console.error(
-      "❌ An unhandled error occurred in main function:",
-      err.message,
-      err.stack,
-    );
+    console.error("❌ Error in main function:", err.message);
   } finally {
-    console.log("Closing MongoDB connection.");
-    await mongoose.connection.close();
-    console.log("MongoDB connection closed.");
+    mongoose.connection.close();
+    console.log("👋 MongoDB connection closed.");
   }
 }
 
-// Start the main process
 main();
