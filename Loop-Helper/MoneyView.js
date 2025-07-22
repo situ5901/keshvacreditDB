@@ -171,7 +171,7 @@ async function fetchOffers(leadId, token, phone) {
     });
     console.log(
       `[OFFERS RESPONSE for Phone ${phone}] =>`,
-      JSON.stringify(response.data, null, 2),
+      JSON.stringify(response.data.status, null, 2),
       "\n",
     );
 
@@ -243,11 +243,6 @@ async function sendToMoneyView(lead, token) {
     },
   };
 
-  console.log(
-    "\n📤 [LEAD SUBMISSION REQUEST] =>",
-    JSON.stringify(requestBody, null, 2),
-  );
-
   let leadSubmissionResult = {
     status: "failure",
     message: "Lead not attempted",
@@ -268,7 +263,7 @@ async function sendToMoneyView(lead, token) {
 
     console.log(
       "📥 [LEAD SUBMISSION RESPONSE] =>",
-      JSON.stringify(response.data, null, 2),
+      JSON.stringify(response.data.message, null, 2),
       "\n",
     );
 
@@ -326,7 +321,7 @@ async function fetchJourneyUrl(leadId, token) {
     });
     console.log(
       "[JOURNEY URL RESPONSE] =>",
-      JSON.stringify(response.data, null, 2),
+      JSON.stringify(response.data.status, null, 2),
       "\n",
     );
     return { status: "success", data: response.data };

@@ -601,12 +601,10 @@ router.post("/check-leads", async (req, res) => {
       })
     );
 
-    // 🔢 Count expired leads
     const expiredCount = results.filter(
       (r) => r.success && r.status === "expired"
     ).length;
 
-    // ✅ Send Final Response
     res.status(200).json({
       success: true,
       totalLeads: leadIds.length,
