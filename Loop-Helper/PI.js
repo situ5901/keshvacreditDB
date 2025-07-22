@@ -20,7 +20,8 @@ mongoose
 
 const UserDB = mongoose.model(
   "LoanTap",
-  new mongoose.Schema({}, { collection: "LoanTap", strict: false }),
+  new mongoose.Schema({}, { collection: "LoanTap", strict: false })
+);
 
 function loadValidPincodes() {
   try {
