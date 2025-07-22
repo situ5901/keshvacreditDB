@@ -41,7 +41,6 @@ function loadValidPincodes() {
     console.error(`❌ Error loading pincode file: ${error.message}`);
     return new Set();
   }
-}
 
 async function getAuthToken() {
   const payload = {
