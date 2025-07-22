@@ -141,12 +141,32 @@ async function sendToPI(user, token) {
 async function processBatch(users, token, validPincodes) {
   for (const user of users) {
     const userPincode = String(user.pincode).trim();
+    const income = Number(user.income || 0);
 
     let updateDoc;
 
+    // ✅ Income filter
+    if (income <= 25000) {
+      console.log(
+        `⛔ Skipping user ${user.phone} due to low income: ₹${income}`,
+      );
+      updateDoc = {
+        $push: {
+          RefArr: {
+            name: "Income Below Threshold",
+            message: `Income ₹${income} is below 25000.`,
+            createdAt: new Date().toISOString(),
+          },
+        },
+      };
+      await UserDB.updateOne({ phone: user.phone }, updateDoc);
+      continue; // Skip to next user
+    }
+
+    // ✅ Pincode validation
     if (validPincodes.has(userPincode)) {
       console.log(
-        `Pincode ${userPincode} for user ${user.phone} is valid. Sending to PI.`,
+        `✅ Pincode ${userPincode} for user ${user.phone} is valid. Sending to PI.`,
       );
       const result = await sendToPI(user, token);
       updateDoc = {
@@ -163,7 +183,7 @@ async function processBatch(users, token, validPincodes) {
       };
     } else {
       console.log(
-        `Pincode ${userPincode} for user ${user.phone} is NOT valid. Skipping API hit.`,
+        `❌ Pincode ${userPincode} for user ${user.phone} is NOT valid. Skipping API hit.`,
       );
       updateDoc = {
         $push: {
