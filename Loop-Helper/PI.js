@@ -22,7 +22,7 @@ const UserDB = mongoose.model(
   new mongoose.Schema({}, { collection: "LoanTap", strict: false }),
 );
 
-const PINCODE_FILE_PATH = path.join(__dirname, "..", "xlsx", "rupee.xlsx");
+const PINCODE_FILE_PATH = path.join(__dirname, "..", "xlsx", "FI_pincode");
 
 function loadValidPincodes(filePath) {
   try {
