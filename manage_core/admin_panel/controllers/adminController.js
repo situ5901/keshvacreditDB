@@ -226,3 +226,7 @@ exports.analysis = async (req, res) => {
     });
   }
 };
+
+exports.getLenderResponse = async (req, res) => {
+  res.send("getLenderResponse");
+};

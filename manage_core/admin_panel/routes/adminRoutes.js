@@ -17,4 +17,9 @@ router.get(
   adminAuth,
   filterDatabase.deleteDuplicatePhones,
 );
+router.get(
+  "/mv/getLenderResponse",
+  adminAuth,
+  adminController.getLenderResponse,
+);
 module.exports = router;

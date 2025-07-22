@@ -1,5 +1,7 @@
 const mongoose = require("mongoose");
 const axios = require("axios");
+const path = require("path");
+const xlsx = require("xlsx");
 require("dotenv").config();
 
 const MONGODB_URIVISH = process.env.MONGODB_URIVISH;
@@ -18,6 +20,26 @@ const UserDB = mongoose.model(
   "smcoll",
   new mongoose.Schema({}, { collection: "smcoll", strict: false }),
 );
+
+const PINCODE_FILE_PATH = path.join(__dirname, "..", "xlsx", "rupee.xlsx");
+
+function loadValidPincodes(filePath) {
+  try {
+    const workbook = xlsx.readFile(filePath);
+    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+    const data = xlsx.utils.sheet_to_json(sheet);
+    return data.map((row) => String(row.Pincode).trim());
+  } catch (error) {
+    console.error(
+      `❌ Error loading valid pincodes from ${filePath}:`,
+      error.message,
+    );
+    return [];
+  }
+}
+
+const validPincodes = loadValidPincodes(PINCODE_FILE_PATH);
+
 async function getAuthToken() {
   const payload = {
     client_id: "keshvacredit",
@@ -41,9 +63,8 @@ function formatDate(dob) {
 
 async function sendToPI(user, token) {
   const fullName = user.name ? user.name.trim() : "";
-
-  let firstName = "";
-  let lastName = "";
+  let firstName = "",
+    lastName = "";
 
   if (fullName === "") {
     firstName = "";
@@ -59,18 +80,32 @@ async function sendToPI(user, token) {
     }
   }
 
+  const pincode = String(user.pincode || "").trim();
+
+  if (!validPincodes.includes(pincode)) {
+    console.warn(`⚠️ Invalid pincode for ${user.phone}: ${pincode}`);
+    const updateDoc = {
+      $push: {
+        RefArr: {
+          name: "PI",
+          message: "pincode not valid",
+          createdAt: new Date().toISOString(),
+        },
+      },
+    };
+    await UserDB.updateOne({ phone: user.phone }, updateDoc);
+    return null;
+  }
+
   const payload = {
-    client_request_id: `REQ${Date.now()}${Math.floor(Math.random() * 1000)}`, // ✅ Unique ID
-    name: {
-      first: firstName,
-      last: lastName,
-    },
+    client_request_id: `REQ${Date.now()}${Math.floor(Math.random() * 1000)}`,
+    name: { first: firstName, last: lastName },
     phone_number: user.phone,
     email: user.email,
     pan: user.pan,
     dob: formatDate(user.dob),
     current_address: {
-      pincode: String(user.pincode || "110001"),
+      pincode: pincode,
     },
     employment_details: {
       employment_type: ["SALARIED", "SELF_EMPLOYED"].includes(
@@ -108,9 +143,13 @@ async function sendToPI(user, token) {
     return { success: false, data: errorData };
   }
 }
+
 async function processBatch(users, token) {
   for (const user of users) {
     const result = await sendToPI(user, token);
+
+    // skip if result is null (invalid pincode, already updated)
+    if (!result) continue;
 
     const updateDoc = {
       $push: {
@@ -118,17 +157,18 @@ async function processBatch(users, token) {
           PIResponse: result.data,
           createdAt: new Date().toISOString(),
         },
-
         RefArr: {
           name: "PI",
           createdAt: new Date().toISOString(),
         },
       },
     };
+
     await UserDB.updateOne({ phone: user.phone }, updateDoc);
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    await new Promise((resolve) => setTimeout(resolve, 1000)); // 1s delay
   }
 }
+
 async function main() {
   try {
     const token = await getAuthToken();
@@ -153,4 +193,5 @@ async function main() {
     mongoose.connection.close();
   }
 }
+
 main();

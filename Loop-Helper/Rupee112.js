@@ -133,7 +133,7 @@ async function sendToPunshAPI(lead) {
     return {
       Status: 0,
       Error: err.response?.data?.message || err.message || "Unknown Error",
-    };
+    }validPincodes;
   }
 }
 
