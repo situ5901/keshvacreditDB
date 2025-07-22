@@ -4,21 +4,22 @@ const path = require("path");
 const xlsx = require("xlsx");
 require("dotenv").config();
 
-const MONGODB_URIVISH = process.env.MONGODB_URIVISH;
 const TOKEN_API_URL = "https://vnotificationgw.epifi.in/v1/auth/token";
 const LEAD_API_URL = "https://vnotificationgw.epifi.in/v1/leads/loans/create";
 
 const BATCH_SIZE = 10;
 const REF_NAME = "PI";
 
+const MONGODB_URINEW = process.env.MONGODB_URINEW;
+
 mongoose
-  .connect(MONGODB_URIVISH)
-  .then(() => console.log("✅ MongoDB Connected"))
-  .catch((err) => console.error("❌ MongoDB Error:", err));
+  .connect(MONGODB_URINEW)
+  .then(() => console.log("✅ MongoDB Connected Successfully"))
+  .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
 
 const UserDB = mongoose.model(
-  "smcoll",
-  new mongoose.Schema({}, { collection: "smcoll", strict: false }),
+  "LoanTap",
+  new mongoose.Schema({}, { collection: "LoanTap", strict: false }),
 );
 
 const PINCODE_FILE_PATH = path.join(__dirname, "..", "xlsx", "rupee.xlsx");
