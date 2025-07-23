@@ -229,3 +229,15 @@ exports.analysis = async (req, res) => {
   }
 };
 
+exports.getLendersData = async (req, res) => {
+  try {
+    const query = await MoneyView.find();
+    return res.status(200).json({
+      message: "✅ Lenders data retrieved successfully",
+      query,
+    });
+  } catch (error) {
+    console.error("❌ Error getting lenders data:", error);
+    res.status(500).json({ message: "❌ Server error", error: error.message });
+  }
+};

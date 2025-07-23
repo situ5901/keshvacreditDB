@@ -1,12 +1,23 @@
-// models/MoneyView.js
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
-const moneyViewSchema = new mongoose.Schema({
-  apiResponse: {
-    moneyViewDedupe: {
-      message: String
-    }
-  }
-}, { strict: false }); // 'strict: false' for flexible documents
+const MoneyViewSchema = new mongoose.Schema(
+  {
+    name: String,
+    phone: String,
+    pan: String,
+    dob: Date,
+    email: String,
+    city: String,
+    state: String,
+    gender: String,
+    employment: String,
+    income: Number,
+    pincode: Number,
+    consent: Date,
+  },
+  {
+    collection: "MoneyView", // 👈 force exact collection name
+  },
+);
 
-module.exports = mongoose.model('MoneyView', moneyViewSchema);
+module.exports = mongoose.model("MoneyView", MoneyViewSchema);
