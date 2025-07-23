@@ -83,16 +83,14 @@ def sendToNewAPI(user):
                 "occupation_type": user.get("occupation", "SALARIED"),
                 "income": user.get("income", 25000),
             },
-{
-  "consent_data": {
-    "content": [
-      "CONSENT_TO_SHARE_DATA",
-      "CONSENT_TO_RECEIVE_COMMUNICATIONS"
-    ],
-    "consent_dtm": "2024-09-05 12:04:31.132 +0530",
-    "consent_statement": "I agree to be contacted by KeshvaCredit via Email, WhatsApp, SMS, RCS, or Call. I give my explicit consent to KeshvaCredit to access my credit report and score from credit bureaus. I have read and accepted all your Terms and Conditions."
-  }
-}
+            "consent_data": {
+            "content": [
+                "CONSENT_TO_SHARE_DATA",
+                "CONSENT_TO_RECEIVE_COMMUNICATIONS"
+            ],
+            "consent_timestamp": "2024-09-05 12:04:31.132 +0530",
+            "consent_statement": "I agree to be contacted by KeshvaCredit via Email, WhatsApp, SMS, RCS, or Call. I give my explicit consent to KeshvaCredit to access my credit report and score from credit bureaus. I have read and accepted all your Terms and Conditions."
+        }
         },
         "api_code": API_CODE,
     }
