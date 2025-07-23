@@ -110,10 +110,9 @@ async function sendToPI(user, token) {
       desired_loan_amount: String(user.desired_loan_amount || 350000),
     },
     custom_fields: {
-      utm_source: "google_ads",
-      agent_code: "AGT777",
-      ref_campaign: "monsoon-offer-2025",
-    },
+      consent_timestamp: "2025-07-12T00:00:00+05:30",
+      consent:
+        "I agree to be contacted by KeshvaCredit via Email, WhatsApp, SMS, RCS, or Call,I give my explicit consent to KeshvaCredit to access my credit report and score from credit bureaus.I have read and accepted all your Terms and Conditions",
     evaluation_type: "BASIC",
   };
 
@@ -226,9 +225,7 @@ async function main() {
       const leads = await UserDB.aggregate([
         {
           $match: {
-            $and: [
-              { "RefArr.name": { $ne: REF_NAME } },
-            ],
+            $and: [{ "RefArr.name": { $ne: REF_NAME } }],
           },
         },
         { $limit: BATCH_SIZE },
