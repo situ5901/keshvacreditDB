@@ -59,4 +59,8 @@ app.use(
   `/api${API_VERSION}/agent`,
   require("./manage_core/admin_panel/routes/agentRoute.js"),
 );
+
+//.................Business Loan Working............//
+app.use(`/api${API_VERSION}/BLoan`, require("./routes/BL/BusinessLoan"));
+
 module.exports = app;
