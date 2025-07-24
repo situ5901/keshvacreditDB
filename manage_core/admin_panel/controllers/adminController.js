@@ -279,22 +279,36 @@ exports.getLendersData = async (req, res) => {
     return res.status(200).json({
       success: true,
       message: "✅ Counts retrieved successfully",
-      Moneyview: count,
-      MoneyViewOffers: count3,
-      MoneyViewTotal: count2,
-      smartcoin: smartcoin,
-      smartcoinTotal: smartcoin2,
-      smartcoinRejected: smartcoin3,
-      DCL: DCL,
-      DCLTotal: DCL2,
-      PL: PL,
-      PLTotal: PL2,
-      Mpokket: Mpokket,
-      MpokketRejected: Mpokket3,
-      MpokketTotal: Mpokket2,
-      Zype: Zype,
-      ZypeTotal: Zype2,
-      ZypeRejected: Zype3,
+      lender: {
+        MoneyView: {
+          Moneyview: count,
+          MoneyViewOffers: count3,
+          MoneyViewTotal: count2,
+        },
+        SmartCoin: {
+          smartcoin: smartcoin,
+          smartcoinTotal: smartcoin2,
+          smartcoinRejected: smartcoin3,
+        },
+        DCL: {
+          DCL: DCL,
+          DCLTotal: DCL2,
+        },
+        PL: {
+          PL: PL,
+          PLTotal: PL2,
+        },
+        Mpokket: {
+          Mpokket: Mpokket,
+          MpokketRejected: Mpokket3,
+          MpokketTotal: Mpokket2,
+        },
+        Zype: {
+          Zype: Zype,
+          ZypeTotal: Zype2,
+          ZypeRejected: Zype3,
+        },
+      },
     });
   } catch (error) {
     console.error("❌ Error in getLendersData:", error);
