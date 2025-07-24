@@ -238,36 +238,63 @@ exports.getLendersData = async (req, res) => {
     const count = await MoneyView.countDocuments({
       "apiResponse.moneyViewDedupe.message": "No dedupe found",
     });
+    const count2 = await MoneyView.countDocuments();
+    const count3 = await MoneyView.countDocuments({
+      "apiResponse.moneyViewOffers.message": "success",
+    });
     const smartcoin = await smcoll.countDocuments({
       "apiResponse.message": "Lead created successfully",
+    });
+    const smartcoin2 = await smcoll.countDocuments();
+    const smartcoin3 = await smcoll.countDocuments({
+      "apiResponse.smartcoin.message":
+        "duplicate found and partner can reject this lead",
     });
     const DCL = await smcoll.countDocuments({
       "apiResponse.data.loan_application_id": { $exists: true },
       "apiResponse.data.product_type": "CARD",
     });
-
+    const DCL2 = await smcoll.countDocuments();
+    const DCL3 = await smcoll.countDocuments();
     const PL = await smcoll.countDocuments({
       "apiResponse.data.loan_application_id": { $exists: true },
       "apiResponse.data.product_type": "EMI",
     });
-
+    const PL2 = await smcoll.countDocuments();
     const Mpokket = await smcoll.countDocuments({
       "apiResponse.MpokketResponse.preApproval.message":
         "Data Accepted Successfully",
     });
+    const Mpokket2 = await smcoll.countDocuments({
+      "apiResponse.MpokketResponse.message": "User Not Eligible for Loan",
+    });
+    const Mpokket3 = await smcoll.countDocuments();
     const Zype = await smcoll.countDocuments({
       "apiResponse.ZypeResponse.status": "ACCEPT",
     });
-
+    const Zype2 = await smcoll.countDocuments();
+    const Zype3 = await smcoll.countDocuments({
+      "apiResponse.ZypeResponse.status": "REJECT",
+    });
     return res.status(200).json({
       success: true,
       message: "✅ Counts retrieved successfully",
       Moneyview: count,
+      MoneyViewOffers: count3,
+      MoneyViewTotal: count2,
       smartcoin: smartcoin,
+      smartcoinTotal: smartcoin2,
+      smartcoinRejected: smartcoin3,
       DCL: DCL,
+      DCLTotal: DCL2,
       PL: PL,
+      PLTotal: PL2,
       Mpokket: Mpokket,
+      MpokketRejected: Mpokket3,
+      MpokketTotal: Mpokket2,
       Zype: Zype,
+      ZypeTotal: Zype2,
+      ZypeRejected: Zype3,
     });
   } catch (error) {
     console.error("❌ Error in getLendersData:", error);
