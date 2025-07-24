@@ -9,7 +9,7 @@ const User = require("../../../models/user.model.js");
 const Users = require("../../../models/checkdata.js");
 const AgentModel = require("../../models/AgentModel.js");
 const CheckUser = require("../../models/checkuser");
-const MoneyView = require("../../models/CheckLenderSchema");
+const { MoneyView, smcoll } = require("../../models/CheckLenderSchema");
 
 // const {
 //   sendAdminLoginAlert,
@@ -231,13 +231,42 @@ exports.analysis = async (req, res) => {
 
 exports.getLendersData = async (req, res) => {
   try {
-    const query = await MoneyView.find();
+    const count = await MoneyView.countDocuments({
+      "apiResponse.moneyViewDedupe.message": "No dedupe found",
+    });
+    const smartcoin = await smcoll.countDocuments({
+      "apiResponse.message": "Lead created successfully",
+    });
+    const DCL = await smcoll.countDocuments({
+      "apiResponse.data.loan_application_id": { $exists: true },
+      "apiResponse.data.product_type": "CARD",
+    });
+
+    const PL = await smcoll.countDocuments({
+      "apiResponse.data.loan_application_id": { $exists: true },
+      "apiResponse.data.product_type": "EMI",
+    });
+
+    const Mpokket = await smcoll.countDocuments({
+      "apiResponse.MpokketResponse.preApproval.message":
+        "Data Accepted Successfully",
+    });
+
     return res.status(200).json({
-      message: "✅ Lenders data retrieved successfully",
-      query,
+      success: true,
+      message: "✅ Counts retrieved successfully",
+      Moneyview: count,
+      smartcoin: smartcoin,
+      DCL: DCL,
+      PL: PL,
+      Mpokket: Mpokket,
     });
   } catch (error) {
-    console.error("❌ Error getting lenders data:", error);
-    res.status(500).json({ message: "❌ Server error", error: error.message });
+    console.error("❌ Error in getLendersData:", error);
+    return res.status(500).json({
+      success: false,
+      message: "❌ Server Error",
+      error: error.message,
+    });
   }
 };
