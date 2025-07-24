@@ -9,7 +9,11 @@ const User = require("../../../models/user.model.js");
 const Users = require("../../../models/checkdata.js");
 const AgentModel = require("../../models/AgentModel.js");
 const CheckUser = require("../../models/checkuser");
-const { MoneyView, smcoll } = require("../../models/CheckLenderSchema");
+const {
+  MoneyView,
+  smcoll,
+  dailyworks,
+} = require("../../models/CheckLenderSchema");
 
 // const {
 //   sendAdminLoginAlert,
@@ -251,6 +255,9 @@ exports.getLendersData = async (req, res) => {
       "apiResponse.MpokketResponse.preApproval.message":
         "Data Accepted Successfully",
     });
+    const Zype = await smcoll.countDocuments({
+      "apiResponse.ZypeResponse.status": "ACCEPT",
+    });
 
     return res.status(200).json({
       success: true,
@@ -260,6 +267,7 @@ exports.getLendersData = async (req, res) => {
       DCL: DCL,
       PL: PL,
       Mpokket: Mpokket,
+      Zype: Zype,
     });
   } catch (error) {
     console.error("❌ Error in getLendersData:", error);
