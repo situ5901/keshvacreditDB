@@ -14,7 +14,7 @@ const userSchema = new mongoose.Schema(
     dob: { type: Date, required: true },
     partner_Id: { type: String, required: true, trim: true },
   },
-  { strict: false },
+  { strict: false }
 );
 
 const customerschema = new mongoose.Schema({

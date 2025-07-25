@@ -21,6 +21,7 @@ router.post("/create_apis", async (req, res) => {
     if (!authKey || authKey !== AUTH_KEY) {
       return res.status(401).json({ status: 401, error: "Unauthorized" });
     }
+
     const {
       name,
       phone,
@@ -70,12 +71,12 @@ router.post("/create_apis", async (req, res) => {
       return res.status(400).json({ status: 400, error: "Invalid PAN format" });
     }
 
-    const userExists = await Promise.any([
+    const [userInCustomer, userInPartner] = await Promise.all([
       customer.findOne({ phone, pan }),
       partnerdb.findOne({ phone, pan }),
-    ]).catch(() => null);
+    ]);
 
-    if (userExists) {
+    if (userInCustomer || userInPartner) {
       return res
         .status(409)
         .json({ status: 409, error: "User is already associated with us" });
@@ -94,6 +95,7 @@ router.post("/create_apis", async (req, res) => {
       dob,
       partner_Id,
     });
+
     await newUser.save();
 
     return res
@@ -159,7 +161,7 @@ router.post("/zype/create", async (req, res) => {
       });
     }
 
-    if (partner_Id !== VALID_PARTNER_ID) {
+    if (partner_Id !== VALID_ZYPE_ID) {
       return res.status(403).json({
         status: 403,
         error: "Invalid partner_Id. Access denied.",
@@ -173,12 +175,12 @@ router.post("/zype/create", async (req, res) => {
       });
     }
 
-    const userExists = await Promise.any([
+    const [userInCustomer, userInPartner] = await Promise.all([
       customer.findOne({ phone, pan }),
       partnerdb.findOne({ phone, pan }),
-    ]).catch(() => null);
+    ]);
 
-    if (userExists) {
+    if (userInCustomer || userInPartner) {
       return res.status(409).json({
         status: 409,
         error: "User is already associated with us",
