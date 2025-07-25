@@ -247,8 +247,7 @@ exports.getLendersData = async (req, res) => {
     });
     const smartcoin2 = await smcoll.countDocuments();
     const smartcoin3 = await smcoll.countDocuments({
-      "apiResponse.smartcoin.message":
-        "duplicate found and partner can reject this lead",
+      "apiResponse.message": "duplicate found and partner can reject this lead",
     });
     const DCL = await smcoll.countDocuments({
       "apiResponse.data.loan_application_id": { $exists: true },
@@ -287,8 +286,8 @@ exports.getLendersData = async (req, res) => {
         },
         SmartCoin: {
           smartcoin: smartcoin,
-          smartcoinTotal: smartcoin2,
           smartcoinRejected: smartcoin3,
+          smartcoinTotal: smartcoin2,
         },
         DCL: {
           DCL: DCL,
@@ -300,13 +299,13 @@ exports.getLendersData = async (req, res) => {
         },
         Mpokket: {
           Mpokket: Mpokket,
-          MpokketRejected: Mpokket3,
-          MpokketTotal: Mpokket2,
+          MpokketRejected: Mpokket2,
+          MpokketTotal: Mpokket3,
         },
         Zype: {
           Zype: Zype,
-          ZypeTotal: Zype2,
           ZypeRejected: Zype3,
+          ZypeTotal: Zype2,
         },
       },
     });
