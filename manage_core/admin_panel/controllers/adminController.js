@@ -242,6 +242,9 @@ exports.getLendersData = async (req, res) => {
     const count3 = await MoneyView.countDocuments({
       "apiResponse.moneyViewOffers.message": "success",
     });
+    const count4 = await MoneyView.countDocuments({
+      "RefArr.name": "MoneyView",
+    });
     const smartcoin = await smcoll.countDocuments({
       "apiResponse.message": "Lead created successfully",
     });
@@ -249,17 +252,25 @@ exports.getLendersData = async (req, res) => {
     const smartcoin3 = await smcoll.countDocuments({
       "apiResponse.message": "duplicate found and partner can reject this lead",
     });
+    const smartcoin4 = await smcoll.countDocuments({
+      "RefArr.name": "SmartCoin",
+    });
     const DCL = await smcoll.countDocuments({
       "apiResponse.data.loan_application_id": { $exists: true },
       "apiResponse.data.product_type": "CARD",
     });
     const DCL2 = await smcoll.countDocuments();
-    const DCL3 = await smcoll.countDocuments();
+    const DCL3 = await smcoll.countDocuments({
+      "RefArr.name": "FatakPayDCL",
+    });
     const PL = await smcoll.countDocuments({
       "apiResponse.data.loan_application_id": { $exists: true },
       "apiResponse.data.product_type": "EMI",
     });
     const PL2 = await smcoll.countDocuments();
+    const PL3 = await smcoll.countDocuments({
+      "RefArr.name": "FatakPayPL",
+    });
     const Mpokket = await smcoll.countDocuments({
       "apiResponse.MpokketResponse.preApproval.message":
         "Data Accepted Successfully",
@@ -268,12 +279,18 @@ exports.getLendersData = async (req, res) => {
       "apiResponse.MpokketResponse.message": "User Not Eligible for Loan",
     });
     const Mpokket3 = await smcoll.countDocuments();
+    const Mpokket4 = await smcoll.countDocuments({
+      "RefArr.name": "Mpokket",
+    });
     const Zype = await smcoll.countDocuments({
       "apiResponse.ZypeResponse.status": "ACCEPT",
     });
     const Zype2 = await smcoll.countDocuments();
     const Zype3 = await smcoll.countDocuments({
       "apiResponse.ZypeResponse.status": "REJECT",
+    });
+    const Zype4 = await smcoll.countDocuments({
+      "RefArr.name": "Zype",
     });
     return res.status(200).json({
       success: true,
@@ -282,29 +299,35 @@ exports.getLendersData = async (req, res) => {
         MoneyView: {
           Moneyview: count,
           MoneyViewOffers: count3,
+          MoneyViewProcessed: count4,
           MoneyViewTotal: count2,
         },
         SmartCoin: {
           smartcoin: smartcoin,
           smartcoinRejected: smartcoin3,
+          smartcoinProcessed: smartcoin4,
           smartcoinTotal: smartcoin2,
         },
         DCL: {
           DCL: DCL,
+          DCLProcessed: DCL3,
           DCLTotal: DCL2,
         },
         PL: {
           PL: PL,
+          PLProcessed: PL3,
           PLTotal: PL2,
         },
         Mpokket: {
           Mpokket: Mpokket,
           MpokketRejected: Mpokket2,
+          MpokketProcessed: Mpokket4,
           MpokketTotal: Mpokket3,
         },
         Zype: {
           Zype: Zype,
           ZypeRejected: Zype3,
+          ZypeProcessed: Zype4,
           ZypeTotal: Zype2,
         },
       },
