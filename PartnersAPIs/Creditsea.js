@@ -5,8 +5,8 @@ const { partnerdb, customer } = require("../PartnersAPIs/PartnerSchema");
 const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
 const {
   AUTH_KEY,
-  AUTH_KEY_ZYPE,
   VALID_PARTNER_ID,
+  AUTH_KEY_ZYPE,
   VALID_ZYPE_ID,
 } = require("../config/partnerConf.js");
 
@@ -21,7 +21,6 @@ router.post("/create_apis", async (req, res) => {
     if (!authKey || authKey !== AUTH_KEY) {
       return res.status(401).json({ status: 401, error: "Unauthorized" });
     }
-//update code
     const {
       name,
       phone,

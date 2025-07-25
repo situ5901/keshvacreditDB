@@ -12,8 +12,3 @@ const UserDB = mongoose.model(
   "smcoll",
   new mongoose.Schema({}, { collection: "smcoll", strict: false }),
 );
-
-async function getTest() {
-  console.log("📦 Fetching users...");
-}
-getTest();
