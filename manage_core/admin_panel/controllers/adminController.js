@@ -292,6 +292,9 @@ exports.getLendersData = async (req, res) => {
     const Zype4 = await smcoll.countDocuments({
       "RefArr.name": "Zype",
     });
+    const RamFinance = await smcoll.countDocuments({
+      "apiResponse.Ramfin.leadCreate.message": "Attributed Successfully",
+    });
     return res.status(200).json({
       success: true,
       message: "✅ Counts retrieved successfully",
@@ -329,6 +332,9 @@ exports.getLendersData = async (req, res) => {
           ZypeRejected: Zype3,
           ZypeProcessed: Zype4,
           ZypeTotal: Zype2,
+        },
+        RamFinance: {
+          RamFinance: RamFinance,
         },
       },
     });
