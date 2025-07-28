@@ -253,7 +253,7 @@ exports.getLendersData = async (req, res) => {
       "apiResponse.message": "duplicate found and partner can reject this lead",
     });
     const smartcoin4 = await smcoll.countDocuments({
-      "RefArr.name": "SmartCoin",
+      "RefArr.name": "Smartcoin",
     });
     const DCL = await smcoll.countDocuments({
       "apiResponse.data.loan_application_id": { $exists: true },
