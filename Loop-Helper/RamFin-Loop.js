@@ -13,73 +13,86 @@ const UserDB = mongoose.model(
   "smcoll",
   new mongoose.Schema({}, { collection: "smcoll", strict: false }),
 );
-//situ
-const newAPI =
-  "https://www.ramfincorp.com/loanapply/ramfincorp_api/lead_gen/api/v1/create_lead";
-const MAX_LEADS = 5;
-const Partner_id = "Keshvacredit";
-const loanAmount = 20000;
-let processedCount = 0;
 
-async function sendToNewAPI(lead) {
-  let response = {};
+const DEDUPE_API = "https://www.ramfincorp.com/new-api/customers/check_dedupe";
+const LEAD_API = "https://www.ramfincorp.com/new-api/customers/lead_push";
+
+const BATCH_SIZE = 5;
+const Partner_id = "Keshvacredit";
+
+async function dedupe(user) {
   try {
-    const apiRequestBody = {
-      customer_name: lead.name,
-      email: lead.email,
-      mobile: lead.phone,
-      pancard: lead.pan,
-      Partner_id: Partner_id,
-      loan_amount: lead.loanAmount || loanAmount,
+    const payload = {
+      mobile: user.phone,
+      pancard: user.pan,
     };
 
-    console.log(
-      "📤 Sending Lead Data to Ramfin API:",
-      JSON.stringify(apiRequestBody, null, 2),
-    );
-
-    const apiResponse = await axios.post(newAPI, apiRequestBody, {
+    const response = await axios.post(DEDUPE_API, payload, {
       headers: {
         "Content-Type": "application/json",
         Authorization:
           "Basic cmFtZmluX2U2NmIxNmE5ZjZiNzQ5YTAzOTBmZWRjM2U4ZjNkZjZmOmI3YjJlZDU1MjM5NjA5NzM5NmQwOWE2N2RkZTI4NjUyMDNjZDMxYjA=",
       },
-      timeout: 10000, // 10 seconds timeout
     });
 
-    response.status = apiResponse.data.status || "success";
-    response.message = apiResponse.data.message || "Lead created successfully";
-  } catch (error) {
-    response.status = "failed";
-    response.message = error.response?.data?.message;
-
-    if (error.response) {
-      console.error("❌ API Error:", {
-        statusCode: error.response.status,
-        data: error.response.data,
-      });
-    } else {
-      console.error("❌ Axios Error:", error.message);
-    }
+    return response.data;
+  } catch (err) {
+    console.error(
+      "❌ Error in Dedupe API for",
+      user.phone,
+      ":",
+      err.response?.data || err.message,
+    );
+    return null;
   }
-  return response;
 }
 
-// Option 1: Parallel Database Updates (as suggested previously)
+async function leadCreate(user) {
+  try {
+    const payload = {
+      mobile: user.phone,
+      pancard: user.pan,
+      partner_Id: Partner_id,
+    };
+
+    const response = await axios.post(LEAD_API, payload, {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization:
+          "Basic cmFtZmluX2U2NmIxNmE5ZjZiNzQ5YTAzOTBmZWRjM2U4ZjNkZjZmOmI3YjJlZDU1MjM5NjA5NzM5NmQwOWE2N2RkZTI4NjUyMDNjZDMxYjA=",
+      },
+    });
+
+    return response.data;
+  } catch (err) {
+    console.error(
+      "❌ Error in Lead Create API for",
+      user.phone,
+      ":",
+      err.response?.data || err.message,
+    );
+    return null;
+  }
+}
+let successCount = 0;
 async function processBatch(users) {
   const promises = users.map(async (user) => {
-    const apiResponse = await sendToNewAPI(user);
-    console.log("📞 User:", user.phone, "➡️ Response:", apiResponse);
+    const dedupeRes = await dedupe(user);
+    const dedupeMsg = dedupeRes?.message || "";
 
-    try {
-      const updateResponse = await UserDB.updateOne(
-        { phone: user.phone },
-        {
+    console.log(`📞 ${user.phone} => Dedupe:`, dedupeMsg);
+
+    if (dedupeMsg.toLowerCase() === "dedup success") {
+      const leadRes = await leadCreate(user);
+      successCount++;
+      if (leadRes) {
+        const updatePayload = {
           $push: {
             apiResponse: {
               RamFin: {
-                status: apiResponse.status,
-                message: apiResponse.message,
+                statusCode: leadRes.statusCode,
+                message: leadRes.message,
+                data: leadRes.data,
               },
               createdAt: new Date().toISOString(),
             },
@@ -89,18 +102,37 @@ async function processBatch(users) {
             },
           },
           $unset: { accounts: "" },
-        },
+        };
+
+        try {
+          const updateRes = await UserDB.updateOne(
+            { phone: user.phone },
+            updatePayload,
+          );
+          console.log(`✅ Updated DB for ${user.phone}:`, updateRes);
+        } catch (err) {
+          console.error(
+            `❌ Failed to update DB for ${user.phone}:`,
+            err.message,
+          );
+        }
+      } else {
+        console.error(
+          `❌ leadCreate failed for ${user.phone}, skipping DB update.`,
+        );
+      }
+    } else {
+      console.log(
+        `⚠️ Skipped Lead Create for ${user.phone} due to Dedupe failure.`,
       );
-      console.log(`✅ Updated DB for ${user.phone}:`, updateResponse);
-    } catch (err) {
-      console.error(`❌ Failed to update DB for ${user.phone}:`, err.message);
     }
   });
 
-  await Promise.all(promises); // Wait for all API calls and DB updates to complete for the batch
+  await Promise.all(promises);
 }
 
 async function loop() {
+  let processedCount = 0;
   try {
     let hasMoreLeads = true;
 
@@ -110,23 +142,22 @@ async function loop() {
       const leads = await UserDB.aggregate([
         {
           $match: {
-            processed: { $ne: true },
             "RefArr.name": { $ne: "RamFin" },
           },
         },
-        { $limit: MAX_LEADS },
+        { $limit: BATCH_SIZE },
       ]);
 
       if (leads.length === 0) {
         hasMoreLeads = false;
         console.log("🚫 No more leads to process.");
       } else {
-        await processBatch(leads); // Use either the parallel or bulk update version
+        await processBatch(leads);
         processedCount += leads.length;
         console.log(`✅ Processed ${processedCount} leads so far.`);
       }
-
-      await new Promise((resolve) => setTimeout(resolve, 1000)); // Delay to prevent rate-limiting
+      console.log(`✅ successFully processed ${successCount} Leads.`);
+      await new Promise((resolve) => setTimeout(resolve, 1000));
     }
   } catch (error) {
     console.error("🚫 Error in loop:", error.message);

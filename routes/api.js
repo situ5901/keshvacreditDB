@@ -192,6 +192,9 @@ router.post("/userinfo", async (req, res) => {
       doesFileITR,
       doesFileGST,
       partner: "Keshvacredit",
+      consent:
+        "We value your privacy. To proceed, we need your consent to collect and process your personal data, such as name, phone number, and PAN details.By continuing, you agree to our Privacy Policy and Terms & Conditions.",
+      createdAt: new Date(),
     });
 
     await newUser.save();
@@ -577,7 +580,7 @@ router.post("/check-leads", async (req, res) => {
                 "Content-Type": "application/json",
                 Authorization: `Bearer ${token}`,
               },
-            }
+            },
           );
 
           return {
@@ -598,11 +601,11 @@ router.post("/check-leads", async (req, res) => {
                 : err?.response?.data || err.message,
           };
         }
-      })
+      }),
     );
 
     const expiredCount = results.filter(
-      (r) => r.success && r.status === "expired"
+      (r) => r.success && r.status === "expired",
     ).length;
 
     res.status(200).json({
