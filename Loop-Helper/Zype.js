@@ -159,8 +159,6 @@ async function processBatch(users) {
       await UserDB.updateOne({ phone: user.phone }, updateDoc);
     }),
   );
-
-  // Handle any errors or log the results
   results.forEach((result, index) => {
     if (result.status === "rejected") {
       console.error(`Error processing user at index ${index}:`, result.reason);
