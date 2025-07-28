@@ -268,9 +268,7 @@ exports.getLendersData = async (req, res) => {
       "apiResponse.data.product_type": "EMI",
     });
     const PL2 = await smcoll.countDocuments();
-    const PL3 = await smcoll.countDocuments({
-      "RefArr.name": "FatakPayPL",
-    });
+    const PL3 = await smcoll.countDocuments({ "RefArr.name": "FatakPay" });
     const Mpokket = await smcoll.countDocuments({
       "apiResponse.MpokketResponse.preApproval.message":
         "Data Accepted Successfully",
