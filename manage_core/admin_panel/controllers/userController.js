@@ -8,6 +8,12 @@ require("dotenv").config();
 exports.login = async (req, res) => {
   const { Membername, MemberMail, MemberPassword } = req.body;
 
+  if (!Membername || !MemberMail || !MemberPassword) {
+    return res
+      .status(400)
+      .json({ message: "❌ Email/Name & Password required" });
+  }
+
   try {
     const user = await Member.findOne({
       $or: [{ MemberMail }, { Membername }, { MemberPassword }],
