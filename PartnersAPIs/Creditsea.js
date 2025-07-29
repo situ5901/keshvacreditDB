@@ -138,7 +138,6 @@ router.post("/zype/create", async (req, res) => {
       pincode,
       income,
       dob,
-      creditScore,
       partner_Id,
     } = req.body;
 
@@ -153,7 +152,6 @@ router.post("/zype/create", async (req, res) => {
       pincode,
       income,
       dob,
-      creditScore,
       partner_Id,
     };
 
@@ -231,105 +229,106 @@ router.post("/zype/create", async (req, res) => {
 
 router.post("/cashkuber/create", async (req, res) => {
   try {
-    const authHeader = req.headers["authorization"];
-    const authKey = authHeader?.replace(/^Bearer\s+/i, "");
+    const authheader = req.headers["authorization"];
+    const authkey = authheader?.replace(/^bearer\s+/i, "");
 
-    if (!authKey || authKey !== AUTH_CASHKUBER_kEY) {
-      return res.status(401).json({ status: 401, error: "Unauthorized" });
+    if (!authkey || authkey !== auth_cashkuber_key) {
+      return res.status(401).json({ status: 401, error: "unauthorized" });
     }
 
     const {
       name,
       phone,
       email,
-      employeeType,
+      employeetype,
       pan,
       pincode,
       state,
       city,
       income,
       dob,
-      creditScore,
-      partner_Id,
+      creditscore,
+      partner_id,
     } = req.body;
 
-    const requiredFields = {
+    const requiredfields = {
       name,
       phone,
       email,
-      employeeType,
+      employeetype,
       pan,
       pincode,
       state,
       city,
       income,
       dob,
-      creditScore,
-      partner_Id,
+      creditscore,
+      partner_id,
     };
 
-    const missingFields = Object.entries(requiredFields)
+    const missingfields = object
+      .entries(requiredfields)
       .filter(([_, value]) => !value)
       .map(([key]) => key);
 
-    if (missingFields.length > 0) {
+    if (missingfields.length > 0) {
       return res.status(400).json({
         status: 400,
-        error: `Missing required fields: ${missingFields.join(", ")}`,
+        error: `missing required fields: ${missingfields.join(", ")}`,
       });
     }
 
-    if (partner_Id !== VALID_CASHKUBER_ID) {
+    if (partner_id !== valid_cashkuber_id) {
       return res.status(403).json({
         status: 403,
-        error: "Invalid partner_Id. Access denied.",
+        error: "invalid partner_id. access denied.",
       });
     }
 
-    if (!panRegex.test(pan)) {
+    if (!panregex.test(pan)) {
       return res.status(400).json({
         status: 400,
-        error: "Invalid PAN format",
+        error: "invalid pan format",
       });
     }
 
-    const [userInCustomer, userInPartner] = await Promise.all([
-      customer.findOne({ phone, pan }),
-      partnerdb.findOne({ phone, pan }),
+    const [userincustomer, userinpartner] = await promise.all([
+      customer.findone({ phone, pan }),
+      partnerdb.findone({ phone, pan }),
     ]);
 
-    if (userInCustomer || userInPartner) {
+    if (userincustomer || userinpartner) {
       return res.status(409).json({
         status: 409,
-        error: "User is already associated with us",
+        error: "user is already associated with us",
       });
     }
 
-    const newUser = new partnerdb({
+    const newuser = new partnerdb({
       name,
       phone,
       email,
-      employeeType,
+      employeetype,
       pan,
       state,
       city,
       pincode,
       income,
       dob,
-      creditScore,
-      partner_Id,
+      creditscore,
+      partner_id,
     });
 
-    await newUser.save();
+    await newuser.save();
 
     return res.status(201).json({
       status: 201,
-      message: "User created",
-      user: newUser,
+      message: "user created",
+      user: newuser,
     });
   } catch (err) {
-    console.error("Server Error:", err);
-    return res.status(500).json({ status: 500, error: "Server error" });
+    console.error("server error:", err);
+    return res.status(500).json({ status: 500, error: "server error" });
   }
 });
 
