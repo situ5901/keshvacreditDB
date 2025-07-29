@@ -11,10 +11,11 @@ const userSchema = new mongoose.Schema(
     income: { type: Number, required: true },
     city: { type: String, required: true, trim: true },
     state: { type: String, required: true, trim: true },
+    creditScore: { type: Number },
     dob: { type: Date, required: true },
     partner_Id: { type: String, required: true, trim: true },
   },
-  { strict: false }
+  { strict: false },
 );
 
 const customerschema = new mongoose.Schema({
