@@ -4,24 +4,21 @@ const bcrypt = require("bcrypt");
 const nodemailer = require("nodemailer");
 require("dotenv").config();
 
-// ✅ User Login
 exports.login = async (req, res) => {
   const { Membername, MemberMail, MemberPassword } = req.body;
 
   if (!Membername || !MemberMail || !MemberPassword) {
     return res.status(400).json({
       status: false,
-      message: "❌ Membername, MemberMail aur MemberPassword sab required hai",
+      message: "❌ Name, Email, Password are required",
     });
   }
-
   try {
-    // 🔍 User ko dhundo jiska name & mail match kare
     const user = await Member.findOne({ Membername, MemberMail });
-
-    // ❌ Agar user nahi mila
     if (!user) {
-      return res.status(401).json({ message: "❌ Name ya Email galat hai" });
+      return res
+        .status(401)
+        .json({ message: "❌ Invalid username or password" });
     }
 
     // 🔐 Password match karo
@@ -31,10 +28,10 @@ exports.login = async (req, res) => {
     );
 
     if (!passwordMatch) {
-      return res.status(401).json({ message: "❌ Password galat hai" });
+      return res
+        .status(401)
+        .json({ message: "❌ Invalid username or password" });
     }
-
-    // ✅ Sab match ho gya -> Token generate karo
     const token = jwt.sign(
       {
         role: "Member",
