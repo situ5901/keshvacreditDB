@@ -125,13 +125,9 @@ async function dedupeCheck(lead, token) {
       JSON.stringify(response.data, null, 2),
       "\n",
     );
-
-    // Check for "No dedupe found" and increment count
     if (response.data.message === "No dedupe found") {
       NoDedupeCount++;
       console.log(`No Dedupe: ${NoDedupeCount} | Phone: ${lead.phone}`);
-
-      // If NoDedupeCount reaches the limit, throw an error to break the main loop
       if (NoDedupeCount >= OFFER_LEADS) {
         console.log(
           "🚨 15 'No Dedupe Found' leads reached. Initiating loop break.",
@@ -290,7 +286,6 @@ async function sendToMoneyView(lead, token) {
       journeyUrl: journeyUrlResult,
     };
   } catch (error) {
-    // Re-throw the specific error if it came from dedupeCheck or fetchOffers
     if (error.message === "🎯 Max successful offer count reached") {
       throw error;
     }

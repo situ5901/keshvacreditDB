@@ -4,7 +4,7 @@ const mongoose = require("mongoose");
 const pLimit = require("p-limit");
 require("dotenv").config();
 const Users = require("../models/checkdata"); // adjust path if needed
-
+const Member = require("../models/infiSchema");
 mongoose.set("strictQuery", true);
 
 function chunkArray(array, size) {
@@ -69,4 +69,47 @@ router.post("/check-data", async (req, res) => {
   }
 });
 
+router.post("/infiSchema", async (req, res) => {
+  try {
+    const data = req.body;
+
+    if (!Array.isArray(data) || data.length === 0) {
+      return res.status(400).json({ success: false, message: "Empty data." });
+    }
+    const uniqueData = data.filter(
+      (item, index, self) =>
+        index ===
+        self.findIndex(
+          (t) =>
+            t.phone === item.phone &&
+            t.pan?.toUpperCase() === item.pan?.toUpperCase(),
+        ),
+    );
+    if (uniqueData.length !== data.length) {
+      return res.status(400).json({
+        success: false,
+        message: "Duplicate phone or PAN in request.",
+      });
+    }
+    const existing = await Member.find({
+      $or: uniqueData.flatMap((item) => {
+        const orArr = [];
+        if (item.phone) orArr.push({ phone: item.phone });
+        if (item.pan) orArr.push({ pan: item.pan.toUpperCase() });
+        return orArr;
+      }),
+    });
+
+    if (existing.length > 0) {
+      return res.status(409).json({
+        success: false,
+        message: "Phone or PAN already exists in DB.",
+      });
+    }
+    const saved = await Member.insertMany(uniqueData, { ordered: false });
+    res.status(200).json({ success: true, message: `${saved.length} saved.` });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
 module.exports = router;

@@ -20,8 +20,6 @@ exports.login = async (req, res) => {
         .status(401)
         .json({ message: "❌ Invalid username or password" });
     }
-
-    // 🔐 Password match karo
     const passwordMatch = await bcrypt.compare(
       MemberPassword,
       user.MemberPassword,
