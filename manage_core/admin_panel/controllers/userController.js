@@ -10,11 +10,13 @@ exports.login = async (req, res) => {
 
   try {
     const user = await Member.findOne({
-      $or: [{ MemberMail }, { Membername }],
+      $or: [{ MemberMail }, { Membername }, { MemberPassword }],
     });
 
     if (!user) {
-      return res.status(401).json({ message: "❌ Invalid email or username" });
+      return res
+        .status(401)
+        .json({ message: "❌ Invalid email username or password" });
     }
     const passwordMatch = await bcrypt.compare(
       MemberPassword,
@@ -25,7 +27,6 @@ exports.login = async (req, res) => {
       return res.status(401).json({ message: "❌ Invalid password" });
     }
 
-    // 🔑 Generate token
     const token = jwt.sign(
       {
         role: "Member",
@@ -36,7 +37,6 @@ exports.login = async (req, res) => {
       { expiresIn: "1h" },
     );
 
-    // ✅ Send login success response
     res.status(200).json({
       status: true,
       role: "Member",
