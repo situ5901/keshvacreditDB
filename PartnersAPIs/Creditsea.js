@@ -242,6 +242,7 @@ router.post("/cashkuber/create", async (req, res) => {
       state,
       city,
       income,
+      creditScore,
       dob,
       partner_Id,
     } = req.body;
@@ -308,6 +309,7 @@ router.post("/cashkuber/create", async (req, res) => {
       pincode,
       income,
       dob,
+      creditScore,
       partner_Id,
     });
 
