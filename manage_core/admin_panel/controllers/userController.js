@@ -9,30 +9,32 @@ exports.login = async (req, res) => {
   const { Membername, MemberMail, MemberPassword } = req.body;
 
   if (!Membername || !MemberMail || !MemberPassword) {
-    return res
-      .status(400)
-      .json({ message: "❌ Email/Name & Password required" });
+    return res.status(400).json({
+      status: false,
+      message: "❌ Membername, MemberMail aur MemberPassword sab required hai",
+    });
   }
 
   try {
-    const user = await Member.findOne({
-      $or: [{ MemberMail }, { Membername }, { MemberPassword }],
-    });
+    // 🔍 User ko dhundo jiska name & mail match kare
+    const user = await Member.findOne({ Membername, MemberMail });
 
+    // ❌ Agar user nahi mila
     if (!user) {
-      return res
-        .status(401)
-        .json({ message: "❌ Invalid email username or password" });
+      return res.status(401).json({ message: "❌ Name ya Email galat hai" });
     }
+
+    // 🔐 Password match karo
     const passwordMatch = await bcrypt.compare(
       MemberPassword,
       user.MemberPassword,
     );
 
     if (!passwordMatch) {
-      return res.status(401).json({ message: "❌ Invalid password" });
+      return res.status(401).json({ message: "❌ Password galat hai" });
     }
 
+    // ✅ Sab match ho gya -> Token generate karo
     const token = jwt.sign(
       {
         role: "Member",
@@ -43,15 +45,15 @@ exports.login = async (req, res) => {
       { expiresIn: "1h" },
     );
 
-    res.status(200).json({
+    return res.status(200).json({
       status: true,
       role: "Member",
-      message: "✅ User logged in securely",
+      message: "✅ Login successful",
       token,
     });
   } catch (error) {
     console.error("❌ Login error:", error);
-    res.status(500).json({ message: "❌ Server error" });
+    return res.status(500).json({ message: "❌ Server error" });
   }
 };
 
