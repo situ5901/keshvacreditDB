@@ -35,6 +35,7 @@ router.post("/create_apis", async (req, res) => {
       city,
       income,
       dob,
+      creditScore,
       partner_Id,
     } = req.body;
 
@@ -95,6 +96,7 @@ router.post("/create_apis", async (req, res) => {
       pincode,
       income,
       dob,
+      creditScore,
       partner_Id,
     });
 
@@ -135,6 +137,7 @@ router.post("/zype/create", async (req, res) => {
       pincode,
       income,
       dob,
+      creditScore,
       partner_Id,
     } = req.body;
 
@@ -200,6 +203,7 @@ router.post("/zype/create", async (req, res) => {
       pincode,
       income,
       dob,
+      creditScore,
       partner_Id,
     });
 
