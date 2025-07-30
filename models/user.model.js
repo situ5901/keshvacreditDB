@@ -28,7 +28,7 @@ const userSchema = new Schema(
     CompanyName: { type: String, trim: true },
     UserPostion: { type: String, trim: true },
     CompanyAddress: { type: String, trim: true },
-    CompleteADdress: { type: String, trim: true },
+    CompleteAddress: { type: String, trim: true },
     salarySlip: { type: String, trim: true },
     pan: { type: String, trim: true },
     aadhar: { type: String, trim: true },
