@@ -16,47 +16,28 @@ router.post("/send-otp", async (req, res) => {
 
     if (!phone) {
       return res.status(400).json({
-        status: "false",
+        status: false,
         message: "Phone number required",
       });
     }
-
-    // Generate OTP
     const otp = Math.floor(100000 + Math.random() * 900000);
+
     otpStorage.set(phone, {
       otp,
       expiresAt: Date.now() + 10 * 60 * 1000,
     });
+    const message = `Dear customer, ${otp} is your login OTP. Valid for 10 minutes. Please do not share with anyone. Regards KeshvaCredit.`;
+    const smsUrl = `https://web.smscloud.in/api/pushsms?user=KESHVACREDIT&authkey=7lbTOubf0YBuTFtuCPmMB1AIclEzjQk8&sender=KVcred&mobile=${phone}&text=${encodeURIComponent(message)}&templateid=1707174409184160229&rpt=1`;
 
-    // Prepare SMS payload
-    const payload = {
-      route: "dlt",
-      sender_id: "KVcred",
-      message: "183062", // ✅ Your approved template ID
-      variables_values: `${otp}|10`,
-      flash: 0,
-      numbers: phone,
-    };
+    const response = await axios.get(smsUrl);
 
-    // Send POST request
-    const response = await axios.post(
-      "https://www.fast2sms.com/dev/bulkV2",
-      payload,
-      {
-        headers: {
-          Authorization: process.env.FAST2SMS_API_KEY,
-          "Content-Type": "application/json",
-        },
-      },
-    );
-    console.log("otp", otp);
+    console.log("✅ OTP:", otp);
     res.status(200).json({
       status: "Success",
       message: "OTP sent successfully",
-      // otp,
     });
   } catch (error) {
-    console.error("SMS Error:", error.response?.data || error.message);
+    console.error("❌ SMS Error:", error.response?.data || error.message);
     res.status(500).json({
       message: "Error sending OTP",
       error: error.response?.data || error.message,
