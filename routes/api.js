@@ -20,11 +20,7 @@ router.post("/send-otp", async (req, res) => {
         message: "Phone number required",
       });
     }
-
-    // Generate OTP
     const otp = Math.floor(100000 + Math.random() * 900000);
-
-    // Store OTP with 10-min expiry
     otpStorage.set(phone, {
       otp,
       expiresAt: Date.now() + 10 * 60 * 1000,
