@@ -65,6 +65,9 @@ def sendToNewAPI(user):
         except:
             print(f"⚠️ Invalid dob for {user.get('phone')} → using default")
 
+    # Get current time from device for consent_dtm
+    consent_dtm = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3] + " +0530"
+
     # Build Payload
     payload = {
         "payload": {
@@ -84,12 +87,12 @@ def sendToNewAPI(user):
                 "income": user.get("income", 25000),
             },
             "consent_data": {
-            "content": [
-                "CONSENT_TO_SHARE_DATA",
-                "CONSENT_TO_RECEIVE_COMMUNICATIONS"
-            ],
-            "consent_dtm": "2024-09-05 12:04:31.132 +0530",
-            "consent_statement": "I agree to be contacted by KeshvaCredit via Email, WhatsApp, SMS, RCS, or Call. I give my explicit consent to KeshvaCredit to access my credit report and score from credit bureaus. I have read and accepted all your Terms and Conditions." 
+                "content": [
+                    "CONSENT_TO_SHARE_DATA",
+                    "CONSENT_TO_RECEIVE_COMMUNICATIONS"
+                ],
+                "device_id": "23456789",
+                "consent_dtm": consent_dtm
             }
         },
         "api_code": API_CODE,
