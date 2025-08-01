@@ -26,7 +26,7 @@ router.post("/send-otp", async (req, res) => {
       otp,
       expiresAt: Date.now() + 10 * 60 * 1000,
     });
-    const message = `Dear customer, ${otp} is your login OTP. Valid for 10 minutes. Please do not share with anyone. Regards KeshvaCredit.`;
+    const message = `KeshvaCredit Login OTP: ${otp}. Valid for 10 minutes. Never share this OTP with anyone.`;
     const smsUrl = `https://web.smscloud.in/api/pushsms?user=KESHVACREDIT&authkey=7lbTOubf0YBuTFtuCPmMB1AIclEzjQk8&sender=KVcred&mobile=${phone}&text=${encodeURIComponent(message)}&templateid=1707174409184160229&rpt=1`;
 
     const response = await axios.get(smsUrl);
