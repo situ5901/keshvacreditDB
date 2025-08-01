@@ -20,18 +20,20 @@ router.post("/send-otp", async (req, res) => {
         message: "Phone number required",
       });
     }
+
+    // Generate OTP
     const otp = Math.floor(100000 + Math.random() * 900000);
 
+    // Store OTP with 10-min expiry
     otpStorage.set(phone, {
       otp,
       expiresAt: Date.now() + 10 * 60 * 1000,
     });
-    const message = `KeshvaCredit Login OTP: ${otp}. Valid for 10 minutes. Never share this OTP with anyone.`;
-    const smsUrl = `https://web.smscloud.in/api/pushsms?user=KESHVACREDIT&authkey=7lbTOubf0YBuTFtuCPmMB1AIclEzjQk8&sender=KVcred&mobile=${phone}&text=${encodeURIComponent(message)}&templateid=1707174409184160229&rpt=1`;
-
+    const message = `Dear customer, ${otp} is your login OTP. Valid for 10 minutes. Please do not share with anyone. Regards KeshvaCredit.`;
+    const smsUrl = `https://web.smscloud.in/api/pushsms?user=KESHVACREDIT&authkey=${process.env.SMSCLOUD_API_KEY}&sender=KVcred&mobile=${phone}&text=${encodeURIComponent(message)}&templateid=1707174409184160229&rpt=1`;
     const response = await axios.get(smsUrl);
 
-    console.log("✅ OTP:", otp);
+    console.log("✅ OTP Sent to", phone, "=>", otp);
     res.status(200).json({
       status: "Success",
       message: "OTP sent successfully",
@@ -39,6 +41,7 @@ router.post("/send-otp", async (req, res) => {
   } catch (error) {
     console.error("❌ SMS Error:", error.response?.data || error.message);
     res.status(500).json({
+      status: false,
       message: "Error sending OTP",
       error: error.response?.data || error.message,
     });
