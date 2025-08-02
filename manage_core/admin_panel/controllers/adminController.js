@@ -268,7 +268,7 @@ exports.getLendersData = async (req, res) => {
       "RefArr.name": "FatakPayDCL",
     });
     const PL = await smcoll.countDocuments({
-    50piResponse.data.loan_application_id": { $exists: true },
+    piResponse.data.loan_application_id": { $exists: true },
       "apiResponse.data.product_type": "EMI",
     });
     const PL2 = await smcoll.countDocuments();
