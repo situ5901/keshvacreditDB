@@ -243,9 +243,6 @@ exports.getLendersData = async (req, res) => {
     const count3 = await MoneyView.countDocuments({
       "apiResponse.moneyViewOffers.message": "success",
     });
-    const situ4 = await MoneyView2.countDocuments({
-      "apiResponse.moneyViewOffers.message": "success",
-    });
     const count4 = await MoneyView.countDocuments({
       "RefArr.name": "MoneyView",
     });
@@ -268,7 +265,7 @@ exports.getLendersData = async (req, res) => {
       "RefArr.name": "FatakPayDCL",
     });
     const PL = await smcoll.countDocuments({
-    piResponse.data.loan_application_id": { $exists: true },
+      "apiResponse.data.loan_application_id": { $exists: true },
       "apiResponse.data.product_type": "EMI",
     });
     const PL2 = await smcoll.countDocuments();
@@ -297,6 +294,9 @@ exports.getLendersData = async (req, res) => {
     const RamFinance = await smcoll.countDocuments({
       "apiResponse.Ramfin.leadCreate.message": "Attributed Successfully",
     });
+    const alterMV = await MoneyView2.countDocuments({
+      "apiResponse.moneyViewOffers.message": "success",
+    });
     return res.status(200).json({
       success: true,
       message: "✅ Counts retrieved successfully",
@@ -307,8 +307,8 @@ exports.getLendersData = async (req, res) => {
           MoneyViewProcessed: count4,
           MoneyViewTotal: count2,
         },
-	MoneyView2: {
-          MoneyViewOffers: situ4,
+        MoneyView2: {
+          MoneyViewOffers: alterMV,
         },
         SmartCoin: {
           smartcoin: smartcoin,
