@@ -71,6 +71,7 @@ def sendToNewAPI(user):
     # Build Payload
     payload = {
         "payload": {
+            partner_id: "keshvacredit",
             "basic_details": {
                 "mobile_number": str(user.get("phone")),
                 "email": user.get("email", "na@example.com"),
@@ -88,8 +89,7 @@ def sendToNewAPI(user):
             },
             "consent_data": {
                 "content": [
-                    "CONSENT_TO_SHARE_DATA",
-                    "CONSENT_TO_RECEIVE_COMMUNICATIONS"
+                   "By clicking on the Next button I give permission to use process, and store the business information provided, in accordance with the Terms and Conditions and Privacy Policy for the purpose of evaluating business eligibility and providing related services"
                 ],
                 "device_id": "23456789",
                 "consent_dtm": consent_dtm
