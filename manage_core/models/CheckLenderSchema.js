@@ -18,10 +18,12 @@ const CommonSchema = new mongoose.Schema({
 });
 
 const MoneyView = mongoose.model("mvcoll", CommonSchema, "mvcoll");
+const MoneyView2 = mongoose.model("MoneyView", CommonSchema, "MoneyView");
 const smcoll = mongoose.model("smcoll", CommonSchema, "smcoll");
 const dailyworks = mongoose.model("dailyworks", CommonSchema, "dailyworks");
 module.exports = {
   MoneyView,
+  MoneyView2,
   smcoll,
   dailyworks,
 };

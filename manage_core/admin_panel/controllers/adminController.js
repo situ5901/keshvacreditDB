@@ -11,6 +11,7 @@ const AgentModel = require("../../models/AgentModel.js");
 const CheckUser = require("../../models/checkuser");
 const {
   MoneyView,
+  MoneyView2,
   smcoll,
   dailyworks,
 } = require("../../models/CheckLenderSchema");
@@ -242,6 +243,9 @@ exports.getLendersData = async (req, res) => {
     const count3 = await MoneyView.countDocuments({
       "apiResponse.moneyViewOffers.message": "success",
     });
+    const count3 = await MoneyView2.countDocuments({
+      "apiResponse.moneyViewOffers.message": "success",
+    });
     const count4 = await MoneyView.countDocuments({
       "RefArr.name": "MoneyView",
     });
@@ -264,7 +268,7 @@ exports.getLendersData = async (req, res) => {
       "RefArr.name": "FatakPayDCL",
     });
     const PL = await smcoll.countDocuments({
-      "apiResponse.data.loan_application_id": { $exists: true },
+    50piResponse.data.loan_application_id": { $exists: true },
       "apiResponse.data.product_type": "EMI",
     });
     const PL2 = await smcoll.countDocuments();
@@ -302,6 +306,9 @@ exports.getLendersData = async (req, res) => {
           MoneyViewOffers: count3,
           MoneyViewProcessed: count4,
           MoneyViewTotal: count2,
+        },
+	MoneyView2: {
+          MoneyViewOffers: count3,
         },
         SmartCoin: {
           smartcoin: smartcoin,
