@@ -297,6 +297,9 @@ exports.getLendersData = async (req, res) => {
     const alterMV = await MoneyView2.countDocuments({
       "apiResponse.moneyViewOffers.message": "success",
     });
+    const MVOfferr = await MoneyView2.countDocuments({
+      "RefArr.name": "MoneyView",
+    });
     return res.status(200).json({
       success: true,
       message: "✅ Counts retrieved successfully",
@@ -309,6 +312,7 @@ exports.getLendersData = async (req, res) => {
         },
         MoneyView2: {
           MoneyViewOffers: alterMV,
+		    MoneyViewProcessed: MVOfferr,
         },
         SmartCoin: {
           smartcoin: smartcoin,
