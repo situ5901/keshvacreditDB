@@ -23,7 +23,7 @@ const OFFERS_API = "https://atlas.whizdm.com/atlas/v1/offers";
 const JOURNEY_URL_API = "https://atlas.whizdm.com/atlas/v1/journey-url";
 const PARTNER_CODE = 422;
 const OFFER_LEADS = 15000; // Target for 'No dedupe found' leads
-const BATCH_SIZE = 500;
+const BATCH_SIZE = 250;
 const PINCODE_FILE_PATH = path.join(__dirname, "..", "xlsx", "mv.xlsx");
 
 function loadValidPincodes(filePath) {
