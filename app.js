@@ -7,11 +7,11 @@ const { API_VERSION } = require("./config/config");
 
 const app = express();
 
+app.use(corsMiddleware);
 app.use(logger("dev"));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
-app.use(corsMiddleware);
 
 app.use(`/api${API_VERSION}/auth`, require("./routes/auth"));
 app.use(`/api${API_VERSION}/leads`, require("./routes/leads"));
