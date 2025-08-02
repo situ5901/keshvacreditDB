@@ -243,7 +243,7 @@ exports.getLendersData = async (req, res) => {
     const count3 = await MoneyView.countDocuments({
       "apiResponse.moneyViewOffers.message": "success",
     });
-    const count4 = await MoneyView2.countDocuments({
+    const situ4 = await MoneyView2.countDocuments({
       "apiResponse.moneyViewOffers.message": "success",
     });
     const count4 = await MoneyView.countDocuments({
@@ -308,7 +308,7 @@ exports.getLendersData = async (req, res) => {
           MoneyViewTotal: count2,
         },
 	MoneyView2: {
-          MoneyViewOffers: count4,
+          MoneyViewOffers: situ4,
         },
         SmartCoin: {
           smartcoin: smartcoin,
