@@ -17,7 +17,7 @@ const CommonSchema = new mongoose.Schema({
   apiResponse: {},
 });
 
-const MoneyView = mongoose.model("MoneyView", CommonSchema, "MoneyView");
+const MoneyView = mongoose.model("mvcoll", CommonSchema, "mvcoll");
 const smcoll = mongoose.model("smcoll", CommonSchema, "smcoll");
 const dailyworks = mongoose.model("dailyworks", CommonSchema, "dailyworks");
 module.exports = {
