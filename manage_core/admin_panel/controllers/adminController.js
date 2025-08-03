@@ -246,6 +246,9 @@ exports.getLendersData = async (req, res) => {
     const count4 = await MoneyView.countDocuments({
       "RefArr.name": "MoneyView",
     });
+    const count5 = await MoneyView.countDocuments({
+      "apiResponse.moneyViewLeadSubmission.message": "success",
+    });
     const smartcoin = await smcoll.countDocuments({
       "apiResponse.message": "Lead created successfully",
     });
@@ -297,6 +300,9 @@ exports.getLendersData = async (req, res) => {
     const alterMV = await MoneyView2.countDocuments({
       "apiResponse.moneyViewOffers.message": "success",
     });
+    const submitedMV = await MoneyView2.countDocuments({
+      "apiResponse.moneyViewOffers.message": "success",
+    });
     const MVOfferr = await MoneyView2.countDocuments({
       "RefArr.name": "MoneyView",
     });
@@ -309,10 +315,12 @@ exports.getLendersData = async (req, res) => {
           MoneyViewOffers: count3,
           MoneyViewProcessed: count4,
           MoneyViewTotal: count2,
+          MoneyViewSubmited: count5,
         },
         MoneyView2: {
           MoneyViewOffers: alterMV,
-		    MoneyViewProcessed: MVOfferr,
+          MoneyViewProcessed: MVOfferr,
+          MoneyViewSubmited: submitedMV,
         },
         SmartCoin: {
           smartcoin: smartcoin,
