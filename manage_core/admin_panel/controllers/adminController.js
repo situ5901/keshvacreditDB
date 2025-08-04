@@ -301,7 +301,7 @@ exports.getLendersData = async (req, res) => {
       "apiResponse.moneyViewOffers.message": "success",
     });
     const submitedMV = await MoneyView2.countDocuments({
-      "apiResponse.moneyViewOffers.message": "success",
+      "apiResponse.moneyViewLeadSubmission.message": "success",
     });
     const MVOfferr = await MoneyView2.countDocuments({
       "RefArr.name": "MoneyView",
