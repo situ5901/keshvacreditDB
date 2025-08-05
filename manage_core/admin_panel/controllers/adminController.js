@@ -306,6 +306,9 @@ exports.getLendersData = async (req, res) => {
     const MVOfferr = await MoneyView2.countDocuments({
       "RefArr.name": "MoneyView",
     });
+    const noDedupeMV = await MoneyView2.countDocuments({
+      "apiResponse.moneyViewDedupe.message": "No dedupe found",
+    });
     return res.status(200).json({
       success: true,
       message: "✅ Counts retrieved successfully",
@@ -318,6 +321,7 @@ exports.getLendersData = async (req, res) => {
           MoneyViewSubmited: count5,
         },
         MoneyView2: {
+          MoneyNoDedupe: noDedupeMV,
           MoneyViewOffers: alterMV,
           MoneyViewProcessed: MVOfferr,
           MoneyViewSubmited: submitedMV,

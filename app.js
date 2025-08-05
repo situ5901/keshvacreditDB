@@ -7,6 +7,19 @@ const { API_VERSION } = require("./config/config");
 
 const app = express();
 
+setInterval(() => {
+  const used = process.memoryUsage();
+  console.log(`Memory Usage (in MB):`);
+  console.log(`  RSS         : ${(used.rss / 1024 / 1024).toFixed(2)} MB`);
+  console.log(
+    `  Heap Total  : ${(used.heapTotal / 1024 / 1024).toFixed(2)} MB`,
+  );
+  console.log(`  Heap Used   : ${(used.heapUsed / 1024 / 1024).toFixed(2)} MB`);
+  console.log(`  External    : ${(used.external / 1024 / 1024).toFixed(2)} MB`);
+  console.log(
+    `  ArrayBuffer : ${(used.arrayBuffers / 1024 / 1024).toFixed(2)} MB`,
+  );
+}, 50000); // Every 5 seconds
 app.use(corsMiddleware);
 app.use(logger("dev"));
 app.use(express.json());
