@@ -566,7 +566,73 @@ router.post("/check-leads", async (req, res) => {
           return {
             leadId,
             success: true,
-            status: response.data.status || "unknown",
+            fullResponse: response.data,
+          };
+        } catch (err) {
+          return {
+            leadId,
+            success: false,
+            statusCode: err?.response?.status || 500,
+            error:
+              typeof err?.response?.data === "string" &&
+              err.response.data.includes("<html")
+                ? "Internal Server Error from Atlas (HTML page received)"
+                : err?.response?.data || err.message,
+          };
+        }
+      }),
+    );
+
+    const expiredCount = results.filter(
+      (r) => r.success && r.status === "expired",
+    ).length;
+
+    res.status(200).json({
+      success: true,
+      totalLeads: leadIds.length,
+      expiredCount,
+      timestamp: new Date().toISOString(),
+      results,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Something went wrong while fetching data",
+      error: error.message,
+    });
+  }
+});
+router.post("/final-loan-details", async (req, res) => {
+  const { leadIds } = req.body;
+
+  if (!Array.isArray(leadIds) || leadIds.length === 0) {
+    return res.status(400).json({
+      success: false,
+      message: "leadIds array is required in request body",
+    });
+  }
+
+  try {
+    // 🔐 Get token from Atlas
+    const token = await getAtlasToken();
+
+    // 🔄 Fetch lead status for each lead ID
+    const results = await Promise.all(
+      leadIds.map(async (leadId) => {
+        try {
+          const response = await axios.get(
+            `https://atlas.whizdm.com/atlas/v1/lead/final-loan-details/${leadId}`,
+            {
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+            },
+          );
+
+          return {
+            leadId,
+            success: true,
             fullResponse: response.data,
           };
         } catch (err) {
