@@ -297,17 +297,18 @@ exports.getLendersData = async (req, res) => {
     const RamFinance = await smcoll.countDocuments({
       "apiResponse.Ramfin.leadCreate.message": "Attributed Successfully",
     });
-    const alterMV = await MoneyView2.countDocuments({
+    const nodedupe = await MoneyView2.countDocuments({
+      "apiResponse.moneyViewDedupe.message": "No dedupe found",
+    });
+    const completeDB = await MoneyView2.countDocuments();
+    const Offeres = await MoneyView2.countDocuments({
       "apiResponse.moneyViewOffers.message": "success",
     });
-    const submitedMV = await MoneyView2.countDocuments({
-      "apiResponse.moneyViewLeadSubmission.message": "success",
-    });
-    const MVOfferr = await MoneyView2.countDocuments({
+    const processMV = await MoneyView2.countDocuments({
       "RefArr.name": "MoneyView",
     });
-    const noDedupeMV = await MoneyView2.countDocuments({
-      "apiResponse.moneyViewDedupe.message": "No dedupe found",
+    const Submission = await MoneyView2.countDocuments({
+      "apiResponse.moneyViewLeadSubmission.message": "success",
     });
     return res.status(200).json({
       success: true,
@@ -321,10 +322,11 @@ exports.getLendersData = async (req, res) => {
           MoneyViewSubmited: count5,
         },
         MoneyView2: {
-          MoneyNoDedupe: noDedupeMV,
-          MoneyViewOffers: alterMV,
-          MoneyViewProcessed: MVOfferr,
-          MoneyViewSubmited: submitedMV,
+          Moneyview: nodedupe,
+          MoneyViewOffers: Offeres,
+          MoneyViewProcessed: processMV,
+          MoneyViewTotal: Submission,
+          MoneyViewSubmited: completeDB,
         },
         SmartCoin: {
           smartcoin: smartcoin,

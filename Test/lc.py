@@ -16,13 +16,13 @@ MONGO_URI = os.getenv("MONGODB_SITU")
 
 # === API Setup ===
 API_URL = "https://dev-tsp-los.lendenclub.com/v2"
-KEY = "03f4e9c37121bbe88545b5a06cd7e619"
-IV = "47ed667825c963ab"
+KEY = "49dde96a1f057656ede3cf85f1be2b29"
+IV = "a4da4265bfa4bac0"
 AUTH_TOKEN = "e70783bb76614b48a9299c77367748"
 API_CODE = "CREATE_LEAD_API_V2"
 AES_BLOCK_SIZE = 32
 MAX_LEADS = 10
-
+STPL = "bec3e2a583c644cb8b9614d4a60a99"
 # === MongoDB Setup ===
 client = MongoClient(MONGO_URI)
 db = client.get_default_database()
@@ -86,6 +86,7 @@ def sendToNewAPI(user):
                 "occupation_type": user.get("occupation", "SALARIED"),
                 "income": user.get("income", 25000),
             },
+            "partner_code":"STPL",
             "consent_data": {
                 "content": [
                    "I consent to Keshva Credit and its Lending partners being appointed as my authorized representatives to receive my credit information from Credit Bureaus for the purpose of loan offers as per their as per their respective terms of use. I consent to being contacted by Keshva Credit and its Lending Partners through phone, email, or any other mode of communication including Whatsapp, IVR for the purpose of availing loans, credit cards, related information and promotions."
