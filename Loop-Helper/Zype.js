@@ -63,13 +63,20 @@ async function sendToNewAPI(user) {
 }
 
 async function getPreApproval(user) {
+  if (user.employment !== "Salaried") {
+    console.log("⛔ Skipping PreApproval: Only 'Salaried' users are allowed");
+    return {
+      status: "SKIPPED",
+      message: "Only Salaried users are allowed for pre-approval.",
+    };
+  }
+
   try {
     const payload = {
       mobileNumber: String(user.phone),
       email: user.email,
       panNumber: user.pan,
       name: user.name,
-      // dob: user.dob ? new Date(user.dob).toISOString().split("T")[0] : null, // ✅ DOB formatted here
       dob: user.dob,
       income: user.income,
       employmentType: user.employment,
