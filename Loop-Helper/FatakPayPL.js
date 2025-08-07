@@ -10,8 +10,8 @@ mongoose
   .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
 
 const UserDB = mongoose.model(
-  "comp",
-  new mongoose.Schema({}, { collection: "comp", strict: false }),
+  "smcoll",
+  new mongoose.Schema({}, { collection: "smcoll", strict: false }),
 );
 
 const BATCH_SIZE = 50;
@@ -146,6 +146,7 @@ async function Loop() {
 
       if (leads.length === 0) {
         console.log("⏸️ No unprocessed leads. Retrying in 2 seconds...");
+        return setTimeout(processNextBatch, 2000); // Retry after 2s
       }
 
       await processBatch(leads, token);
