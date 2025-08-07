@@ -2,25 +2,34 @@ const mongoose = require("mongoose");
 const axios = require("axios");
 require("dotenv").config();
 
+// Load the MongoDB connection string from environment variables
 const MONGODB_URINEW = process.env.MONGODB_URINEW;
 
+// Establish a connection to MongoDB
 mongoose
   .connect(MONGODB_URINEW)
   .then(() => console.log("✅ MongoDB Connected Successfully"))
   .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
 
+// Define a Mongoose model for the 'smcoll' collection
+// This schema is set to be 'strict: false' to handle flexible document structures
 const UserDB = mongoose.model(
   "smcoll",
   new mongoose.Schema({}, { collection: "smcoll", strict: false }),
 );
 
-const BATCH_SIZE = 100; // Set your batch size
+// Constants for batch size and API details
+const BATCH_SIZE = 100;
 const PartnerID = "a8ce06a0-4fbd-489f-8d75-345548fb98a8";
 const ELIGIBILITY_API =
   "https://prod.zype.co.in/attribution-service/api/v1/underwriting/customerEligibility";
 const PRE_APPROVAL_API =
   "https://prod.zype.co.in/attribution-service/api/v1/underwriting/preApprovalOffer";
 
+/**
+ * Ensures the user's income is a number.
+ * @param {object} user - The user document.
+ */
 async function processIncome(user) {
   if (typeof user.income === "string") {
     const parsedIncome = parseFloat(user.income);
@@ -32,8 +41,14 @@ async function processIncome(user) {
   }
 }
 
+/**
+ * Sends a request to the customer eligibility API.
+ * @param {object} user - The user document.
+ * @returns {Promise<object>} The API response data or a failure object.
+ */
 async function sendToNewAPI(user) {
   try {
+    // Process the income field before sending the request
     await processIncome(user);
 
     const payload = {
@@ -62,14 +77,40 @@ async function sendToNewAPI(user) {
   }
 }
 
+/**
+ * Sends a request to the pre-approval API, but only for 'Salaried' users.
+ * @param {object} user - The user document.
+ * @returns {Promise<object|void>} The API response data or undefined if skipped.
+ */
 async function getPreApproval(user) {
+  // Skip if the user is not 'Salaried'
+  if (user.employment !== "Salaried") {
+    const reason = `Employment type is '${user.employment}' — skipped preApproval`;
+    console.log(`⏭️ Skipping PreApproval: ${reason}`);
+
+    // Update the database to reflect that this step was skipped
+    await UserDB.updateOne(
+      { phone: user.phone },
+      {
+        $push: {
+          RefArr: {
+            name: "Zype",
+            message: reason,
+            createdAt: new Date().toISOString(),
+          },
+        },
+      },
+    );
+
+    return;
+  }
+
   try {
     const payload = {
       mobileNumber: String(user.phone),
       email: user.email,
       panNumber: user.pan,
       name: user.name,
-      // dob: user.dob ? new Date(user.dob).toISOString().split("T")[0] : null, // ✅ DOB formatted here
       dob: user.dob,
       income: user.income,
       employmentType: user.employment,
@@ -100,13 +141,19 @@ async function getPreApproval(user) {
   }
 }
 
+/**
+ * Processes a batch of users concurrently.
+ * @param {Array<object>} users - An array of user documents.
+ */
 async function processBatch(users) {
   const results = await Promise.allSettled(
     users.map(async (user) => {
+      // Find the user document to check for existing data and update
       const userDoc = await UserDB.findOne({ phone: user.phone });
       const updates = {};
       let needUpdate = false;
 
+      // Ensure apiResponse and preApproval fields are arrays if they exist
       if (userDoc.apiResponse && !Array.isArray(userDoc.apiResponse)) {
         updates.apiResponse = [userDoc.apiResponse];
         needUpdate = true;
@@ -121,17 +168,40 @@ async function processBatch(users) {
         await UserDB.updateOne({ phone: user.phone }, { $set: updates });
       }
 
-      const response = await sendToNewAPI(user);
+      // 🚫 SKIP if not Salaried
+      if (user.employment !== "Salaried") {
+        const skipMessage = `Employment type is '${user.employment}' — skipped eligibility & preApproval`;
+        console.log(`⏭️ ${skipMessage}: ${user.phone} - ${user.name}`);
 
+        await UserDB.updateOne(
+          { phone: user.phone },
+          {
+            $push: {
+              RefArr: {
+                name: "Zype",
+                message: skipMessage,
+                createdAt: new Date().toISOString(),
+              },
+            },
+          },
+        );
+
+        return; // Stop processing this user
+      }
+
+      // ✅ Send Eligibility API
+      const eligibilityResponse = await sendToNewAPI(user);
+
+      // Define the update document
       const updateDoc = {
         $push: {
           apiResponse: {
             ZypeResponse: {
-              ...response,
+              ...eligibilityResponse,
               Zype: true,
             },
-            status: response.status,
-            amount: response.amount,
+            status: eligibilityResponse.status,
+            amount: eligibilityResponse.amount,
             createdAt: new Date().toISOString(),
           },
           RefArr: {
@@ -139,49 +209,55 @@ async function processBatch(users) {
             createdAt: new Date().toISOString(),
           },
         },
-        $unset: { accounts: "" },
+        $unset: { accounts: "" }, // Unset the 'accounts' field
       };
 
-      if (response.status === "ACCEPT") {
-        const preApproval = await getPreApproval(user);
+      // If eligibility is 'ACCEPT', proceed with pre-approval
+      if (eligibilityResponse.status === "ACCEPT") {
+        const preApprovalResponse = await getPreApproval(user);
 
-        updateDoc.$push.apiResponse = {
-          ZypeResponse: preApproval,
-          status: preApproval.status,
-          amount: preApproval.amount,
-          message: preApproval.message,
-          createdAt: new Date().toISOString(),
-        };
+        if (preApprovalResponse) {
+          // Push pre-approval data to the apiResponse array
+          updateDoc.$push.apiResponse = {
+            ZypeResponse: preApprovalResponse,
+            status: preApprovalResponse.status,
+            amount: preApprovalResponse.amount,
+            message: preApprovalResponse.message,
+            createdAt: new Date().toISOString(),
+          };
+        }
       } else {
-        console.log(`⛔ No PreApproval — Status: ${response.status}`);
+        console.log(
+          `⛔ No PreApproval — Status: ${eligibilityResponse.status}`,
+        );
       }
 
+      // Update the user document in the database
       await UserDB.updateOne({ phone: user.phone }, updateDoc);
     }),
   );
 
-  // Handle any errors or log the results
+  // Log the results of the batch processing
   results.forEach((result, index) => {
     if (result.status === "rejected") {
       console.error(`Error processing user at index ${index}:`, result.reason);
     } else {
-      console.log(`Successfully processed user at index ${index}`);
+      console.log(`✅ Successfully processed user at index ${index}`);
     }
   });
 }
-let processedCount = 0;
+
+/**
+ * Main loop to fetch and process users in batches.
+ */
 async function Loop() {
   try {
     while (true) {
       console.log("📦 Fetching leads...");
 
+      // Aggregate query to find users not yet processed by 'Zype'
       const leads = await UserDB.aggregate([
-        {
-          $match: {
-            "RefArr.name": { $ne: "Zype" },
-            employment: "Salaried",
-          },
-        },
+        { $match: { "RefArr.name": { $ne: "Zype" } } },
         { $limit: BATCH_SIZE },
       ]);
 
@@ -202,4 +278,5 @@ async function Loop() {
   }
 }
 
+// Start the main loop
 Loop();
