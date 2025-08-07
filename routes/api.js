@@ -220,8 +220,8 @@ router.put("/updateUser", async (req, res) => {
 
   try {
     const updatedUser = await User.findOneAndUpdate(
-      { mobile: phone }, // yahan mobile likha
-      { $set: req.body }, // jitna bhi data aaye sab update ho
+      { mobile: phone },
+      { $set: req.body },
       { new: true },
     );
 

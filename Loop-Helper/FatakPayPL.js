@@ -10,11 +10,11 @@ mongoose
   .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
 
 const UserDB = mongoose.model(
-  "smcoll",
-  new mongoose.Schema({}, { collection: "smcoll", strict: false }),
+  "comp",
+  new mongoose.Schema({}, { collection: "comp", strict: false }),
 );
 
-const BATCH_SIZE = 100;
+const BATCH_SIZE = 50;
 const CREATE_USER_TOKEN_API =
   "https://onboardingapi.fatakpay.com/external-api/v1/create-user-token";
 const ELIGIBILITY_API =
@@ -146,7 +146,6 @@ async function Loop() {
 
       if (leads.length === 0) {
         console.log("⏸️ No unprocessed leads. Retrying in 2 seconds...");
-        return setTimeout(processNextBatch, 2000); // Retry after 2s
       }
 
       await processBatch(leads, token);
