@@ -63,20 +63,13 @@ async function sendToNewAPI(user) {
 }
 
 async function getPreApproval(user) {
-  if (user.employment !== "Salaried") {
-    console.log("⛔ Skipping PreApproval: Only 'Salaried' users are allowed");
-    return {
-      status: "SKIPPED",
-      message: "Only Salaried users are allowed for pre-approval.",
-    };
-  }
-
   try {
     const payload = {
       mobileNumber: String(user.phone),
       email: user.email,
       panNumber: user.pan,
       name: user.name,
+      // dob: user.dob ? new Date(user.dob).toISOString().split("T")[0] : null, // ✅ DOB formatted here
       dob: user.dob,
       income: user.income,
       employmentType: user.employment,
@@ -166,6 +159,8 @@ async function processBatch(users) {
       await UserDB.updateOne({ phone: user.phone }, updateDoc);
     }),
   );
+
+  // Handle any errors or log the results
   results.forEach((result, index) => {
     if (result.status === "rejected") {
       console.error(`Error processing user at index ${index}:`, result.reason);
@@ -181,7 +176,12 @@ async function Loop() {
       console.log("📦 Fetching leads...");
 
       const leads = await UserDB.aggregate([
-        { $match: { "RefArr.name": { $ne: "Zype" } } },
+        {
+          $match: {
+            "RefArr.name": { $ne: "Zype" },
+            employment: "Salaried",
+          },
+        },
         { $limit: BATCH_SIZE },
       ]);
 
