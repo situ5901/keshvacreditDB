@@ -147,16 +147,20 @@ async function Loop() {
       ]);
 
       if (leads.length === 0) {
-        console.log("⏸️ No unprocessed leads. Checking again...");
+        console.log("⏸️ No unprocessed leads. Checking again in 5 sec...");
+        await sleep(5000); // wait 5 seconds if no leads
         continue;
       }
 
       await processBatch(leads, token);
       console.log(`✅ Processed batch of ${leads.length} users`);
+
+      // ✅ Wait 5 seconds before next batch
+      console.log("⏳ Waiting 5 seconds before next batch...");
+      await sleep(5000);
     } catch (err) {
       console.error("❌ Error in loop:", err.message);
+      await sleep(5000); // also wait if error occurs
     }
   }
 }
-
-Loop();
