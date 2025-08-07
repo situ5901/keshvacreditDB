@@ -325,8 +325,8 @@ exports.getLendersData = async (req, res) => {
           Moneyview: nodedupe,
           MoneyViewOffers: Offeres,
           MoneyViewProcessed: processMV,
-          MoneyViewTotal: Submission,
-          MoneyViewSubmited: completeDB,
+          MoneyViewSubmited: Submission,
+          MoneyViewTotal: completeDB,
         },
         SmartCoin: {
           smartcoin: smartcoin,
