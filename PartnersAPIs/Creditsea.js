@@ -367,7 +367,7 @@ router.post("/rupeereaddy/create", async (req, res) => {
     const authHeader = req.headers["authorization"];
     const authKey = authHeader?.replace(/^Bearer\s+/i, "");
 
-    if (!authKey || authKey !== AUTH_CASHKUBER_kEY) {
+    if (!authKey || authKey !== AUTH_KEY_RUPEE_READY) {
       return res.status(401).json({ status: 401, error: "Unauthorized" });
     }
 
