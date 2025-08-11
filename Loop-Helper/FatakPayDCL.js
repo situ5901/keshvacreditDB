@@ -27,14 +27,13 @@ async function createUserToken() {
       password: "a5df9f760eb280c878b4",
     };
 
+    console.log("\n🔑 Generating token...");
     const response = await axios.post(CREATE_USER_TOKEN_API, payloads, {
       headers: { "Content-Type": "application/json" },
     });
 
-    console.log(
-      "\n🎟️ Token API Raw Response:",
-      JSON.stringify(response.data, null, 2),
-    );
+    console.log("🎟️ Token API Response:");
+    console.dir(response.data, { depth: null });
 
     if (response.data.success && response.data.data?.token) {
       console.log("✅ Token generated successfully:", response.data.data.token);
@@ -59,14 +58,13 @@ async function sendEligibilityCheck(user, token) {
       pan: user.pan || null,
       dob: user.dob ? new Date(user.dob).toISOString().split("T")[0] : null, // ✅ DOB formatted here
       email: user.email || "not@provided.com",
-      // dob: formatDOB(user.dob),
       pincode: user.pincode || "400001",
       home_address: user.home_address || "123 MG Road, Mumbai",
       office_address:
         user.office_address || "ABC Pvt Ltd, Andheri East, Mumbai",
       emp_code: user.emp_code || "EMP12345",
       type_of_residence: user.type_of_residence || "Owned",
-      // company_name: user.company_name || "ABC Pvt Ltd",
+      company_name: user.company_name || "ABC Pvt Ltd",
       consent: true,
       consent_timestamp: new Date().toISOString(),
     };
@@ -137,30 +135,33 @@ async function Loop() {
     return;
   }
 
-  while (true) {
+  async function processNextBatch() {
     try {
       console.log("\n🔎 Looking for new leads...");
 
       const leads = await UserDB.aggregate([
-        { $match: { "RefArr.name": { $ne: "FatakPayDCL" } } },
+        { $match: { "RefArr.name": { $ne: "FatakPay" } } },
         { $limit: BATCH_SIZE },
       ]);
 
       if (leads.length === 0) {
-        console.log("⏸️ No unprocessed leads. Checking again in 5 sec...");
-        await sleep(5000); // wait 5 seconds if no leads
-        continue;
+        console.log("⏸️ No unprocessed leads. Retrying in 2 seconds...");
+        return setTimeout(processNextBatch, 2000); // Retry after 2s
       }
 
       await processBatch(leads, token);
       console.log(`✅ Processed batch of ${leads.length} users`);
 
-      // ✅ Wait 5 seconds before next batch
-      console.log("⏳ Waiting 5 seconds before next batch...");
-      await sleep(5000);
+      // Process next batch immediately
+      setImmediate(processNextBatch);
     } catch (err) {
-      console.error("❌ Error in loop:", err.message);
-      await sleep(5000); // also wait if error occurs
+      console.error("❌ Error in processing:", err.message);
+      return setTimeout(processNextBatch, 5000); // Retry after error in 5s
     }
   }
+
+  // Start the loop
+  processNextBatch();
 }
+
+Loop();
