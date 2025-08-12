@@ -260,7 +260,6 @@ exports.getLendersData = async (req, res) => {
       "RefArr.name": "Smartcoin",
     });
     const DCL = await smcoll.countDocuments({
-      "apiResponse.data.loan_application_id": { $exists: true },
       "apiResponse.data.product_type": "CARD",
     });
     const DCL2 = await smcoll.countDocuments();
@@ -268,7 +267,6 @@ exports.getLendersData = async (req, res) => {
       "RefArr.name": "FatakPayDCL",
     });
     const PL = await smcoll.countDocuments({
-      "apiResponse.data.loan_application_id": { $exists: true },
       "apiResponse.data.product_type": "EMI",
     });
     const PL2 = await smcoll.countDocuments();
