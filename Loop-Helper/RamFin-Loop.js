@@ -138,6 +138,10 @@ async function processBatch(users) {
   return attributedSuccessfullyCount;
 }
 
+function delay(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 async function main() {
   let totalAttributedSuccessfully = 0;
   let skip = 0;
@@ -169,6 +173,10 @@ async function main() {
       totalAttributedSuccessfully += batchAttributedCount;
 
       skip += users.length;
+
+      // 🕒 Wait for 3 seconds before hitting the next batch
+      console.log("⏳ Waiting 3 seconds before next batch...");
+      await delay(3000);
     }
 
     console.log("--------------------------------------------------");
