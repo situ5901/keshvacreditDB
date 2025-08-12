@@ -11,7 +11,7 @@ mongoose
 
 const UserDB = mongoose.model(
   "comp",
-  new mongoose.Schema({}, { collection: "comp", strict: false }),	
+  new mongoose.Schema({}, { collection: "comp", strict: false }),
 );
 
 const BATCH_SIZE = 50;
@@ -125,9 +125,11 @@ async function processBatch(users, token) {
     await UserDB.updateOne({ phone: user.phone }, updateDoc);
     console.log(`✅ DB updated for: ${user.phone}`);
   });
-
-  // Run all in parallel
   await Promise.allSettled(promises);
+}
+
+function delay(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 async function Loop() {
@@ -137,26 +139,35 @@ async function Loop() {
     return;
   }
 
-  while (true) {
+  async function processNextBatch() {
     try {
       console.log("\n🔎 Looking for new leads...");
 
       const leads = await UserDB.aggregate([
-        { $match: { "RefArr.name": { $ne: "FatakPayDCL" } } },
+        { $match: { "RefArr.name": { $ne: "FatakPay" } } },
         { $limit: BATCH_SIZE },
       ]);
 
       if (leads.length === 0) {
-        console.log("⏸️ No unprocessed leads. Checking again...");
-        continue;
+        console.log("⏸️ No unprocessed leads. Retrying in 2 seconds...");
+        await delay(2000); // Retry after 2 seconds
+        return processNextBatch();
       }
 
       await processBatch(leads, token);
       console.log(`✅ Processed batch of ${leads.length} users`);
+
+      // ✅ Wait 5 seconds before hitting the next batch
+      console.log("⏳ Waiting 5 seconds before next batch...");
+      await delay(5000);
+
+      await processNextBatch();
     } catch (err) {
-      console.error("❌ Error in loop:", err.message);
+      console.error("❌ Error in processing:", err.message);
     }
   }
+
+  processNextBatch();
 }
 
 Loop();

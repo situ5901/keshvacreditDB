@@ -10,8 +10,8 @@ mongoose
   .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
 
 const UserDB = mongoose.model(
-  "comp",
-  new mongoose.Schema({}, { collection: "comp", strict: false }),
+  "smcoll",
+  new mongoose.Schema({}, { collection: "smcoll", strict: false }),
 );
 
 const BATCH_SIZE = 10;
@@ -128,6 +128,10 @@ async function processBatch(users, token) {
   await Promise.allSettled(promises);
 }
 
+function delay(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 async function Loop() {
   const token = await createUserToken();
   if (!token) {
@@ -146,17 +150,23 @@ async function Loop() {
 
       if (leads.length === 0) {
         console.log("⏸️ No unprocessed leads. Retrying in 2 seconds...");
-        return setTimeout(processNextBatch, 2000); // Retry after 2s
+        await delay(2000); // Retry after 2 seconds
+        return processNextBatch();
       }
 
       await processBatch(leads, token);
       console.log(`✅ Processed batch of ${leads.length} users`);
-      setTimeout(processNextBatch, 1000);
+
+      // ✅ Wait 5 seconds before hitting the next batch
+      console.log("⏳ Waiting 5 seconds before next batch...");
+      await delay(5000);
+
+      await processNextBatch();
     } catch (err) {
       console.error("❌ Error in processing:", err.message);
-      return setTimeout(processNextBatch, 5000); // Retry after error in 5s
     }
   }
+
   processNextBatch();
 }
 
