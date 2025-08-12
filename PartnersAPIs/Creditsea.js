@@ -110,6 +110,7 @@ router.post("/create_apis", async (req, res) => {
       income,
       dob,
       partner_Id,
+      createdAt: new Date(),
     });
 
     await newUser.save();
@@ -227,6 +228,7 @@ router.post("/zype/create", async (req, res) => {
       income,
       dob,
       partner_Id,
+      createdAt: new Date(),
     });
 
     await newUser.save();
@@ -346,6 +348,7 @@ router.post("/cashkuber/create", async (req, res) => {
       UserPostion,
       CompanyAddress,
       CompleteAddress,
+      createdAt: new Date(),
       partner_Id,
     });
 
@@ -459,6 +462,7 @@ router.post("/rupeereaddy/create", async (req, res) => {
       UserPostion,
       CompanyAddress,
       CompleteAddress,
+      createdAt: new Date(),
       partner_Id,
     });
 
