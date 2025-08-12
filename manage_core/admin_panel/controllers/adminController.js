@@ -295,6 +295,9 @@ exports.getLendersData = async (req, res) => {
     const RamFinance = await smcoll.countDocuments({
       "apiResponse.Ramfin.leadCreate.message": "Attributed Successfully",
     });
+    const RamFinProcessed = await smcoll.countDocuments({
+      "RefArr.name": "RamFin",
+    });
     const RamFinCount = await smcoll.countDocuments();
     const nodedupe = await MoneyView2.countDocuments({
       "apiResponse.moneyViewDedupe.message": "No dedupe found",
@@ -357,7 +360,8 @@ exports.getLendersData = async (req, res) => {
         },
         RamFinance: {
           RamFinance: RamFinance,
-          RamFinProcessed: RamFinCount,
+          RamFinProcessed: RamFinProcessed,
+          RamFinTotal: RamFinCount,
         },
       },
     });
