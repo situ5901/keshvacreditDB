@@ -320,7 +320,7 @@ exports.getLendersData = async (req, res) => {
           MoneyViewSubmited: count5,
         },
         MoneyView2: {
-          Moneyview: nodedupe,
+          Moneyview2: nodedupe,
           MoneyViewOffers: Offeres,
           MoneyViewProcessed: processMV,
           MoneyViewSubmited: Submission,
