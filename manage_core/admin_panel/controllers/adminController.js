@@ -16,10 +16,7 @@ const {
   dailyworks,
 } = require("../../models/CheckLenderSchema");
 
-// const {
-//   sendAdminLoginAlert,
-//   sendAdminCreatedAlert,
-// } = require("./mailverify.js");
+const { partnerdb, customer } = require("../../../PartnersAPIs/PartnerSchema");
 exports.login = (req, res) => {
   const { adminName, adminMail, password } = req.body;
 
@@ -367,6 +364,28 @@ exports.getLendersData = async (req, res) => {
     });
   } catch (error) {
     console.error("❌ Error in getLendersData:", error);
+    return res.status(500).json({
+      success: false,
+      message: "❌ Server Error",
+      error: error.message,
+    });
+  }
+};
+
+exports.getPartnerData = async (req, res) => {
+  try {
+    const count = await partnerdb.countDocuments({
+      "partner_Id": "Creditsea-keshva",
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "✅ Counts retrieved successfully",
+      count,
+    });
+
+  } catch (error) {
+    console.error("❌ Error in getPartnerData:", error);
     return res.status(500).json({
       success: false,
       message: "❌ Server Error",

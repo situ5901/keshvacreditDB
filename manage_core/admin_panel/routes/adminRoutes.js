@@ -18,4 +18,5 @@ router.get(
   filterDatabase.deleteDuplicatePhones,
 );
 router.get("/get/LenderData", adminAuth, adminController.getLendersData);
+router.get("/get/partnerData", adminAuth, adminController.getPartnerData);
 module.exports = router;
