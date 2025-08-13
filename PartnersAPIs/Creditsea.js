@@ -17,8 +17,8 @@ const {
 function getFormattedDate() {
   const now = new Date();
   const year = now.getFullYear().toString().slice(-2); // YY
-  const month = String(now.getMonth() + 1).padStart(2, '0'); // 01-12
-  const day = String(now.getDate()).padStart(2, '0'); // 01-31
+  const month = String(now.getMonth() + 1).padStart(2, "0"); // 01-12
+  const day = String(now.getDate()).padStart(2, "0"); // 01-31
   return `${year}-${month}-${day}`;
 }
 router.get("/testdeno", async (req, res) => {
@@ -98,26 +98,26 @@ router.post("/create_apis", async (req, res) => {
         .status(409)
         .json({ status: 409, error: "User is already associated with us" });
     }
-const newUser = new partnerdb({
-  name,
-  phone,
-  email,
-  employeeType,
-  pan,
-  state,
-  city,
-  pincode,
-  creditScore,
-  SalaryType,
-  CompanyName,
-  UserPostion,
-  CompanyAddress,
-  CompleteAddress,
-  income,
-  dob,
-  partner_Id,
-  createdAt: getFormattedDate(), 
-});
+    const newUser = new partnerdb({
+      name,
+      phone,
+      email,
+      employeeType,
+      pan,
+      state,
+      city,
+      pincode,
+      creditScore,
+      SalaryType,
+      CompanyName,
+      UserPostion,
+      CompanyAddress,
+      CompleteAddress,
+      income,
+      dob,
+      partner_Id,
+      createdAt: getFormattedDate(),
+    });
 
     await newUser.save();
 
@@ -233,8 +233,8 @@ router.post("/zype/create", async (req, res) => {
       CompleteAddress,
       income,
       dob,
+      createdAt: getFormattedDate(),
       partner_Id,
-  createdAt: getFormattedDate(), 
     });
 
     await newUser.save();
@@ -354,7 +354,7 @@ router.post("/cashkuber/create", async (req, res) => {
       UserPostion,
       CompanyAddress,
       CompleteAddress,
-      createdAt: new Date(),
+      createdAt: getFormattedDate(),
       partner_Id,
     });
 
