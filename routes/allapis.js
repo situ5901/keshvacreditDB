@@ -69,49 +69,48 @@ router.post("/check-data", async (req, res) => {
 // ✅ API 2: Insert Data into Member Collection (Check Both Collections for Phone)
 router.post("/infiSchema", async (req, res) => {
   try {
-    const data = req.body;
+    const { data } = req.body;
 
     if (!Array.isArray(data) || data.length === 0) {
-      return res.status(400).json({ success: false, message: "Empty data." });
+      return res.status(400).json({ success: false, message: "Empty data received." });
     }
 
-    // Remove duplicates in request body by phone only
+    // Trim phone numbers and filter out duplicates from the request body
     const uniqueData = data.filter((item, index, self) => {
       const phone = item.phone?.trim();
-      return (
-        phone && index === self.findIndex((t) => t.phone?.trim() === phone)
-      );
+      return phone && index === self.findIndex((t) => t.phone?.trim() === phone);
     });
 
     if (uniqueData.length !== data.length) {
-      return res.status(400).json({
-        success: false,
-        message: "Duplicate phone in request.",
-      });
+      return res.status(400).json({ success: false, message: "Duplicate phone numbers found in the request body." });
     }
 
-    // Check for existing phone in both collections
+    // Get an array of all unique phone numbers to check against the database
+    const phonesToCheck = uniqueData.map((item) => item.phone.trim());
+
+    // Check for existing phone numbers in both collections simultaneously
     const [existingUsers, existingMembers] = await Promise.all([
-      Users.find({
-        phone: { $in: uniqueData.map((i) => i.phone.trim()) },
-      }),
-      Member.find({
-        phone: { $in: uniqueData.map((i) => i.phone.trim()) },
-      }),
+      Users.find({ phone: { $in: phonesToCheck } }),
+      Member.find({ phone: { $in: phonesToCheck } }),
     ]);
 
     const combinedExisting = [...existingUsers, ...existingMembers];
+
     if (combinedExisting.length > 0) {
+      const existingPhones = combinedExisting.map((item) => item.phone);
       return res.status(409).json({
         success: false,
-        message: "Phone already exists in DB.",
+        message: `Phone numbers already exist in the database: ${existingPhones.join(", ")}`,
       });
     }
 
-    const saved = await Member.insertMany(uniqueData, { ordered: false });
-    res.status(200).json({ success: true, message: `${saved.length} saved.` });
+    // If no conflicts, save the new data to the Member collection
+    const savedMembers = await Member.insertMany(uniqueData, { ordered: false });
+    res.status(200).json({ success: true, message: `${savedMembers.length} member(s) saved successfully.` });
+
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    console.error("Error saving new members:", err);
+    res.status(500).json({ success: false, message: "An internal server error occurred." });
   }
 });
 
