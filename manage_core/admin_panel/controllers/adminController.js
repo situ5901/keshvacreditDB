@@ -375,13 +375,23 @@ exports.getLendersData = async (req, res) => {
 
 exports.getPartnerData = async (req, res) => {
   try {
+    const { partner_Id } = req.body; 
+
+    if (!partner_Id) {
+      return res.status(400).json({
+        success: false,
+        message: "❌ partner_Id is required",
+      });
+    }
+
     const count = await partnerdb.countDocuments({
-      partner_Id: "Creditsea-keshva",
+      partner_Id: partner_Id.trim(),
     });
 
     return res.status(200).json({
       success: true,
       message: "✅ Counts retrieved successfully",
+      partner_Id,
       count,
     });
   } catch (error) {
@@ -428,7 +438,7 @@ const count = await MemberData.countDocuments({
 
     return res.status(200).json({
       success: true,
-      message: "Count retrieved for partner_id",
+      message: `✅ Count retrieved for partner_id`,
       count,
     });
 
