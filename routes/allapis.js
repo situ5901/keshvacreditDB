@@ -7,7 +7,6 @@ const Users = require("../models/checkdata"); // adjust path if needed
 const Member = require("../models/infiSchema");
 mongoose.set("strictQuery", true);
 
-const pLimit = require("p-limit");
 
 router.post("/check-data", async (req, res) => {
   try {
