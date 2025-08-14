@@ -82,7 +82,7 @@ router.post("/infiSchema", async (req, res) => {
         self.findIndex(
           (t) =>
             t.phone === item.phone &&
-            t.pan?.toUpperCase() === item.pan?.toUpperCase(),
+            // t.pan?.toUpperCase() === item.pan?.toUpperCase(),
         ),
     );
     if (uniqueData.length !== data.length) {
@@ -95,7 +95,7 @@ router.post("/infiSchema", async (req, res) => {
       $or: uniqueData.flatMap((item) => {
         const orArr = [];
         if (item.phone) orArr.push({ phone: item.phone });
-        if (item.pan) orArr.push({ pan: item.pan.toUpperCase() });
+        // if (item.pan) orArr.push({ pan: item.pan.toUpperCase() });
         return orArr;
       }),
     });
