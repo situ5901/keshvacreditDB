@@ -66,7 +66,6 @@ router.post("/check-data", async (req, res) => {
   }
 });
 
-// ✅ API 2: Insert Data into Member Collection (Check Both Collections for Phone)
 router.post("/infiSchema", async (req, res) => {
   try {
     const { data } = req.body;
@@ -74,8 +73,7 @@ router.post("/infiSchema", async (req, res) => {
     if (!Array.isArray(data) || data.length === 0) {
       return res.status(400).json({ success: false, message: "Empty data received." });
     }
-
-    // Trim phone numbers and filter out duplicates from the request body
+//update new
     const uniqueData = data.filter((item, index, self) => {
       const phone = item.phone?.trim();
       return phone && index === self.findIndex((t) => t.phone?.trim() === phone);
