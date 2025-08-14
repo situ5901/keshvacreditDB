@@ -70,7 +70,6 @@ router.post("/infiSchema", async (req, res) => {
   try {
     const data = req.body; // Request body se data
 
-    // Check agar body empty hai
     if (!data || Object.keys(data).length === 0) {
       return res.status(400).json({
         success: false,
@@ -78,10 +77,8 @@ router.post("/infiSchema", async (req, res) => {
       });
     }
 
-    // MongoDB me save
     const savedMember = await Member.create(data);
 
-    // Success response
     return res.status(201).json({
       success: true,
       message: "Data saved successfully",
