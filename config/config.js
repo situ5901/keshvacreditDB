@@ -10,6 +10,5 @@ module.exports = {
     "https://13.200.229.187",
     "http://localhost:5000",
     "http://localhost:3000",
-    "https://e24197fb8c68.ngrok-free.app/",
   ],
 };
