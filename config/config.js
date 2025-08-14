@@ -10,6 +10,6 @@ module.exports = {
     "https://13.200.229.187",
     "http://localhost:5000",
     "http://localhost:3000",
-    "https://lead-bredge-8a094h30c-situ5901s-projects.vercel.app",
+    "https://leadbredge.netlify.app",
   ],
 };
