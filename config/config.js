@@ -6,9 +6,10 @@ module.exports = {
   API_VERSION: process.env.API_VERSION || "/v1",
   ALLOWLIST: [
     "https://keshvacredit.com",
-    "https://www.keshvacredit.com",  
+    "https://www.keshvacredit.com",
     "https://13.200.229.187",
     "http://localhost:5000",
     "http://localhost:3000",
+    "https://5db3cefa87fe.ngrok-free.app/",
   ],
 };
