@@ -9,6 +9,7 @@ const User = require("../../../models/user.model.js");
 const Users = require("../../../models/checkdata.js");
 const AgentModel = require("../../models/AgentModel.js");
 const CheckUser = require("../../models/checkuser");
+const MemberData = require("../../../models/infiSchema");
 const {
   MoneyView,
   MoneyView2,
@@ -375,7 +376,7 @@ exports.getLendersData = async (req, res) => {
 exports.getPartnerData = async (req, res) => {
   try {
     const count = await partnerdb.countDocuments({
-      "partner_Id": "Creditsea-keshva",
+      partner_Id: "Creditsea-keshva",
     });
 
     return res.status(200).json({
@@ -383,9 +384,56 @@ exports.getPartnerData = async (req, res) => {
       message: "✅ Counts retrieved successfully",
       count,
     });
-
   } catch (error) {
     console.error("❌ Error in getPartnerData:", error);
+    return res.status(500).json({
+      success: false,
+      message: "❌ Server Error",
+      error: error.message,
+    });
+  }
+};
+
+exports.getMembersData = async (req, res) => {
+  try {
+    const { partner_Id } = req.body;
+
+    if (!partner_Id) {
+      return res.status(400).json({
+        success: false,
+        message: "❌ partner_Id is required in request body",
+      });
+    }
+
+const count = await MemberData.countDocuments({
+  $expr: {
+    $eq: [
+      {
+        $toLower: {
+          $trim: {
+            input: {
+              $replaceAll: {
+                input: "$partner_id",
+                find: ",",
+                replacement: ""
+              }
+            }
+          }
+        }
+      },
+      partner_Id.trim().replace(/,/g, "").toLowerCase()
+    ]
+  }
+});
+
+    return res.status(200).json({
+      success: true,
+      message: "Count retrieved for partner_id",
+      count,
+    });
+
+  } catch (error) {
+    console.error("❌ Error in getMembersData:", error);
     return res.status(500).json({
       success: false,
       message: "❌ Server Error",
