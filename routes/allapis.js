@@ -80,9 +80,8 @@ router.post("/infiSchema", async (req, res) => {
       (item, index, self) =>
         index ===
         self.findIndex(
-          (t) =>
-            t.phone === item.phone &&
-            // t.pan?.toUpperCase() === item.pan?.toUpperCase(),
+          (t) => t.phone === item.phone,
+          // t.pan?.toUpperCase() === item.pan?.toUpperCase(),
         ),
     );
     if (uniqueData.length !== data.length) {
