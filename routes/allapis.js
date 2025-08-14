@@ -68,47 +68,32 @@ router.post("/check-data", async (req, res) => {
 
 router.post("/infiSchema", async (req, res) => {
   try {
-    const { data } = req.body;
+    const data = req.body; // Request body se data
 
-    if (!Array.isArray(data) || data.length === 0) {
-      return res.status(400).json({ success: false, message: "Empty data received." });
-    }
-//update new
-    const uniqueData = data.filter((item, index, self) => {
-      const phone = item.phone?.trim();
-      return phone && index === self.findIndex((t) => t.phone?.trim() === phone);
-    });
-
-    if (uniqueData.length !== data.length) {
-      return res.status(400).json({ success: false, message: "Duplicate phone numbers found in the request body." });
-    }
-
-    // Get an array of all unique phone numbers to check against the database
-    const phonesToCheck = uniqueData.map((item) => item.phone.trim());
-
-    // Check for existing phone numbers in both collections simultaneously
-    const [existingUsers, existingMembers] = await Promise.all([
-      Users.find({ phone: { $in: phonesToCheck } }),
-      Member.find({ phone: { $in: phonesToCheck } }),
-    ]);
-
-    const combinedExisting = [...existingUsers, ...existingMembers];
-
-    if (combinedExisting.length > 0) {
-      const existingPhones = combinedExisting.map((item) => item.phone);
-      return res.status(409).json({
+    // Check agar body empty hai
+    if (!data || Object.keys(data).length === 0) {
+      return res.status(400).json({
         success: false,
-        message: `Phone numbers already exist in the database: ${existingPhones.join(", ")}`,
+        message: "Please provide valid data",
       });
     }
 
-    // If no conflicts, save the new data to the Member collection
-    const savedMembers = await Member.insertMany(uniqueData, { ordered: false });
-    res.status(200).json({ success: true, message: `${savedMembers.length} member(s) saved successfully.` });
+    // MongoDB me save
+    const savedMember = await Member.create(data);
 
-  } catch (err) {
-    console.error("Error saving new members:", err);
-    res.status(500).json({ success: false, message: "An internal server error occurred." });
+    // Success response
+    return res.status(201).json({
+      success: true,
+      message: "Data saved successfully",
+      data: savedMember,
+    });
+  } catch (error) {
+    console.error("❌ Error in /infiSchema:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal Server Error",
+      error: error.message,
+    });
   }
 });
 
