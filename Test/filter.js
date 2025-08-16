@@ -42,15 +42,26 @@ router.post("/filterdata", async (req, res) => {
     const tasks = chunks.map((batch, idx) =>
       limit(async () => {
         console.time(`Batch-${idx}`);
-        const results = await mongoose.connection
+
+        // Find in 'userdb'
+        const userdbResults = await mongoose.connection
           .collection("userdb")
           .find(
             { phone: { $in: batch } },
             { projection: { RefArr: 0, apiResponse: 0 } },
           )
           .toArray();
+
+        const secondarydbResults = await mongoose.connection
+          .collection("webuserdbs")
+          .find(
+            { phone: { $in: batch } },
+            { projection: { RefArr: 0, apiResponse: 0 } },
+          )
+          .toArray();
+
         console.timeEnd(`Batch-${idx}`);
-        allResults.push(...results);
+        allResults.push(...userdbResults, ...secondarydbResults);
       }),
     );
 
