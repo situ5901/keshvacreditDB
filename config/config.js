@@ -12,6 +12,8 @@ module.exports = {
     "http://localhost:3000",
     "http://localhost:3002",
     "http://13.235.129.236",
+    "https://keshva.in/",
+    "https://www.keshva.in/",
     "https://leadbredge.netlify.app",
   ],
 };
