@@ -10,6 +10,7 @@ module.exports = {
     "https://13.200.229.187",
     "http://localhost:5000",
     "http://localhost:3000",
+    "http://localhost:3002",
     "https://leadbredge.netlify.app",
   ],
 };
