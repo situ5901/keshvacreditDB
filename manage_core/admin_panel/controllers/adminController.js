@@ -368,6 +368,7 @@ exports.getLendersData = async (req, res) => {
         },
         LoanTaps: {
           LoanTaps: LT,
+          LoanTapsTotal: LT2,
         },
       },
     });
