@@ -314,7 +314,6 @@ exports.getLendersData = async (req, res) => {
     const LT = await LoanTaps.countDocuments({
       "apiResponse.LoanTap.message": "Application created successfully.",
     });
-    const LT2 = await LoanTaps.countDocuments({});
     return res.status(200).json({
       success: true,
       message: "✅ Counts retrieved successfully",
@@ -368,7 +367,6 @@ exports.getLendersData = async (req, res) => {
         },
         LoanTaps: {
           LoanTaps: LT,
-          LoanTapsTotal: LT2,
         },
       },
     });
