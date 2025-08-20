@@ -12,8 +12,8 @@ mongoose
   .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
 
 const UserDB = mongoose.model(
-  "mvcoll",
-  new mongoose.Schema({}, { collection: "mvcoll", strict: false }),
+  "MoneyView",
+  new mongoose.Schema({}, { collection: "MoneyView", strict: false }),
 );
 const Healthcheck_API = "https://atlas.whizdm.com/atlas/v1/health";
 const TOKEN_API = "https://atlas.whizdm.com/atlas/v1/token";
@@ -44,6 +44,13 @@ function loadValidPincodes(filePath) {
   }
 }
 
+function getFormattedDate() {
+  const now = new Date();
+  const year = now.getFullYear().toString().slice(-2); // YY
+  const month = String(now.getMonth() + 1).padStart(2, "0"); // 01-12
+  const day = String(now.getDate()).padStart(2, "0"); // 01-31
+  return `${year}-${month}-${day}`;
+}
 const validPincodesSet = loadValidPincodes(PINCODE_FILE_PATH);
 if (validPincodesSet.size === 0) {
   console.warn("⚠️ No valid pincodes loaded. Skipping all leads.");
@@ -362,7 +369,7 @@ async function processBatch(leads, token) {
               RefArr: {
                 name: "SkippedMoneyView",
                 reason: finalMessage,
-                createdAt: new Date().toISOString(),
+                createdAt: getFormattedDate(),
               },
             },
           },
@@ -380,7 +387,7 @@ async function processBatch(leads, token) {
               RefArr: {
                 name: "SkippedMoneyView",
                 reason: finalMessage,
-                createdAt: new Date().toISOString(),
+                createdAt: getFormattedDate(),
               },
             },
           },
@@ -398,7 +405,7 @@ async function processBatch(leads, token) {
               RefArr: {
                 name: "SkippedMoneyView",
                 reason: finalMessage,
-                createdAt: new Date().toISOString(),
+                createdAt: getFormattedDate(),
               },
             },
           },
@@ -437,11 +444,11 @@ async function processBatch(leads, token) {
                 dedupe: apiResponsesToSave.moneyViewDedupe,
                 status: "skipped",
                 message: "Duplicate lead",
-                createdAt: new Date().toISOString(),
+                createdAt: getFormattedDate(),
               },
               RefArr: {
                 name: "MoneyView",
-                createdAt: new Date().toISOString(),
+                createdAt: getFormattedDate(),
               },
             },
             $unset: { accounts: "" },
@@ -480,9 +487,9 @@ async function processBatch(leads, token) {
         $push: {
           apiResponse: {
             ...apiResponsesToSave,
-            createdAt: new Date().toISOString(),
+            createdAt: getFormattedDate(),
           },
-          RefArr: { name: "MoneyView", createdAt: new Date().toISOString() },
+          RefArr: { name: "MoneyView", createdAt: getFormattedDate() },
         },
         $unset: { accounts: "" },
       },

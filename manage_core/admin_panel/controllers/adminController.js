@@ -15,6 +15,7 @@ const {
   MoneyView2,
   smcoll,
   dailyworks,
+  LoanTaps,
 } = require("../../models/CheckLenderSchema");
 
 const { partnerdb, customer } = require("../../../PartnersAPIs/PartnerSchema");
@@ -310,6 +311,9 @@ exports.getLendersData = async (req, res) => {
     const Submission = await MoneyView2.countDocuments({
       "apiResponse.moneyViewLeadSubmission.message": "success",
     });
+    const LT = await LoanTaps.countDocuments({
+      "apiResponse.LoanTap.message": "Application created successfully.",
+    });
     return res.status(200).json({
       success: true,
       message: "✅ Counts retrieved successfully",
@@ -361,6 +365,9 @@ exports.getLendersData = async (req, res) => {
           RamFinProcessed: RamFinProcessed,
           RamFinTotal: RamFinCount,
         },
+        LoanTaps: {
+          LoanTaps: LT,
+        },
       },
     });
   } catch (error) {
@@ -375,7 +382,7 @@ exports.getLendersData = async (req, res) => {
 
 exports.getPartnerData = async (req, res) => {
   try {
-    const { partner_Id } = req.body; 
+    const { partner_Id } = req.body;
 
     if (!partner_Id) {
       return res.status(400).json({
@@ -415,33 +422,32 @@ exports.getMembersData = async (req, res) => {
       });
     }
 
-const count = await MemberData.countDocuments({
-  $expr: {
-    $eq: [
-      {
-        $toLower: {
-          $trim: {
-            input: {
-              $replaceAll: {
-                input: "$partner_id",
-                find: ",",
-                replacement: ""
-              }
-            }
-          }
-        }
+    const count = await MemberData.countDocuments({
+      $expr: {
+        $eq: [
+          {
+            $toLower: {
+              $trim: {
+                input: {
+                  $replaceAll: {
+                    input: "$partner_id",
+                    find: ",",
+                    replacement: "",
+                  },
+                },
+              },
+            },
+          },
+          partner_Id.trim().replace(/,/g, "").toLowerCase(),
+        ],
       },
-      partner_Id.trim().replace(/,/g, "").toLowerCase()
-    ]
-  }
-});
+    });
 
     return res.status(200).json({
       success: true,
       message: `✅ Count retrieved for partner_id`,
       count,
     });
-
   } catch (error) {
     console.error("❌ Error in getMembersData:", error);
     return res.status(500).json({

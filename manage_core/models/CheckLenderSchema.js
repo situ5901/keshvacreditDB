@@ -21,9 +21,11 @@ const MoneyView = mongoose.model("mvcoll", CommonSchema, "mvcoll");
 const MoneyView2 = mongoose.model("MoneyView", CommonSchema, "MoneyView");
 const smcoll = mongoose.model("smcoll", CommonSchema, "smcoll");
 const dailyworks = mongoose.model("dailyworks", CommonSchema, "dailyworks");
+const LoanTaps = mongoose.model("LoanTap", CommonSchema, "LoanTap");
 module.exports = {
   MoneyView,
   MoneyView2,
   smcoll,
   dailyworks,
+  LoanTaps,
 };
