@@ -197,6 +197,7 @@ async function fetchOffers(leadId, token, phone) {
 async function sendToMoneyView(lead, token) {
   const requestBody = {
     partnerCode: 422,
+    partnerId: 428,
     partnerRef: "keshvacredit",
     name: lead.name.trim(),
     gender: lead.gender.toLowerCase(),

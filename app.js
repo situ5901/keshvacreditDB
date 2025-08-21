@@ -63,6 +63,11 @@ app.use(errorHandler);
 //............LeadBridge Working............//
 const adminRoutes = require("./manage_core/admin_panel/routes/adminRoutes.js");
 app.use(`/api${API_VERSION}/admin`, adminRoutes);
+
+//............LEaders Working............//
+
+const LeadersRoutes = require("./manage_core/Leaders/Leaders_route.js");
+app.use(`/api${API_VERSION}/leaders`, LeadersRoutes);
 //............Member Working............//
 const memberRoutes = require("./manage_core/admin_panel/routes/userRoutes.js");
 app.use(`/api${API_VERSION}/member`, memberRoutes);
