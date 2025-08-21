@@ -63,6 +63,50 @@ exports.login = (req, res) => {
   }
 };
 
+exports.Adminlogin = (req, res) => {
+  const { adminName, adminMail, password } = req.body;
+
+  if (!adminName || !adminMail || !password) {
+    return res
+      .status(400)
+      .json({ message: "❌ Admin name, email, and password are required" });
+  }
+
+  const adminDataPath = path.join(__dirname, "../data/leaders.json");
+
+  if (!fs.existsSync(adminDataPath)) {
+    return res.status(500).json({ message: "❌ Admin data file not found" });
+  }
+
+  let adminData;
+  try {
+    const fileContent = fs.readFileSync(adminDataPath, "utf-8");
+    adminData = JSON.parse(fileContent);
+  } catch (err) {
+    return res.status(500).json({ message: "❌ Failed to read admin data" });
+  }
+
+  if (
+    adminName === adminData.adminName &&
+    adminMail === adminData.adminMail &&
+    password === adminData.password
+  ) {
+    const token = jwt.sign(
+      { role: "admin", username: adminMail },
+      process.env.JWT_SECRET || "defaultsecret",
+      { expiresIn: "24h" },
+    );
+
+    return res.json({
+      role: "Leaders",
+      message: "✅ Leaders logged in",
+      token,
+    });
+  } else {
+    return res.status(401).json({ message: "❌ Invalid admin credentials" });
+  }
+};
+
 exports.dashboard = (req, res) => {
   res.send("✅ Welcome to Admin Dashboard");
 };
