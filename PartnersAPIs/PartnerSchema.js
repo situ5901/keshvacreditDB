@@ -5,7 +5,7 @@ const userSchema = new mongoose.Schema(
     name: { type: String, required: true, trim: true },
     phone: { type: String, required: true, trim: true },
     email: { type: String, required: true, trim: true },
-    employeeType: { type: String, required: true, trim: true },
+    employment: { type: String, required: true, trim: true },
     pan: { type: String, required: true, trim: true },
     pincode: { type: String, required: true, trim: true },
     income: { type: Number, required: true },
