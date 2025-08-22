@@ -226,7 +226,7 @@ router.post("/create_apis", async (req, res) => {
       name,
       phone,
       email,
-      employeeType,
+      employment: employeeType,
       pan,
       state,
       city,
