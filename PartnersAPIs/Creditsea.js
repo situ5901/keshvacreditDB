@@ -60,7 +60,7 @@ router.post("/cashkuber/create", async (req, res) => {
       name,
       phone,
       email,
-      employeeType,
+      employment: employeeType,
       pan,
       pincode,
       state,

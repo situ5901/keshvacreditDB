@@ -63,8 +63,8 @@ async function sendToNewAPI(user) {
 }
 
 async function getPreApproval(user) {
-  if (user.employment !== "Salaried") {
-    const reason = `Employment type is '${user.employment}' — skipped preApproval`;
+  if (user.employeeType !== "Salaried") {
+    const reason = `Employment type is '${user.employeeType}' — skipped preApproval`;
     console.log(`⏭️ Skipping PreApproval: ${reason}`);
     await UserDB.updateOne(
       { phone: user.phone },
@@ -90,7 +90,7 @@ async function getPreApproval(user) {
       name: user.name,
       dob: user.dob,
       income: user.income,
-      employmentType: user.employment,
+      employmentType: user.employeeType,
       orgName: "Infosys Ltd",
       partnerId: PartnerID,
       bureauType: 1,
@@ -121,6 +121,9 @@ async function getPreApproval(user) {
 async function processBatch(users) {
   const results = await Promise.allSettled(
     users.map(async (user) => {
+      // Debug log to verify employeeType
+      console.log("👀 Lead User:", user.phone, "employeeType:", user.employeeType);
+
       const userDoc = await UserDB.findOne({ phone: user.phone });
       const updates = {};
       let needUpdate = false;
@@ -139,8 +142,9 @@ async function processBatch(users) {
         await UserDB.updateOne({ phone: user.phone }, { $set: updates });
       }
 
-      if (user.employment !== "Salaried") {
-        const skipMessage = `Employment type is '${user.employment}' — skipped eligibility & preApproval`;
+      // ✅ fixed: use employeeType instead of employment
+      if (user.employeeType !== "Salaried") {
+        const skipMessage = `Employment type is '${user.employeeType}' — skipped eligibility & preApproval`;
         console.log(`⏭️ ${skipMessage}: ${user.phone} - ${user.name}`);
 
         await UserDB.updateOne(

@@ -2,6 +2,7 @@ const axios = require("axios");
 const mongoose = require("mongoose");
 require("dotenv").config();
 
+// --- Configuration ---
 const MONGODB_URINEW = process.env.MONGODB_URINEW;
 const DEDUPE_API = "https://www.ramfincorp.com/new-api/customers/check_dedupe";
 const LEAD_API = "https://www.ramfincorp.com/new-api/customers/lead_push";
@@ -13,7 +14,8 @@ const AUTH_HEADER = {
   Authorization:
     "Basic cmFtZmluX2U2NmIxNmE5ZjZiNzQ5YTAzOTBmZWRjM2U4ZjNkZjZmOmI3YjJlZDU1MjM5NjA5NzM5NmQwOWE2N2RkZTI4NjUyMDNjZDMxYjA=",
 };
-//Lead Done
+
+// --- MongoDB Connection ---
 mongoose
   .connect(MONGODB_URINEW)
   .then(() => console.log("✅ MongoDB Connected Successfully"))
@@ -24,6 +26,8 @@ const UserDB = mongoose.model(
   new mongoose.Schema({}, { collection: "testdb", strict: false }),
 );
 
+// 🔹 Dedupe API Call
+// This function now returns the entire response data object, whether it's success or an error.
 async function dedupe(user) {
   try {
     const payload = {
@@ -31,10 +35,15 @@ async function dedupe(user) {
       pancard: user.pan,
     };
 
+    console.log("📦 Sending Dedupe Payload:", payload);
+
     const response = await axios.post(DEDUPE_API, payload, {
       headers: AUTH_HEADER,
     });
 
+    console.log("📩 Raw Dedupe Response:", response.data);
+
+    // ✅ Return the entire response data object
     return response.data;
   } catch (err) {
     console.error(
@@ -43,10 +52,13 @@ async function dedupe(user) {
       ":",
       err.response?.data || err.message,
     );
-    return null;
+    // ✅ Return the error response data object instead of null
+    return err.response?.data || null;
   }
 }
 
+// 🔹 Lead Create API Call
+// This function also returns the entire response data object, whether it's success or an error.
 async function leadCreate(user) {
   try {
     const payload = {
@@ -55,10 +67,15 @@ async function leadCreate(user) {
       partner_Id: Partner_id,
     };
 
+    console.log("📦 Sending LeadCreate Payload:", payload);
+
     const response = await axios.post(LEAD_API, payload, {
       headers: AUTH_HEADER,
     });
 
+    console.log("📩 Raw LeadCreate Response:", response.data);
+
+    // ✅ Return the entire response data object
     return response.data;
   } catch (err) {
     console.error(
@@ -67,10 +84,12 @@ async function leadCreate(user) {
       ":",
       err.response?.data || err.message,
     );
-    return null;
+    // ✅ Return the error response data object instead of null
+    return err.response?.data || null;
   }
 }
 
+// 🔹 Process Batch
 async function processBatch(users) {
   let attributedSuccessfullyCount = 0;
 
@@ -80,7 +99,7 @@ async function processBatch(users) {
         const userDoc = await UserDB.findOne({ phone: user.phone });
         if (!userDoc) {
           console.warn(
-            `User with phone ${user.phone} not found in DB. Skipping.`,
+            `⚠️ User with phone ${user.phone} not found in DB. Skipping.`,
           );
           return;
         }
@@ -96,6 +115,7 @@ async function processBatch(users) {
           $push: {
             apiResponse: {
               Ramfin: {
+                // Store the full response objects here, including errors
                 dedupe: dedupeResponse,
                 leadCreate: leadCreateResponse,
               },
@@ -112,8 +132,11 @@ async function processBatch(users) {
         await UserDB.updateOne({ _id: userDoc._id }, updateDoc);
         console.log(`✅ Database updated for user: ${user.phone}`);
 
+        // Check if the leadCreateResponse object exists and contains the success message
         if (
           leadCreateResponse &&
+          typeof leadCreateResponse === "object" &&
+          leadCreateResponse.message &&
           typeof leadCreateResponse.message === "string" &&
           leadCreateResponse.message.includes("Attributed Successfully")
         ) {
@@ -138,10 +161,12 @@ async function processBatch(users) {
   return attributedSuccessfullyCount;
 }
 
+// 🔹 Delay Function
 function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+// 🔹 Main Runner
 async function main() {
   let totalAttributedSuccessfully = 0;
   let skip = 0;
