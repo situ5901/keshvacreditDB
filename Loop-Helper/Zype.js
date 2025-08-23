@@ -10,8 +10,8 @@ mongoose
   .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
 
 const UserDB = mongoose.model(
-  "testdb",
-  new mongoose.Schema({}, { collection: "testdb", strict: false }),
+  "smcoll",
+  new mongoose.Schema({}, { collection: "smcoll", strict: false }),
 );
 
 const BATCH_SIZE = 100;
@@ -63,8 +63,8 @@ async function sendToNewAPI(user) {
 }
 
 async function getPreApproval(user) {
-  if (user.employeeType !== "Salaried") {
-    const reason = `Employment type is '${user.employeeType}' — skipped preApproval`;
+  if (user.employment !== "Salaried") {
+    const reason = `Employment type is '${user.employment}' — skipped preApproval`;
     console.log(`⏭️ Skipping PreApproval: ${reason}`);
     await UserDB.updateOne(
       { phone: user.phone },
@@ -90,7 +90,7 @@ async function getPreApproval(user) {
       name: user.name,
       dob: user.dob,
       income: user.income,
-      employmentType: user.employeeType,
+      employmentType: user.employment,
       orgName: "Infosys Ltd",
       partnerId: PartnerID,
       bureauType: 1,
@@ -121,9 +121,6 @@ async function getPreApproval(user) {
 async function processBatch(users) {
   const results = await Promise.allSettled(
     users.map(async (user) => {
-      // Debug log to verify employeeType
-      console.log("👀 Lead User:", user.phone, "employeeType:", user.employeeType);
-
       const userDoc = await UserDB.findOne({ phone: user.phone });
       const updates = {};
       let needUpdate = false;
@@ -142,9 +139,8 @@ async function processBatch(users) {
         await UserDB.updateOne({ phone: user.phone }, { $set: updates });
       }
 
-      // ✅ fixed: use employeeType instead of employment
-      if (user.employeeType !== "Salaried") {
-        const skipMessage = `Employment type is '${user.employeeType}' — skipped eligibility & preApproval`;
+      if (user.employment !== "Salaried") {
+        const skipMessage = `Employment type is '${user.employment}' — skipped eligibility & preApproval`;
         console.log(`⏭️ ${skipMessage}: ${user.phone} - ${user.name}`);
 
         await UserDB.updateOne(
