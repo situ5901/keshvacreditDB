@@ -12,8 +12,8 @@ mongoose
   .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
 
 const UserDB = mongoose.model(
-  "partners",
-  new mongoose.Schema({}, { collection: "partners", strict: false }),
+  "MoneyView",
+  new mongoose.Schema({}, { collection: "MoneyView", strict: false }),
 );
 const Healthcheck_API = "https://atlas.whizdm.com/atlas/v1/health";
 const TOKEN_API = "https://atlas.whizdm.com/atlas/v1/token";
@@ -197,7 +197,6 @@ async function fetchOffers(leadId, token, phone) {
 async function sendToMoneyView(lead, token) {
   const requestBody = {
     partnerCode: 422,
-    partnerId: 428,
     partnerRef: "keshvacredit",
     name: lead.name.trim(),
     gender: lead.gender.toLowerCase(),
@@ -211,7 +210,7 @@ async function sendToMoneyView(lead, token) {
         ? "Self Employed"
         : lead.employment,
     incomeMode: "online",
-    declaredIncome: leadd.income,
+    declaredIncome: parseInt(lead.income),
     educationLevel: "GRADUATION",
     maritalStatus: "Married",
     addressList: [
