@@ -11,7 +11,7 @@ const userSchema = new mongoose.Schema(
     income: { type: String, required: true, trim: true },
     city: { type: String, required: true, trim: true },
     state: { type: String, required: true, trim: true },
-    creditScore: { type: String, required: true, trim: true },
+    creditScore: { type: String, trim: true },
     dob: { type: String, required: true, trim: true },
     gender: { type: String, required: true, trim: true },
     partner_Id: { type: String, required: true, trim: true },
