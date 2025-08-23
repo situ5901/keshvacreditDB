@@ -1,0 +1,207 @@
+const axios = require("axios");
+const mongoose = require("mongoose");
+require("dotenv").config();
+
+const MONGODB_URINEW = process.env.MONGODB_URINEW;
+mongoose
+  .connect(MONGODB_URINEW)
+  .then(() => console.log("✅ MongoDB Connected Successfully"))
+  .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
+
+const UserDB = mongoose.model(
+  "testdb",
+  new mongoose.Schema({}, { collection: "testdb", strict: false }),
+);
+
+const BATCH_SIZE = 2; // adjust as per requirement
+const Partner_id = "keshvacredit";
+
+const DEDUPAPI = "https://fcnode5.faircent.com/v1/api/duplicateCheck";
+const LEAD_API =
+  "https://fcnode5.faircent.com/v1/api/aggregrator/register/user";
+
+async function getHeader() {
+  return {
+    "Content-Type": "application/json",
+    "x-application-id": "b27b11e13af255ef90f7c1939dcab2d2",
+    "x-application-name": "KESHVACREDIT",
+  };
+}
+
+// 🔹 Map DB user → API payload
+function buildPayload(user) {
+  const [fname, ...lnameParts] = (user.name || "").trim().split(" ");
+  const lname = lnameParts.join(" ") || "";
+
+  let dobFormatted = "";
+  if (user.dob) {
+    const dob = new Date(user.dob);
+    if (!isNaN(dob)) dobFormatted = dob.toISOString().split("T")[0];
+  }
+
+  const gender = user.gender?.toUpperCase().startsWith("M")
+    ? "M"
+    : user.gender?.toUpperCase().startsWith("F")
+      ? "F"
+      : "";
+
+  return {
+    fname: fname || "",
+    lname: lname || "",
+    dob: dobFormatted,
+    pan: user.pan,
+    mobile: Number(user.phone),
+    pin: Number(user.pincode),
+    state: user.state,
+    monthly_income: Number(user.income),
+    city: user.city,
+    address: user.address || user.city,
+    mail: user.email,
+    gender,
+    employment_status: (user.employment || "").trim(),
+    loan_purpose: 1365,
+    loan_amount: 35000,
+    partner_id: Partner_id,
+  };
+}
+
+async function CheckDedup(user) {
+  try {
+    const payload = { mobile: user.phone, pan: user.pan, email: user.email };
+    const response = await axios.post(DEDUPAPI, payload, {
+      headers: await getHeader(),
+    });
+
+    console.log(`📞 Dedup Response for ${user.phone}:`, response.data);
+    return response.data || {};
+  } catch (err) {
+    console.error(
+      `❌ Dedup API Failed for ${user.phone}:`,
+      err.response?.data || err.message,
+    );
+    return {};
+  }
+}
+
+async function LeadAPI(user) {
+  try {
+    const payload = buildPayload(user);
+    console.log(`📤 Lead Payload for ${user.phone}:`, payload);
+
+    const response = await axios.post(LEAD_API, payload, {
+      headers: await getHeader(),
+    });
+
+    // If response has nested result, use it
+    const leadData = response.data?.result
+      ? response.data
+      : response.data || {};
+    console.log(`✅ Lead API Response for ${user.phone}:`, leadData);
+    return leadData;
+  } catch (err) {
+    console.error(
+      `❌ Lead API Failed for ${user.phone}:`,
+      err.response?.data || err.message,
+    );
+    return {};
+  }
+}
+
+async function processBatch(users) {
+  let attributedSuccessfullyCount = 0;
+
+  const results = await Promise.allSettled(
+    users.map(async (user) => {
+      try {
+        console.log(`🚀 Processing user: ${user.phone}`);
+
+        const [dedupeResponse, leadResponse] = await Promise.all([
+          CheckDedup(user),
+          LeadAPI(user),
+        ]);
+
+        // Build faircent object safely
+        const faircentData = {
+          dedupe: dedupeResponse,
+          lead: leadResponse,
+        };
+
+        // Push to DB even if one of the responses is empty
+        const updateDoc = {
+          $push: {
+            apiResponse: {
+              Faircent: faircentData,
+              createdAt: new Date().toISOString(),
+            },
+            RefArr: { name: "Faircent", createdAt: new Date().toISOString() },
+          },
+          $unset: { accounts: "" },
+        };
+
+        await UserDB.updateOne({ _id: user._id }, updateDoc);
+        console.log(`✅ DB updated for ${user.phone}`);
+
+        if (
+          leadResponse.message &&
+          typeof leadResponse.message === "string" &&
+          leadResponse.message.includes("Attributed Successfully")
+        ) {
+          attributedSuccessfullyCount++;
+          console.log(`⭐ Lead Attributed Successfully: ${user.phone}`);
+        }
+      } catch (err) {
+        console.error(`❌ Failed for user ${user.phone}:`, err.message);
+      }
+    }),
+  );
+
+  results.forEach((result, idx) => {
+    if (result.status === "rejected")
+      console.error(`Batch item ${idx} rejected:`, result.reason);
+  });
+
+  return attributedSuccessfullyCount;
+}
+
+async function processData() {
+  let totalAttributedSuccessfully = 0;
+  let skip = 0;
+  let hasMore = true;
+
+  console.log("🚦 Starting Faircent user processing...");
+
+  try {
+    while (hasMore) {
+      const users = await UserDB.find({
+        $or: [
+          { RefArr: { $exists: false } },
+          { "RefArr.name": { $ne: "Faircent" } },
+        ],
+      })
+        .skip(skip)
+        .limit(BATCH_SIZE)
+        .lean();
+
+      if (!users.length) break;
+
+      const batchCount = await processBatch(users);
+      console.log(`📊 Batch Done: ${batchCount} users attributed successfully`);
+      totalAttributedSuccessfully += batchCount;
+      skip += users.length;
+    }
+
+    console.log("--------------------------------------------------");
+    console.log("✅ All batches processed.");
+    console.log(
+      `🎯 Total Leads Attributed Successfully: ${totalAttributedSuccessfully}`,
+    );
+    console.log("--------------------------------------------------");
+  } catch (err) {
+    console.error("❌ Fatal error in processData:", err);
+  } finally {
+    mongoose.disconnect();
+    console.log("🔌 MongoDB connection closed.");
+  }
+}
+
+processData();
