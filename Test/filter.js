@@ -43,7 +43,6 @@ router.post("/filterdata", async (req, res) => {
       limit(async () => {
         console.time(`Batch-${idx}`);
 
-        // Find in 'userdb'
         const userdbResults = await mongoose.connection
           .collection("userdb")
           .find(
