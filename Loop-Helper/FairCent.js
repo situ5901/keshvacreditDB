@@ -91,7 +91,6 @@ async function LeadAPI(user) {
   try {
     const payload = buildPayload(user);
 
-    // ✅ Salary validation
     if (payload.monthly_income < 25000) {
       console.warn(`⚠️ Skipping user ${user.phone} (Income < 25K)`);
       return { message: "Skipped: Income < 25K" };
