@@ -13,13 +13,14 @@ const UserDB = mongoose.model(
   new mongoose.Schema({}, { collection: "testdb", strict: false }),
 );
 
-const BATCH_SIZE = 2; // adjust as per requirement
+const BATCH_SIZE = 2;
 const Partner_id = "keshvacredit";
 
-const DEDUPAPI = "https://fcnode5.faircent.com/v1/api/duplicateCheck";
-const LEAD_API =
-  "https://fcnode5.faircent.com/v1/api/aggregrator/register/user";
+const BASE_URL = "https://fcnode5.faircent.com";
+const DEDUPAPI = `${BASE_URL}/v1/api/duplicateCheck`;
+const LEAD_API = `${BASE_URL}/v1/api/aggregrator/register/user`;
 
+// ✅ Fixed headers
 async function getHeader() {
   return {
     "Content-Type": "application/json",
@@ -28,7 +29,7 @@ async function getHeader() {
   };
 }
 
-// 🔹 Map DB user → API payload
+// 🔹 Payload builder (doc ke hisaab se)
 function buildPayload(user) {
   const [fname, ...lnameParts] = (user.name || "").trim().split(" ");
   const lname = lnameParts.join(" ") || "";
@@ -50,10 +51,9 @@ function buildPayload(user) {
     lname: lname || "",
     dob: dobFormatted,
     pan: user.pan,
-    mobile: Number(user.phone),
+    mobile: String(user.phone), // ✅ string hona chahiye
     pin: Number(user.pincode),
     state: user.state,
-    monthly_income: Number(user.income),
     city: user.city,
     address: user.address || user.city,
     mail: user.email,
@@ -61,17 +61,21 @@ function buildPayload(user) {
     employment_status: (user.employment || "").trim(),
     loan_purpose: 1365,
     loan_amount: 35000,
+    monthly_income: Number(user.income),
     partner_id: Partner_id,
   };
 }
 
 async function CheckDedup(user) {
   try {
-    const payload = { mobile: user.phone, pan: user.pan, email: user.email };
+    const payload = {
+      mobile: String(user.phone),
+      pan: user.pan,
+      email: user.email,
+    };
     const response = await axios.post(DEDUPAPI, payload, {
       headers: await getHeader(),
     });
-
     console.log(`📞 Dedup Response for ${user.phone}:`, response.data);
     return response.data || {};
   } catch (err) {
@@ -86,18 +90,21 @@ async function CheckDedup(user) {
 async function LeadAPI(user) {
   try {
     const payload = buildPayload(user);
+
+    // ✅ Salary validation
+    if (payload.monthly_income < 25000) {
+      console.warn(`⚠️ Skipping user ${user.phone} (Income < 25K)`);
+      return { message: "Skipped: Income < 25K" };
+    }
+
     console.log(`📤 Lead Payload for ${user.phone}:`, payload);
 
     const response = await axios.post(LEAD_API, payload, {
       headers: await getHeader(),
     });
 
-    // If response has nested result, use it
-    const leadData = response.data?.result
-      ? response.data
-      : response.data || {};
-    console.log(`✅ Lead API Response for ${user.phone}:`, leadData);
-    return leadData;
+    console.log(`✅ Lead API Response for ${user.phone}:`, response.data);
+    return response.data;
   } catch (err) {
     console.error(
       `❌ Lead API Failed for ${user.phone}:`,
@@ -120,13 +127,11 @@ async function processBatch(users) {
           LeadAPI(user),
         ]);
 
-        // Build faircent object safely
         const faircentData = {
           dedupe: dedupeResponse,
           lead: leadResponse,
         };
 
-        // Push to DB even if one of the responses is empty
         const updateDoc = {
           $push: {
             apiResponse: {
@@ -166,12 +171,11 @@ async function processBatch(users) {
 async function processData() {
   let totalAttributedSuccessfully = 0;
   let skip = 0;
-  let hasMore = true;
 
   console.log("🚦 Starting Faircent user processing...");
 
   try {
-    while (hasMore) {
+    while (true) {
       const users = await UserDB.find({
         $or: [
           { RefArr: { $exists: false } },

@@ -16,9 +16,9 @@ const {
 
 function getFormattedDate() {
   const now = new Date();
-  const year = now.getFullYear().toString().slice(-2); // YY
-  const month = String(now.getMonth() + 1).padStart(2, "0"); // 01-12
-  const day = String(now.getDate()).padStart(2, "0"); // 01-31
+  const year = now.getFullYear(); // YYYY
+  const month = String(now.getMonth() + 1).padStart(2, "0"); // MM
+  const day = String(now.getDate()).padStart(2, "0"); // DD
   return `${year}-${month}-${day}`;
 }
 router.get("/testdeno", async (req, res) => {

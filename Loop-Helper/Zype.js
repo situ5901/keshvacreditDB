@@ -32,6 +32,18 @@ async function processIncome(user) {
   }
 }
 
+function convertUtcToIsoDob(utcDate) {
+  try {
+    const date = new Date(utcDate);
+    if (isNaN(date.getTime())) {
+      throw new Error("Invalid UTC Date");
+    }
+    return date.toISOString().split("T")[0]; // Sirf YYYY-MM-DD (DOB ke liye)
+  } catch (err) {
+    console.error("❌ DOB Conversion Error:", err.message);
+    return null;
+  }
+}
 async function sendToNewAPI(user) {
   try {
     await processIncome(user);
@@ -88,7 +100,7 @@ async function getPreApproval(user) {
       email: user.email,
       panNumber: user.pan,
       name: user.name,
-      dob: user.dob,
+      dob: convertUtcToIsoDob(user.dob),
       income: user.income,
       employmentType: user.employment,
       orgName: "Infosys Ltd",
