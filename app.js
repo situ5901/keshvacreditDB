@@ -81,7 +81,7 @@ app.use(
 //............Management Panel Working............//
 app.use(
   `/api${API_VERSION}/manage`,
-  require("./manage_core/ManagementPanel/Management_Routes"),
+  require("./manage_core/admin_panel/routes/adminRoutes"),
 );
 
 //.................Business Loan Working............//
