@@ -28,7 +28,6 @@ exports.login = async (req, res) => {
         .json({ message: "❌ Invalid email, name, or password" });
     }
 
-    // ✅ Generate JWT token
     const token = jwt.sign(
       { id: agent._id, role: "Agent", name: agent.Agentname },
       process.env.JWT_SECRET || "default_secret", // fallback if env var is missing
