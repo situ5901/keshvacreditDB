@@ -1,3 +1,7 @@
+const fs = require("fs");
+const path = require("path");
+const jwt = require("jsonwebtoken");
+
 const {
   MoneyView,
   MoneyView2,
@@ -101,7 +105,10 @@ exports.Managementlogin = (req, res) => {
     });
   }
 
-  const MamagementDataPath = path.join(__dirname, "../data/Managemantes.json");
+  const MamagementDataPath = path.join(
+    __dirname,
+    "../admin_panel/data/Managemantes.json",
+  );
 
   if (!fs.existsSync(MamagementDataPath)) {
     return res.status(500).json({ message: "❌ Admin data file not found" });
