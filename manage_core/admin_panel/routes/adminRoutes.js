@@ -21,5 +21,4 @@ router.get("/get/LenderData", adminAuth, adminController.getLendersData);
 router.post("/get/partnerData", adminAuth, adminController.getPartnerData);
 router.post("/get/membersData", adminController.getMembersData);
 router.post("/Leaderslogin", adminController.Adminlogin);
-router.post("/Memberlogin", adminController.Memberlogin);
 module.exports = router;

@@ -107,51 +107,6 @@ exports.Adminlogin = (req, res) => {
   }
 };
 
-exports.Memberlogin = (req, res) => {
-  const { ManagementName, ManagementMail, ManagementPassword } = req.body;
-
-  if (!ManagementMail || !ManagementPassword || !ManagementName) {
-    return res.status(400).json({
-      message: "❌ Management name, email, and password are required",
-    });
-  }
-
-  const MamagementDataPath = path.join(__dirname, "../data/Managemantes.json");
-
-  if (!fs.existsSync(MamagementDataPath)) {
-    return res.status(500).json({ message: "❌ Admin data file not found" });
-  }
-
-  let MamagementData;
-  try {
-    const fileContent = fs.readFileSync(MamagementDataPath, "utf-8");
-    MamagementData = JSON.parse(fileContent);
-  } catch (err) {
-    return res.status(500).json({ message: "❌ Failed to read admin data" });
-  }
-
-  if (
-    ManagementName === MamagementData.ManagementName &&
-    ManagementMail === MamagementData.ManagementMail &&
-    ManagementPassword === MamagementData.ManagementPassword
-  ) {
-    const token = jwt.sign(
-      { role: "Management", username: ManagementName },
-      process.env.JWT_SECRET || "defaultsecret",
-      { expiresIn: "24h" },
-    );
-
-    return res.json({
-      role: "Management",
-      message: "✅ Mamagement logged in",
-      token,
-    });
-  } else {
-    return res
-      .status(401)
-      .json({ message: "❌ Invalid Management credentials" });
-  }
-};
 exports.dashboard = (req, res) => {
   res.send("✅ Welcome to Admin Dashboard");
 };
