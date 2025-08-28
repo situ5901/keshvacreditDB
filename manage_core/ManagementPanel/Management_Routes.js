@@ -6,6 +6,6 @@ const ManagementController = require("./ManageMant");
 
 router.get("/dashboard", adminController.dashboard);
 router.get("/campin", ManagementController.campianData);
-router.get("/Memberlogin", ManagementController.Managementlogin);
+router.post("/Memberlogin", ManagementController.Managementlogin);
 router.get;
 module.exports = router;
