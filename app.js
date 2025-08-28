@@ -84,6 +84,10 @@ app.use(
   require("./manage_core/admin_panel/routes/adminRoutes"),
 );
 
+app.use(
+  `/api${API_VERSION}/manage/utils`,
+  require("./manage_core/ManagementPanel/Management_Routes"),
+);
 //.................Business Loan Working............//
 app.use(`/api${API_VERSION}/BLoan`, require("./routes/BL/BusinessLoan"));
 

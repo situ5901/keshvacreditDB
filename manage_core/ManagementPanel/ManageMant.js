@@ -46,7 +46,7 @@ exports.campianData = async (req, res) => {
             requestId:
               "$apiResponse.MpokketResponse.preApproval.data.requestId",
             phone: "$phone", // root level phone
-            pan: "$pan", // root level pan
+            name: "$name", // root level pan
           },
         },
       },
