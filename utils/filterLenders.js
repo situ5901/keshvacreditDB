@@ -195,7 +195,7 @@ eligibleLenders.forEach((lender) => {
       const sheetName = workbook.SheetNames[0]; // always take first sheet
       const data = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
       lender.pincodes = data
-        .map((row) => row.PinCode && row.PinCode.toString().trim())
+        .map((row) => row.Pincode && row.Pincode.toString().trim())
         .filter(Boolean);
     } catch (err) {
       console.error(`Error reading ${excelPath}:`, err.message); // ✅ fixed
