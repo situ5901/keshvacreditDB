@@ -148,6 +148,34 @@ const eligibleLenders = [
     url: "https://clickmyloan.com/images/logo.png",
     utm: "no data",
   },
+  {
+    name: "Mudraboxx",
+    minAge: 21,
+    maxAge: 58,
+    lenderId: 16,
+    minIncome: 25000,
+    employment: "Salaried",
+    url: "https://mudraboxx.com/favicon.ico",
+    utm: "no data",
+  },
+  {
+    name: "Payme",
+    minAge: 21,
+    maxAge: 58,
+    lenderId: 16,
+    minIncome: 15000,
+    url: "https://www.paymeindia.in/logo.svg",
+    utm: "no data",
+  },
+  {
+    name: "Branch",
+    minAge: 21,
+    maxAge: 58,
+    lenderId: 16,
+    minIncome: 15000,
+    url: "https://d2c5ectx2y1vm9.cloudfront.net/assets/logo-485b81d3b9c7d0948100d5af0c6add2a27271ae40c65cdb6e98be5907ceaee32.png",
+    utm: "no data",
+  },
 ];
 
 async function filterLenders(age, income, loan, employment) {
