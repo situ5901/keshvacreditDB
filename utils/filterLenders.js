@@ -182,8 +182,8 @@ const eligibleLenders = [
 
 // Mapping lenders to their Excel files
 const lenderFiles = {
-  Rupee: path.join(__dirname, "pincode", "rupee.xlsx"),
-  MoneyView: path.join(__dirname, "pincode", "mv.xlsx"),
+  Rupee: path.join(__dirname, "./pincode/rupee.xlsx"),
+  MoneyView: path.join(__dirname, "./pincode/mv.xlsx"),
 };
 
 // Attach pincodes from Excel

@@ -70,7 +70,7 @@ router.post("/userinfo", async (req, res) => {
       name,
       phone,
       email,
-      employeeType,
+      employeement,
       pan,
       pincode,
       loanAmount,
