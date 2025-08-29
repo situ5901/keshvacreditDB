@@ -1,3 +1,6 @@
+const XLSX = require("xlsx");
+const path = require("path");
+
 const eligibleLenders = [
   {
     name: "Ramfin",
@@ -9,14 +12,14 @@ const eligibleLenders = [
     utm: "https://applyonline.ramfincorp.com/?utm_source=keshvacredit",
   },
   {
-    name: "Rupee112",
+    name: "Rupee",
     minAge: 21,
     maxAge: 55,
-    lenderId: 3,
     employment: "Salaried",
+    lenderId: 2,
+    minIncome: 15000,
     url: "https://www.rupee112.com/public/images/brand_logo.png",
     utm: "https://www.rupee112.com/apply-now?utm_source=KESHVACREDIT&utm_medium=",
-    minIncome: 15000,
   },
   {
     name: "Zype",
@@ -37,7 +40,6 @@ const eligibleLenders = [
     url: "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/ec/a2/99/eca29916-a53d-50f1-f5b5-c044b70ee4f3/AppIcon-0-0-1x_U007emarketing-0-6-0-85-220.png/1200x600wa.png",
     utm: "https://web.fatakpay.com/authentication/login?utm_source=558_POVVE&utm_medium=",
   },
-
   {
     name: "FatakPayDCL",
     minAge: 18,
@@ -152,7 +154,7 @@ const eligibleLenders = [
     name: "Mudraboxx",
     minAge: 21,
     maxAge: 58,
-    lenderId: 16,
+    lenderId: 17, // changed
     minIncome: 25000,
     employment: "Salaried",
     url: "https://mudraboxx.com/favicon.ico",
@@ -162,7 +164,7 @@ const eligibleLenders = [
     name: "Payme",
     minAge: 21,
     maxAge: 58,
-    lenderId: 16,
+    lenderId: 18, // changed
     minIncome: 15000,
     url: "https://www.paymeindia.in/logo.svg",
     utm: "no data",
@@ -171,55 +173,71 @@ const eligibleLenders = [
     name: "Branch",
     minAge: 21,
     maxAge: 58,
-    lenderId: 16,
+    lenderId: 19, // changed
     minIncome: 15000,
     url: "https://d2c5ectx2y1vm9.cloudfront.net/assets/logo-485b81d3b9c7d0948100d5af0c6add2a27271ae40c65cdb6e98be5907ceaee32.png",
     utm: "no data",
   },
 ];
 
-async function filterLenders(age, income, loan, employment) {
-  if (!age || !income || !loan) return [];
-
-  const filteredLenders = eligibleLenders.reduce((acc, lender) => {
-    const matchesEmployment =
-      !lender.employment || lender.employment === employment;
-
-    if (
-      lender.minAge <= age &&
-      lender.maxAge >= age &&
-      matchesEmployment &&
-      lender.minIncome <= income
-    ) {
-      acc.push({
-        name: lender.name,
-        url: lender.url,
-        utm: lender.utm || "no data",
-      });
-    }
-    return acc;
-  }, []);
-
-  return filteredLenders;
-}
-
-const user = {
-  dob: "1998-05-20", // please use yyyy-mm-dd
-  income: 25000,
-  loanAmount: 100000,
-  employment: "Salaried",
+// Mapping lenders to their Excel files
+const lenderFiles = {
+  Rupee: path.join(__dirname, "pincode", "rupee.xlsx"),
+  MoneyView: path.join(__dirname, "pincode", "mv.xlsx"),
 };
 
-const dobDate = new Date(user.dob);
-const age = new Date().getFullYear() - dobDate.getFullYear();
-const income = user.income;
-const loanAmount = user.loanAmount;
-const employment = user.employment;
+// Attach pincodes from Excel
+eligibleLenders.forEach((lender) => {
+  const excelPath = lenderFiles[lender.name];
+  if (excelPath) {
+    try {
+      const workbook = XLSX.readFile(excelPath);
+      const sheetName = workbook.SheetNames[0]; // always take first sheet
+      const data = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+      lender.pincodes = data
+        .map((row) => row.PinCode && row.PinCode.toString().trim())
+        .filter(Boolean);
+    } catch (err) {
+      console.error(`Error reading ${excelPath}:`, err.message); // ✅ fixed
+      lender.pincodes = [];
+    }
+  } else {
+    lender.pincodes = [];
+  }
+});
 
-filterLenders(age, income, loanAmount, employment)
-  .then((result) => {})
-  .catch((err) => {
-    console.error(err);
-  });
+async function filterLenders(age, income, loan, employment, pincode) {
+  if (!age || !income || !loan) return [];
 
+  return eligibleLenders
+    .filter((lender) => {
+      const matchesEmployment =
+        !lender.employment || lender.employment === employment;
+
+      if (["Rupee", "MoneyView"].includes(lender.name)) {
+        const matchesPincode =
+          lender.pincodes.length > 0 && lender.pincodes.includes(pincode);
+        return (
+          lender.minAge <= age &&
+          lender.maxAge >= age &&
+          matchesEmployment &&
+          lender.minIncome <= income &&
+          matchesPincode
+        );
+      }
+
+      // 👉 Baaki sab lenders bina pincode ke filter honge
+      return (
+        lender.minAge <= age &&
+        lender.maxAge >= age &&
+        matchesEmployment &&
+        lender.minIncome <= income
+      );
+    })
+    .map((lender) => ({
+      name: lender.name,
+      url: lender.url,
+      utm: lender.utm || "no data",
+    }));
+}
 module.exports = filterLenders;
