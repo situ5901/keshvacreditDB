@@ -91,7 +91,7 @@ router.post("/userinfo", async (req, res) => {
     if (!name) missingFields.push("name");
     if (!phone) missingFields.push("phone");
     if (!email) missingFields.push("email");
-    if (!employeeType) missingFields.push("employeeType");
+    if (!employeement) missingFields.push("employeement");
     if (!pan) missingFields.push("pan");
     if (!pincode) missingFields.push("pincode");
     if (!loanAmount) missingFields.push("loanAmount");
