@@ -15,5 +15,6 @@ module.exports = {
     "https://keshva.in",
     "https://www.keshva.in",
     "https://leadbredge.netlify.app",
+    "https://13.204.26.20",
   ],
 };
