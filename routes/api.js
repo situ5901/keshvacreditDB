@@ -156,7 +156,7 @@ router.post("/userinfo", async (req, res) => {
       name,
       phone,
       email,
-      employeeType,
+      employeement,
       pan: pan.toUpperCase(), // save uppercase PAN
       pincode,
       loanAmount,
@@ -192,7 +192,6 @@ router.post("/userinfo", async (req, res) => {
     });
   }
 });
-
 
 router.post("/getUsers", async (req, res) => {
   const { phone } = req.body;
