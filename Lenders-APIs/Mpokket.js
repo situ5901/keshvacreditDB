@@ -3,7 +3,7 @@ const router = express.Router();
 const axios = require("axios");
 
 const CreateUserAPI = "https://api.mpkt.in/acquisition-affiliate/v1/user";
-const dedupeAPI = "https://api.mpkt.in/acquisition-affiliate/v1/dedupe/check""; // Replace with actual dedupe endpoint
+const dedupeAPI = "https://api.mpkt.in/acquisition-affiliate/v1/dedupe/check"; // Replace with actual dedupe endpoint
 const API_KEY = "2A331F81163D447C9B5941910D2BD";
 const PartnerID = "Keshvacredit";
 
