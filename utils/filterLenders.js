@@ -1,6 +1,3 @@
-const loadAllPincodeData = require("./loadPincodes");
-
-const lenderPincodes = loadAllPincodeData(path.join(__dirname, "../xlsx"));
 const eligibleLenders = [
   {
     name: "Ramfin",
@@ -15,6 +12,7 @@ const eligibleLenders = [
     name: "Rupee",
     minAge: 21,
     maxAge: 55,
+    employment: "Salaried",
     lenderId: 2,
     minIncome: 15000,
     url: "https://www.rupee112.com/public/images/brand_logo.png",
