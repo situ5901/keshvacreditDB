@@ -70,7 +70,7 @@ router.post("/userinfo", async (req, res) => {
       name,
       phone,
       email,
-      employeement,
+      employment,
       pan,
       pincode,
       loanAmount,
@@ -91,7 +91,7 @@ router.post("/userinfo", async (req, res) => {
     if (!name) missingFields.push("name");
     if (!phone) missingFields.push("phone");
     if (!email) missingFields.push("email");
-    if (!employeement) missingFields.push("employeement");
+    if (!employment) missingFields.push("employment");
     if (!pan) missingFields.push("pan");
     if (!pincode) missingFields.push("pincode");
     if (!loanAmount) missingFields.push("loanAmount");
@@ -156,7 +156,7 @@ router.post("/userinfo", async (req, res) => {
       name,
       phone,
       email,
-      employeement,
+      employment,
       pan: pan.toUpperCase(), // save uppercase PAN
       pincode,
       loanAmount,
