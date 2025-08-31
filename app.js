@@ -58,7 +58,7 @@ app.use(
 app.use(`/api${API_VERSION}/LenderAPIs`, require("./Lenders-APIs/FatakPayDCL"));
 app.use(`/api${API_VERSION}/LenderAPIs`, require("./Lenders-APIs/FatakPay"));
 app.use(`/api${API_VERSION}/LenderAPIs`, require("./Lenders-APIs/LoanTap"));
-app.use(`/api${API_VERSION}/Test`, require("./Test/filter.js"));
+app.use(`/api${API_VERSION}/Test`, require("./LDClub/filter.js"));
 app.use(errorHandler);
 //............LeadBridge Working............//
 const adminRoutes = require("./manage_core/admin_panel/routes/adminRoutes.js");
