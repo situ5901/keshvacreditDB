@@ -98,7 +98,6 @@ function buildPayload(user) {
   };
 }
 
-// ---------- Helper: Send to CapitalNow Dedupe ----------
 async function sendToCapitalNow(user) {
   try {
     const rawPayload = buildPayload(user);

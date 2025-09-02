@@ -178,9 +178,19 @@ const eligibleLenders = [
     url: "https://d2c5ectx2y1vm9.cloudfront.net/assets/logo-485b81d3b9c7d0948100d5af0c6add2a27271ae40c65cdb6e98be5907ceaee32.png",
     utm: "no data",
   },
+  {
+    name: "CapitalNow",
+    minAge: 21,
+    maxAge: 58,
+    lenderId: 20,
+    minIncome: 33000,
+    MOS: "bank-Transfer",
+    employment: "Salaried",
+    url: "https://www.capitalnow.in/images/logo.png",
+    utm: "no data",
+  },
 ];
 
-// Mapping lenders to their Excel files
 const lenderFiles = {
   Rupee: path.join(__dirname, "./pincode/rupee.xlsx"),
   MoneyView: path.join(__dirname, "./pincode/mv.xlsx"),
