@@ -25,6 +25,8 @@ const partnerPublicKey = fs.readFileSync(
   "utf8",
 );
 
+const url = "bit.ly/opencnapp";
+
 // ---------- Helper: Login to CapitalNow ----------
 async function loginPartner() {
   try {
@@ -115,9 +117,17 @@ async function sendToCapitalNow(user) {
         ? client.decryptFromPartner(response.data, partnerPublicKey)
         : response.data;
 
+    // Agar code 2005 hai, toh URL ko response me add karo
+    if (finalData.code === 2005) {
+      return {
+        ...finalData, // poora response
+        url: finalData.url || "http://bit.ly/opencnapp", // URL ensure
+      };
+    }
+
+    // Agar code 2005 nahi hai, normal response
     return finalData;
   } catch (err) {
-    // Handle token expiry
     if (err.response?.status === 401 || err.response?.data?.code === 4118) {
       console.warn("⚠️ Token expired or invalid. Refreshing...");
       await refreshAccessToken();
