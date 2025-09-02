@@ -4,6 +4,7 @@ const fs = require("fs");
 const { SecurePartnerClient } = require("@capitalnow/secure-partner-sdk");
 require("dotenv").config(); // load .env file
 
+// --- DB Connection ---
 const MONGODB_URINEW = process.env.MONGODB_URINEW;
 mongoose
   .connect(MONGODB_URINEW)
@@ -11,10 +12,11 @@ mongoose
   .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
 
 const UserDB = mongoose.model(
-  "comp",
-  new mongoose.Schema({}, { collection: "comp", strict: false }),
+  "smcoll",
+  new mongoose.Schema({}, { collection: "smcoll", strict: false }),
 );
 
+// --- CapitalNow SDK & Keys ---
 const client = new SecurePartnerClient({ keyDir: "./Loop-Helper/privateKey" });
 
 const partnerPublicKey = fs.readFileSync(
@@ -24,22 +26,26 @@ const partnerPublicKey = fs.readFileSync(
 
 const Partner_id = "keshvacredit_1001";
 
+// --- API URLs ---
 const BASE_URL = "https://partner-api.staging.capitalnow.in/api/v1/partner";
 const LOGIN_API = `${BASE_URL}/login`;
 const REFRESH_API = `${BASE_URL}/refresh-token`;
 const DEDUPE_API = `${BASE_URL}/lead-dedupe-check`;
 
+// --- Credentials ---
 const CAPNOW_USER = "keshvacredit_1001";
 const CAPNOW_PASS = "pk_test_BNvUulzyvKJq0kSDTOz";
 
 let accessToken = null;
 let refreshToken = null;
 
+// --- Partner Login ---
 async function loginPartner() {
   try {
     const authString = Buffer.from(`${CAPNOW_USER}:${CAPNOW_PASS}`).toString(
       "base64",
     );
+
     const res = await axios.post(
       LOGIN_API,
       {},
@@ -47,30 +53,48 @@ async function loginPartner() {
         headers: { Authorization: `Basic ${authString}` },
       },
     );
-    console.log("📦 Logged in. AccessToken received", res.data);
+
+    console.log("📦 Login raw response:", res.data);
+
     const decryptedLogin = client.decryptFromPartner(
       res.data,
       partnerPublicKey,
     );
-    console.log("✅ Logged in. AccessToken received:", decryptedLogin);
+    console.log("✅ Decrypted Login Response:", decryptedLogin);
 
-    // FIX: Assign tokens from the decrypted object.
     accessToken = decryptedLogin.data.access_token;
     refreshToken = decryptedLogin.data.refresh_token;
 
-    console.log("✅ Logged in with CapitalNow. Access token received.");
+    console.log("🔑 Access + Refresh token saved.");
   } catch (err) {
     console.error("❌ Login Failed:", err.response?.data || err.message);
-    throw new Error(
-      "Failed to authenticate with CapitalNow. Please check your credentials.",
-    );
+    throw new Error("Failed to authenticate with CapitalNow.");
   }
 }
 
+// --- Refresh Access Token ---
 async function refreshAccessToken() {
   try {
-    const res = await axios.post(REFRESH_API, { refreshToken });
-    accessToken = res.data.accessToken;
+    const authString = Buffer.from(`${CAPNOW_USER}:${CAPNOW_PASS}`).toString(
+      "base64",
+    );
+
+    const res = await axios.post(
+      REFRESH_API,
+      {}, // empty body
+      {
+        headers: {
+          Authorization: `Basic ${authString}`,
+          refresh_token: `Bearer ${refreshToken}`,
+        },
+      },
+    );
+
+    console.log("📦 Refresh raw response:", res.data);
+
+    const decrypted = client.decryptFromPartner(res.data, partnerPublicKey);
+    accessToken = decrypted.data.access_token;
+
     console.log("🔄 Access Token refreshed.");
   } catch (err) {
     console.error(
@@ -91,7 +115,6 @@ async function getHeader() {
   };
 }
 
-// --- Data & API Logic ---
 function buildPayload(user) {
   const [fname, ...lnameParts] = (user.name || "").trim().split(" ");
   return {
@@ -102,15 +125,18 @@ function buildPayload(user) {
   };
 }
 
+// --- Send to CapitalNow ---
 async function sendToCapitalNow(user) {
   try {
     const rawPayload = buildPayload(user);
+
     const encryptedPayload = client.encryptForPartner(
       Partner_id,
       rawPayload,
       partnerPublicKey,
     );
-    console.log(`📦 Encrypted payload for ${user.phone}:`, encryptedPayload);
+
+    console.log(`📤 Encrypted payload for ${user.phone}:`, encryptedPayload);
 
     const response = await axios.post(DEDUPE_API, encryptedPayload, {
       headers: await getHeader(),
@@ -119,17 +145,13 @@ async function sendToCapitalNow(user) {
     console.log(`📥 API Raw Response for ${user.phone}:`, response.data);
 
     let finalData;
-
-    if (response.data.partnerId === "keshvacredit_1001") {
+    if (response.data.partnerId === Partner_id) {
       finalData = client.decryptFromPartner(response.data, partnerPublicKey);
     } else {
       finalData = response.data;
     }
 
-    console.log(
-      `✅ CapitalNow Decrypted Response for ${user.phone}:`,
-      finalData,
-    );
+    console.log(`✅ Decrypted Response for ${user.phone}:`, finalData);
 
     return finalData;
   } catch (err) {
@@ -146,17 +168,35 @@ async function sendToCapitalNow(user) {
   }
 }
 
-// Processes a batch of users by sending them to the API and updating the DB.
+// --- Process Batch of Users ---
 async function processBatch(users) {
   for (const user of users) {
     const cnResponse = await sendToCapitalNow(user);
 
+    let leadStatus = "PENDING";
+
+    // Add app link to cnResponse if 2005
+    if (cnResponse.code === 2004) {
+      leadStatus = "REGISTERED_USER";
+      console.log("👉 Registered User → Share app link: bit.ly/opencnapp");
+    } else if (cnResponse.code === 2005) {
+      leadStatus = "FRESH_LEAD";
+      cnResponse.appLink = "bit.ly/opencnapp"; // ← Push link here
+      console.log(
+        "👉 Fresh Lead Registered → Share app link: bit.ly/opencnapp",
+      );
+    } else if (cnResponse.code === 2006) {
+      leadStatus = "ACTIVE_LOAN";
+      console.log("❌ Active Loan User → Reject lead.");
+    }
+
+    // Update DB
     await UserDB.updateOne(
       { _id: user._id },
       {
         $push: {
           apiResponse: {
-            CapitalNow: cnResponse,
+            CapitalNow: cnResponse, // now includes appLink if 2005
             createdAt: new Date().toISOString(),
           },
           RefArr: {
@@ -165,13 +205,17 @@ async function processBatch(users) {
             createdAt: new Date().toISOString(),
           },
         },
+        $set: {
+          leadStatus,
+        },
       },
     );
 
-    console.log(`✅ DB updated (decrypted) for ${user.phone}`);
+    console.log(`✅ DB updated (leadStatus=${leadStatus}) for ${user.phone}`);
   }
 }
 
+// --- Main Process Loop ---
 async function processData() {
   let skip = 0;
   await loginPartner();
@@ -184,7 +228,7 @@ async function processData() {
       ],
     })
       .skip(skip)
-      .limit(1) // Process one user at a time.
+      .limit(1) // Process one user at a time
       .lean();
 
     if (!users.length) break;
@@ -197,5 +241,5 @@ async function processData() {
   mongoose.disconnect();
 }
 
-// Start the process
+// Start process
 processData();
