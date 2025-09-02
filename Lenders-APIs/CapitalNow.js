@@ -79,8 +79,11 @@ async function refreshAccessToken() {
 }
 
 // ---------- Helper: Get Authorization Header ----------
+// ---------- Helper: Get Authorization Header ----------
 async function getHeader() {
-  if (!accessToken) await loginPartner();
+  // Har bar login call karo (force fresh token)
+  await loginPartner(); 
+
   return {
     "Content-Type": "application/json",
     Authorization: `Bearer ${accessToken}`,
