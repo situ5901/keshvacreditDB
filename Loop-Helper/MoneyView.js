@@ -4,7 +4,7 @@ require("dotenv").config();
 const path = require("path");
 const xlsx = require("xlsx");
 
-const MONGODB_URINEW = process.env.MONGODB_URINEW;
+const MONGODB_URINEW = process.env.MONGODB_URINEW1;
 
 mongoose
   .connect(MONGODB_URINEW)
