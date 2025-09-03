@@ -95,7 +95,7 @@ function buildPayload(user) {
   const [fname, ...lnameParts] = (user.name || "").trim().split(" ");
   return {
     first_name: fname || "",
-    last_name: lnameParts.join(" ") || "",
+    last_name: user.last_name || lnameParts.join(" ") || "",
     mobile_number: Number(user.phone),
     pan_number: user.pancard,
   };
