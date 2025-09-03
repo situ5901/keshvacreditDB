@@ -359,6 +359,9 @@ exports.getLendersData = async (req, res) => {
       "apiResponse.LoanTap.message": "Application created successfully.",
     });
     const LT2 = await LoanTaps.countDocuments();
+    const Branch = await Branch.countDocuments({
+      "apiResponse.Branch.data.decision.code": 1,
+    });
     return res.status(200).json({
       success: true,
       message: "✅ Counts retrieved successfully",
@@ -413,6 +416,9 @@ exports.getLendersData = async (req, res) => {
         LoanTaps: {
           LoanTaps: LT,
           LoanTapsTotal: LT2,
+        },
+	Branch: {
+          Branch: Branch,
         },
       },
     });
@@ -502,4 +508,4 @@ exports.getMembersData = async (req, res) => {
       error: error.message,
     });
   }
-};
+}

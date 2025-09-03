@@ -27,14 +27,14 @@ const partnerPublicKey = fs.readFileSync(
 const Partner_id = "keshvacredit_1001";
 
 // --- API URLs ---
-const BASE_URL = "https://partner-api.staging.capitalnow.in/api/v1/partner";
+const BASE_URL = "https://partnerapi.capitalnow.in/api/v1/partner";
 const LOGIN_API = `${BASE_URL}/login`;
 const REFRESH_API = `${BASE_URL}/refresh-token`;
 const DEDUPE_API = `${BASE_URL}/lead-dedupe-check`;
 
 // --- Credentials ---
 const CAPNOW_USER = "keshvacredit_1001";
-const CAPNOW_PASS = "pk_test_BNvUulzyvKJq0kSDTOz";
+const CAPNOW_PASS = "pk_live_1S0rE5ozX9jGkhhrn1iTkCRlO";
 
 let accessToken = null;
 let refreshToken = null;

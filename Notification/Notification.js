@@ -3,7 +3,7 @@ const router = require("express").Router();
 const mongoose = require("mongoose");
 const admin = require("firebase-admin");
 
-const { Notify, Token } = require("./NotifySchema.js"); // 👈 adjust path correctly
+const { Notify, Token } = require("./NotifySchema.js"); // 👈 Make sure path correct
 
 // 🔹 Firebase Initialize using .env
 if (!admin.apps.length) {
@@ -20,7 +20,7 @@ if (!admin.apps.length) {
 router.post("/save-token", async (req, res) => {
   const { token } = req.body;
   if (!token) {
-    return res.status(400).json({ error: "Token required" });
+    return res.status(400).json({ error: "❌ Token required" });
   }
 
   try {
@@ -40,30 +40,46 @@ router.post("/send-notification", async (req, res) => {
   const { title, message } = req.body;
 
   if (!title || !message) {
-    return res.status(400).json({ error: "Title and message required" });
+    return res.status(400).json({ error: "❌ Title and message required" });
   }
 
   try {
     // Save notification in DB
     await Notify.create({ title, message });
 
-    // Get all tokens
+    // Get all device tokens
     const tokens = await Token.find();
     const fcmTokens = tokens.map((t) => t.token);
 
     if (fcmTokens.length === 0) {
-      return res.json({ message: "⚠️ No tokens found" });
+      return res.json({ message: "⚠ No device tokens found" });
     }
 
-    // FCM Multicast message
+    // FCM multicast message
     const fcmMessage = {
-      notification: { title, body: message },
+      notification: {
+        title: title,
+        body: message,
+      },
+      android: {
+        priority: "high",
+        notification: {
+          sound: "default",
+          channelId: "default_channel", // 👈 same channel as in Flutter code
+        },
+      },
+      data: {
+        click_action: "FLUTTER_NOTIFICATION_CLICK", // 👈 required for navigation
+        id: "1",
+        status: "done",
+      },
       tokens: fcmTokens,
     };
 
+    // Send notification
     const response = await admin.messaging().sendEachForMulticast(fcmMessage);
 
-    // 🔥 Optional: Remove invalid tokens
+    // 🔥 Remove invalid tokens
     const invalidTokens = [];
     response.responses.forEach((resp, idx) => {
       if (!resp.success) {
@@ -82,7 +98,11 @@ router.post("/send-notification", async (req, res) => {
       console.log("🗑 Removed invalid tokens:", invalidTokens);
     }
 
-    res.json({ message: "✅ Notification sent & saved to DB!", response });
+    res.json({
+      message: "✅ Notification sent & saved to DB!",
+      successCount: response.successCount,
+      failureCount: response.failureCount,
+    });
   } catch (error) {
     console.error("Firebase Error:", error);
     res.status(500).json({
