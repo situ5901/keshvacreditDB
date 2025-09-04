@@ -16,7 +16,7 @@ const UserDB = mongoose.model(
 const BATCH_SIZE = 2;
 const Partner_id = "keshvacredit";
 
-const BASE_URL = "https://fcnode5.faircent.com";
+const BASE_URL = "https://api.faircent.com/";
 const DEDUPAPI = `${BASE_URL}/v1/api/duplicateCheck`;
 const LEAD_API = `${BASE_URL}/v1/api/aggregrator/register/user`;
 
@@ -24,7 +24,7 @@ const LEAD_API = `${BASE_URL}/v1/api/aggregrator/register/user`;
 async function getHeader() {
   return {
     "Content-Type": "application/json",
-    "x-application-id": "b27b11e13af255ef90f7c1939dcab2d2",
+    "x-application-id": "1cfa78742af22b054a57fac6cf830699",
     "x-application-name": "KESHVACREDIT",
   };
 }
