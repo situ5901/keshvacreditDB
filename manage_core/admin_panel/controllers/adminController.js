@@ -358,11 +358,13 @@ exports.getLendersData = async (req, res) => {
     const LT = await LoanTaps.countDocuments({
       "apiResponse.LoanTap.message": "Application created successfully.",
     });
-    const CapitalNowCount = await smcoll.countDocuments();
+    const CapitalNowProcessed = await smcoll.countDocuments({
+      "RefArr.name": "CapitalNow",
+    });
     const CapitalNow = await smcoll.countDocuments({
       "apiResponse.CapitalNow.message": "Fresh Lead Registered Successfully!",
     });
-
+    const CapitalNowCount = await smcoll.countDocuments();
     const LT2 = await LoanTaps.countDocuments();
     return res.status(200).json({
       success: true,
@@ -384,7 +386,8 @@ exports.getLendersData = async (req, res) => {
         },
         CapitalNow: {
           CapitalNow: CapitalNow,
-          CapitalNowSubmited: CapitalNow,
+          CapitalNowProcessed: CapitalNowProcessed,
+          CapitalNowTotal: CapitalNowCount,
         },
         SmartCoin: {
           smartcoin: smartcoin,
