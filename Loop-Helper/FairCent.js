@@ -16,7 +16,7 @@ const UserDB = mongoose.model(
 const BATCH_SIZE = 2;
 const Partner_id = "keshvacredit";
 
-const BASE_URL = "https://api.faircent.com/";
+const BASE_URL = "https://api.faircent.com";
 const DEDUPAPI = `${BASE_URL}/v1/api/duplicateCheck`;
 const LEAD_API = `${BASE_URL}/v1/api/aggregrator/register/user`;
 
