@@ -365,6 +365,20 @@ exports.getLendersData = async (req, res) => {
       "apiResponse.CapitalNow.message": "Fresh Lead Registered Successfully!",
     });
     const CapitalNowCount = await smcoll.countDocuments();
+    const Branch = await MoneyView.countDocuments({
+      "apiResponse.Branch.data.decision.code": 1,
+    });
+    const Branch2 = await MoneyView.countDocuments();
+    const Branch3 = await MoneyView.countDocuments({
+      "RefArr.name": "Branch",
+    });
+    const FairCent = await smcoll.countDocuments({
+      "apiResponse.Faircent.lead.message": "Account Created Successfully!",
+    });
+    const FairCentProcessed = await smcoll.countDocuments({
+      "RefArr.name": "Faircent",
+    });
+    const FairCentCount = await smcoll.countDocuments();
     const LT2 = await LoanTaps.countDocuments();
     return res.status(200).json({
       success: true,
@@ -388,6 +402,16 @@ exports.getLendersData = async (req, res) => {
           CapitalNow: CapitalNow,
           CapitalNowProcessed: CapitalNowProcessed,
           CapitalNowTotal: CapitalNowCount,
+        },
+        Branch: {
+          Branch: Branch,
+          BranchProcessed: Branch3,
+          BranchTotal: Branch2,
+        },
+        FairCent: {
+          FairCent: FairCent,
+          FairCentProcessed: FairCentProcessed,
+          FairCentTotal: FairCentCount,
         },
         SmartCoin: {
           smartcoin: smartcoin,
