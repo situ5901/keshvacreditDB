@@ -64,7 +64,7 @@ app.use(`/api${API_VERSION}/LenderAPIs`, require("./Lenders-APIs/LoanTap"));
 app.use(`/api${API_VERSION}/Test`, require("./LDClub/filter.js"));
 app.use(errorHandler);
 //............LeadBridge Working............//
-const adminRoutes = require("./manage_core/admin_panel/routes/adminRoutes.js");
+constromeadminRoutes = require("./manage_core/admin_panel/routes/adminRoutes.js");
 app.use(`/api${API_VERSION}/admin`, adminRoutes);
 
 //............LEaders Working............//

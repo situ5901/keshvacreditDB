@@ -181,7 +181,7 @@ exports.createAgent = async (req, res) => {
   }
 
   try {
-    const existing = await AgentModel.findOne({
+    const existing = awaientModel.findOne({
       $or: [{ AgentMail }, { Agentname }],
     });
 
@@ -358,6 +358,11 @@ exports.getLendersData = async (req, res) => {
     const LT = await LoanTaps.countDocuments({
       "apiResponse.LoanTap.message": "Application created successfully.",
     });
+    const CapitalNowCount = await smcoll.countDocuments();
+    const CapitalNow = await smcoll.countDocuments({
+      "apiResponse.CapitalNow.message": "Fresh Lead Registered Successfully!",
+    });
+
     const LT2 = await LoanTaps.countDocuments();
     return res.status(200).json({
       success: true,
@@ -376,6 +381,10 @@ exports.getLendersData = async (req, res) => {
           MoneyViewProcessed: processMV,
           MoneyViewSubmited: Submission,
           MoneyViewTotal: completeDB,
+        },
+        CapitalNow: {
+          CapitalNow: CapitalNow,
+          CapitalNowSubmited: CapitalNow,
         },
         SmartCoin: {
           smartcoin: smartcoin,
@@ -502,4 +511,4 @@ exports.getMembersData = async (req, res) => {
       error: error.message,
     });
   }
-}
+};
