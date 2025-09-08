@@ -12,10 +12,10 @@ import time
 load_dotenv()
 MONGO_URI = os.getenv("MONGODB_URINEW", "mongodb://localhost:27017/")
 
-BASE_URL = "https://dev-rspl-imlsp.lendenclub.com/v1"
+BASE_URL = "https://im-lsp.lendenclub.com/"
 PARTNER_CODE = "KC"
-KEY = "76f541a77bb26ff4389c47ede508c80f"   # utf-8 string
-IV = "8795d9c2dfda62da"                   # utf-8 string
+KEY = "3765d4ed4946bf61fc789020a6ed0262"   # utf-8 string
+IV = "d9f5c9dae54fdd5b"                   # utf-8 string
 AES_BLOCK_SIZE = 32
 BATCH_SIZE = 5
 
