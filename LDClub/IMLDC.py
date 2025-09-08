@@ -75,7 +75,7 @@ def call_api(api_code: str, data: dict):
     checksum = generate_checksum(encrypted_payload)
 
     body = {"checksum": checksum, "payload": encrypted_payload}
-    url = f"{BASE_URL}/{PARTNER_CODE}/"
+    url = f"{BASE_URL}v1/{PARTNER_CODE}/"
 
     try:
         res = requests.post(url, json=body, timeout=15)
