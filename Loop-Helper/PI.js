@@ -11,7 +11,7 @@ const LEAD_API_URL = "https://vnotificationgw.epifi.in/v1/leads/loans/create";
 const BATCH_SIZE = 10;
 const REF_NAME = "PI";
 
-const MONGODB_URINEW = process.env.MONGODB_URINEW1;
+const MONGODB_URINEW = process.env.MONGODB_URINEW;
 
 mongoose
   .connect(MONGODB_URINEW)
