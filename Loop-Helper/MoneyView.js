@@ -26,6 +26,14 @@ const OFFER_LEADS = 15000; // Target for 'No dedupe found' leads
 const BATCH_SIZE = 10;
 const PINCODE_FILE_PATH = path.join(__dirname, "..", "xlsx", "mv.xlsx");
 
+function getFormattedDate() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`; // YYYY-MM-DD
+}
+
 function loadValidPincodes(filePath) {
   try {
     const workbook = xlsx.readFile(filePath);
@@ -362,7 +370,7 @@ async function processBatch(leads, token) {
               RefArr: {
                 name: "SkippedMoneyView",
                 reason: finalMessage,
-                createdAt: new Date().toISOString(),
+                createdAt: getFormattedDate(), // ✅ fixed format
               },
             },
           },
@@ -380,7 +388,7 @@ async function processBatch(leads, token) {
               RefArr: {
                 name: "SkippedMoneyView",
                 reason: finalMessage,
-                createdAt: new Date().toISOString(),
+                createdAt: getFormattedDate(), // ✅ fixed format
               },
             },
           },
@@ -398,7 +406,7 @@ async function processBatch(leads, token) {
               RefArr: {
                 name: "SkippedMoneyView",
                 reason: finalMessage,
-                createdAt: new Date().toISOString(),
+                createdAt: getFormattedDate(), // ✅ fixed format
               },
             },
           },
@@ -437,11 +445,11 @@ async function processBatch(leads, token) {
                 dedupe: apiResponsesToSave.moneyViewDedupe,
                 status: "skipped",
                 message: "Duplicate lead",
-                createdAt: new Date().toISOString(),
+                createdAt: getFormattedDate(), // ✅ fixed format
               },
               RefArr: {
                 name: "MoneyView",
-                createdAt: new Date().toISOString(),
+                createdAt: getFormattedDate(), // ✅ fixed format
               },
             },
             $unset: { accounts: "" },
@@ -480,9 +488,12 @@ async function processBatch(leads, token) {
         $push: {
           apiResponse: {
             ...apiResponsesToSave,
-            createdAt: new Date().toISOString(),
+            createdAt: getFormattedDate(), // ✅ fixed format
           },
-          RefArr: { name: "MoneyView", createdAt: new Date().toISOString() },
+          RefArr: {
+            name: "MoneyView",
+            createdAt: getFormattedDate(), // ✅ fixed format
+          },
         },
         $unset: { accounts: "" },
       },
@@ -544,7 +555,6 @@ async function Loop() {
 
   console.log("🔌 Closing DB connection...");
   await mongoose.connection.close();
-  // Final confirmation log after the loop has exited and DB connection is closing
   console.log(
     `\n🎉 Process Finished! Final 🎯 Count No Dedupe: ${NoDedupeCount}`,
   );
