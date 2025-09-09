@@ -52,8 +52,12 @@ router.get("/getDailyReport", async (req, res) => {
     const formattedWork = allWork.map((work) => {
       const dateObj = new Date(work.createdAt);
 
-      const date = dateObj.toLocaleDateString(); // e.g. 5/30/2025
-      const time = dateObj.toLocaleTimeString(); // e.g. 9:20:08 AM
+      const date = dateObj.toLocaleDateString("en-IN", {
+        timeZone: "Asia/Kolkata",
+      });
+      const time = dateObj.toLocaleTimeString("en-IN", {
+        timeZone: "Asia/Kolkata",
+      });
 
       return {
         name: work.name,
