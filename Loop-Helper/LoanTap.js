@@ -3,7 +3,7 @@ const mongoose = require("mongoose");
 const crypto = require("crypto");
 require("dotenv").config();
 
-const MONGODB_URINEW = process.env.MONGODB_URINEW1;
+const MONGODB_URINEW = process.env.MONGODB_URINEW;
 
 mongoose
   .connect(MONGODB_URINEW)
