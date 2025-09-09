@@ -365,11 +365,11 @@ exports.getLendersData = async (req, res) => {
       "apiResponse.CapitalNow.message": "Fresh Lead Registered Successfully!",
     });
     const CapitalNowCount = await smcoll.countDocuments();
-    const Branch = await MoneyView.countDocuments({
+    const Branch = await smcoll.countDocuments({
       "apiResponse.Branch.data.decision.code": 1,
     });
-    const Branch2 = await MoneyView.countDocuments();
-    const Branch3 = await MoneyView.countDocuments({
+    const Branch2 = await smcoll.countDocuments();
+    const Branch3 = await smcoll.countDocuments({
       "RefArr.name": "Branch",
     });
     const FairCent = await smcoll.countDocuments({
