@@ -18,6 +18,29 @@ const BaseURL =
   "https://oneweb.bajajhousingfinance.in/plms-api/services/campaignRest/createCampaign";
 const partnerId = "Keshvacredit";
 
+
+function generateMessageId() {
+// API request
+const response = await axios.post(BaseURL, payload, {
+  headers: {
+    Authorization: "dXNlcjpBRE1JTjpKYW5AMjAxOQ==",
+    "Content-Type": "application/json",
+    ENTITYID: "1",
+    LANGUAGE: "EN",
+    MESSAGEID: generateMessageId(),  // 👈 yaha dynamic aa jayega
+    REQUESTTIME: new Date().toISOString(), // dynamic request time
+    SERVICENAME: "createCampaign",
+    SERVICEVERSION: "1",
+  },
+});
+  const date = new Date();
+  const dateStr = `${String(date.getMonth() + 1).padStart(2, "0")}/${String(
+    date.getDate(),
+  ).padStart(2, "0")}/${date.getFullYear()}`; // MM/DD/YYYY
+  const randomPart = Math.floor(100000000 + Math.random() * 900000000); // 9 digit random number
+  return `${dateStr}-${randomPart}`;
+}
+
 async function sendLead() {
   try {
     // DB से user data fetch करना

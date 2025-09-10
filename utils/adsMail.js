@@ -1,7 +1,14 @@
 const express = require("express");
 const router = express.Router();
 const adsmail = require("../models/adsMail");
+const mongoose = require("mongoose");
+const deleteAccSchema = new mongoose.Schema({
+  email: { type: String, required: true },
+  phone: { type: String, required: true },
+  requestedAt: { type: Date, default: Date.now },
+});
 
+const DeleteAcc = mongoose.model("deleteAcc", deleteAccSchema);
 router.post("/delete-account", async (req, res) => {
   const { email, phone } = req.body;
 
@@ -10,30 +17,18 @@ router.post("/delete-account", async (req, res) => {
   }
 
   try {
-    await adsmail.sendMail({
-      from: email, // user ka email as sender
-      to: process.env.EMAIL, // admin / support email
-      subject: `Delete Account Request - ${email}`,
-      html: `
-      <h3>Delete Account Request</h3>
-      <p><b>User Email:</b> ${email}</p>
-      <p><b>User Phone:</b> ${phone}</p>
-      <p>This user has requested to delete their account from the system.</p>
-      <hr/>
-      <p style="font-size:12px; color:#888;">Generated automatically from KeshvaCredit API.</p>
-      `,
-    });
+    // Save request to DB
+    const newRequest = new DeleteAcc({ email, phone });
+    await newRequest.save();
 
-    console.log(
-      `Delete account request received from: ${email}, phone: ${phone}`,
-    );
-    res.json({ message: "Delete account request sent to admin mail." });
+    console.log(`Delete account request saved: ${email}, phone: ${phone}`);
+    res.json({ message: "Delete account request saved successfully." });
   } catch (error) {
     console.error(
-      `Failed to send delete account request for ${email}. Error:`,
+      `Failed to save delete account request for ${email}. Error:`,
       error,
     );
-    res.status(500).json({ message: "Failed to send delete account request." });
+    res.status(500).json({ message: "Failed to save delete account request." });
   }
 });
 
