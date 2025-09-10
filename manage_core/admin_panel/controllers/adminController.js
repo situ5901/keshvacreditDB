@@ -284,7 +284,7 @@ exports.getLendersData = async (req, res) => {
     });
     const count2 = await MoneyView.countDocuments();
     const count3 = await MoneyView.countDocuments({
-      "apiResponse.moneyViewOffers.message": "success",
+      "apiResponse.moneyViewLeadSubmission.message": "success",
     });
     const count4 = await MoneyView.countDocuments({
       "RefArr.name": "MoneyView",
@@ -346,8 +346,8 @@ exports.getLendersData = async (req, res) => {
       "apiResponse.moneyViewDedupe.message": "No dedupe found",
     });
     const completeDB = await MoneyView2.countDocuments();
-    const Offeres = await MoneyView2.countDocuments({
-      "apiResponse.moneyViewOffers.message": "success",
+    const Success = await MoneyView2.countDocuments({
+      "apiResponse.moneyViewLeadSubmission.message": "success",
     });
     const processMV = await MoneyView2.countDocuments({
       "RefArr.name": "MoneyView",
@@ -393,7 +393,7 @@ exports.getLendersData = async (req, res) => {
         },
         MoneyView2: {
           Moneyview2: nodedupe,
-          MoneyViewOffers: Offeres,
+          MoneyViewOffers: Success,
           MoneyViewProcessed: processMV,
           MoneyViewSubmited: Submission,
           MoneyViewTotal: completeDB,
