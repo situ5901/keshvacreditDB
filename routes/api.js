@@ -224,8 +224,9 @@ router.put("/updateUser", async (req, res) => {
 
   try {
     const updatedUser = await User.findOneAndUpdate(
-      { mobile: phone },
-      { $set: req.body },
+      { mobile: phone },             // filter
+      { $set: req.body },            // update
+      { new: true, upsert: false }   // options
     );
 
     if (!updatedUser) {
