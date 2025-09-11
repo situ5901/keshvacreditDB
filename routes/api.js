@@ -226,7 +226,6 @@ router.put("/updateUser", async (req, res) => {
     const updatedUser = await User.findOneAndUpdate(
       { mobile: phone },
       { $set: req.body },
-      { new: true },
     );
 
     if (!updatedUser) {
