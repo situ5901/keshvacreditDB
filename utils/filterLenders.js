@@ -37,7 +37,7 @@ const eligibleLenders = [
     maxAge: 59,
     lenderId: 4,
     minIncome: 18000,
-    url: "https://fatakpay.com/assets/images/logo/Logo.svg",
+    url: "https://i.postimg.cc/0jzs6xgb/Logo-1.jpg",
     utm: "https://web.fatakpay.com/authentication/login?utm_source=575_DLZ56&utm_medium=",
   },
   {
@@ -46,7 +46,7 @@ const eligibleLenders = [
     maxAge: 59,
     lenderId: 5,
     minIncome: 18000,
-    url: "https://fatakpay.com/assets/images/logo/Logo.svg",
+    url: "https://i.postimg.cc/0jzs6xgb/Logo-1.jpg",
     utm: "https://web.fatakpay.com/authentication/login?utm_source=576_PPEGA&utm_medium=",
   },
   {
@@ -166,7 +166,7 @@ const eligibleLenders = [
     maxAge: 58,
     lenderId: 18,
     minIncome: 15000,
-    url: "https://i.postimg.cc/zXphgPXC/logo.jpg",
+    url: "https://www.paymeindia.in/logo.svg",
     utm: "https://web.paymeindia.in/?referrer=",
   },
   {
