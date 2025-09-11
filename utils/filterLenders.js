@@ -102,7 +102,7 @@ const eligibleLenders = [
     lenderId: 11,
     minIncome: 15000,
     url: "https://cdn.prod.website-files.com/65b65b84c3edfa5897cdfb0b/66223fca2ba9f44ca226f304_Primary%20logo.png",
-    utm: "no data",
+    utm: "https://moneyview.in/personal-loan?utm_source=KeshvaCredit",
   },
   {
     name: "BharatLoan",
@@ -139,7 +139,7 @@ const eligibleLenders = [
     lenderId: 15,
     minIncome: 15000,
     url: "https://www.instantmudra.com/images/logo_official.png",
-    utm: "no data",
+    utm: "https://www.instantmudra.com/apply_loan.php?utm_source=quid&utm_medium=get&utm_campaign=d70e2e18685f38708e175d780390d064ke58",
   },
   {
     name: "clickmyloan",
@@ -148,7 +148,7 @@ const eligibleLenders = [
     lenderId: 16,
     minIncome: 15000,
     url: "https://clickmyloan.com/images/logo.png",
-    utm: "no data",
+    utm: "https://clickmyloan.cloudbankin.com/onboard/?referral_code=caa39346dc#/home/welcome",
   },
   {
     name: "Mudraboxx",
@@ -158,7 +158,7 @@ const eligibleLenders = [
     minIncome: 25000,
     employment: "Salaried",
     url: "https://mudraboxx.com/favicon.ico",
-    utm: "no data",
+    utm: "https://mudraboxx.com/apply?utm_source=KesavaCredit&utm_medium=cpc&utm_campaign=kesavacredit-campaign&utm_term={utm_term}&utm_content={utm_content}&utm_id={utm_id}&product_id={product_id}&location={location}&gclid={gclid}",
   },
   {
     name: "Payme",
@@ -167,7 +167,7 @@ const eligibleLenders = [
     lenderId: 18, // changed
     minIncome: 15000,
     url: "https://www.paymeindia.in/logo.svg",
-    utm: "no data",
+    utm: "https://web.paymeindia.in/?referrer=",
   },
   {
     name: "Branch",
@@ -176,7 +176,7 @@ const eligibleLenders = [
     lenderId: 19, // changed
     minIncome: 15000,
     url: "https://d2c5ectx2y1vm9.cloudfront.net/assets/logo-485b81d3b9c7d0948100d5af0c6add2a27271ae40c65cdb6e98be5907ceaee32.png",
-    utm: "no data",
+    utm: "https://play.google.com/store/apps/details?id=com.branch_international.branch.branch_demo_android&referrer=utm_source%3DKESHVACREDIT%26lead_id%3D",
   },
   {
     name: "CapitalNow",
@@ -208,7 +208,7 @@ eligibleLenders.forEach((lender) => {
         .map((row) => row.Pincode && row.Pincode.toString().trim())
         .filter(Boolean);
     } catch (err) {
-      console.error(`Error reading ${excelPath}:`, err.message); // ✅ fixed
+      console.error(Error reading ${excelPath}:, err.message); // ✅ fixed
       lender.pincodes = [];
     }
   } else {
