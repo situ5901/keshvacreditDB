@@ -157,7 +157,7 @@ const eligibleLenders = [
     lenderId: 17,
     minIncome: 25000,
     employment: "Salaried",
-    url: "https://mudraboxx.com/favicon.ico",
+    url: "https://mudraboxx.com/_next/image?url=%2F_next%2Fstatic%2Fmedia%2Flogo.ec7e9ff0.png&w=256&q=75",
     utm: "https://mudraboxx.com/apply?utm_source=KesavaCredit&utm_medium=cpc&utm_campaign=kesavacredit-campaign",
   },
   {
@@ -175,7 +175,7 @@ const eligibleLenders = [
     maxAge: 58,
     lenderId: 19,
     minIncome: 15000,
-    url: "https://d2c5ectx2y1vm9.cloudfront.net/assets/logo.png",
+    url: "https://d2c5ectx2y1vm9.cloudfront.net/assets/logo-485b81d3b9c7d0948100d5af0c6add2a27271ae40c65cdb6e98be5907ceaee32.png",
     utm: "https://play.google.com/store/apps/details?id=com.branch_international.branch.branch_demo_android&referrer=utm_source%3DKESHVACREDIT",
   },
   {
