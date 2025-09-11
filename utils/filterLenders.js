@@ -253,7 +253,7 @@ eligibleLenders.forEach((lender) => {
         .map((row) => row.Pincode && row.Pincode.toString().trim())
         .filter(Boolean);
     } catch (err) {
-      console.error(Error reading ${excelPath}:, err.message);
+      console.error(`Error reading ${excelPath}:`, err.message);
       lender.pincodes = [];
     }
   } else {
