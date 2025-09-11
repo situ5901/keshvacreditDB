@@ -166,7 +166,7 @@ const eligibleLenders = [
     maxAge: 58,
     lenderId: 18,
     minIncome: 15000,
-    url: "https://www.paymeindia.in/logo.svg",
+    url: "https://i.postimg.cc/zXphgPXC/logo.jpg",
     utm: "https://web.paymeindia.in/?referrer=",
   },
   {
