@@ -1,14 +1,9 @@
+const axios = require("axios");
 const express = require("express");
 const router = express.Router();
-const axios = require("axios");
 
 function generateMessageId() {
-  const date = new Date();
-  const dateStr = `${String(date.getMonth() + 1).padStart(2, "0")}/${String(
-    date.getDate(),
-  ).padStart(2, "0")}/${date.getFullYear()}`;
-  const randomPart = Math.floor(100000000 + Math.random() * 900000000);
-  return `${dateStr}-${randomPart}`;
+  return "MSG-" + Date.now();
 }
 
 router.post("/partner/bajaj", async (req, res) => {
@@ -22,57 +17,119 @@ router.post("/partner/bajaj", async (req, res) => {
       dob,
       email,
       pincode,
-      home_address,
-      office_address,
+      home_address = {},
+      office_address = {},
       type_of_residence,
       company_name,
     } = req.body;
 
     const payload = {
       leadDetails: {
-        firstName: name,
+        firstName: name || "",
         middleName: "",
-        lastName: last_name,
-        emailId: email,
-        uniqueId: pancard,
+        lastName: last_name || "",
+        emailId: email || "",
+        uniqueId: pancard || "",
+        profession: "",
         leadSource: "ONLINE",
-        dateOfBirth: dob,
-        employmentType: employType,
-        grossReceipt: "", // optional / aap add kar sakte ho
-        pinCode: pincode,
-        gender: "", // optional
+        leadType: "",
+        dateOfBirth: dob || "",
+        monthlyObligations: "",
+        employmentType: employType || "",
+        employerId: company_name || "",
+        natureOfBusiness: "",
+        leadReference: "",
+        nameOfDegree: "",
+        grossReceipt: "",
+        turnOver: "",
+        netProfit: "",
+        pinCode: pincode || "",
+        netSalary: "",
+        currExperience: "",
+        experience: "",
+        gender: "",
+        hostLeadId: "",
+        specialization: "",
+        appliedTenor: "",
         mobileNumber: phone,
         addressDetails: [
           {
             addrType: "CURRES",
-            pinCode: pincode,
+            pinCode: pincode || "",
             country: "IN",
-            city: home_address.city || "",
+            district: "",
+            landmark: "",
+            locality: "",
+            priority: 5,
             street: home_address.street || "",
+            city: home_address.city || "",
+            houseNumber: home_address.houseNumber || "",
+            flatNumber: home_address.flatNumber || "",
           },
         ],
         phoneDetails: [
           {
             phoneNumber: phone,
             phoneTypeCode: "MOBILE",
+            priority: 5,
           },
         ],
         emailDetails: [
           {
-            emailId: email,
+            emailId: email || "",
             emailTypeCode: "PERSONAL",
+            priority: 5,
           },
         ],
       },
       productOffer: {
         businessVertical: "SHOL",
         offerProduct: "HHL",
+        processType: "",
         offerName: "Campaign PO",
         baseProduct: "PROSPECT",
         bT: "Fresh",
         extCustSeg: "NEW",
+        productOfferSource: "",
+        ownerId: "",
+        ownerType: "Queue",
         loanType: "HHL",
         dataMartStatus: "LIVE",
+        pOValidity: "",
+        campaignDetails: {
+          campaignType: "",
+          campaignName: "",
+          campaignDate: "",
+          utmSource: "AFFILIATE",
+          utmMedium: "DIGITAL",
+          utmCampaign: "PARTNER NAME",
+          utmContent: "PUBLISHER PUT DETAILS",
+          utmProduct: "",
+          downPaymentReceived: "",
+          propertyType: "",
+          itrFieldlast3Years: "",
+          requiredLoanamount: "",
+          currentBankName: "",
+          currentRateOfInterest: "",
+          propertyIdentified: "",
+          propertyLocation: "",
+          vouchers: "",
+          responseType: "HOT",
+          propensity: "",
+        },
+        loanDetails: {
+          loanType: "HHL",
+          appliedLoanAmount: "",
+          appliedTenor: "",
+          appliedROI: "",
+        },
+        sourcingDetails: {
+          sourcingBranch: "1164",
+          sourcingChannelCategory: "",
+          source: "",
+          aSMName: "",
+          sourcingChannel: "",
+        },
       },
     };
 
@@ -103,5 +160,3 @@ router.post("/partner/bajaj", async (req, res) => {
 });
 
 module.exports = router;
-
-//udpate to date
