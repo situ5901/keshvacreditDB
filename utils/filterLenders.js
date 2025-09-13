@@ -38,14 +38,14 @@ const eligibleLenders = [
     utm: "https://zype.sng.link/Ajygt/1ba7?_dl=com.zype.mobile&_smtype=3",
   },
   {
-    name: "FatakPay Personal Loan",
+    name: "FDPL",
     minAge: 18,
     maxAge: 59,
     lenderId: 4,
     minIncome: 18000,
     interestRate: "starting from 12% to 35.95% per Annum",
     loanAmount: "upto 5 Lakh",
-    url: "https://i.postimg.cc/0jzs6xgb/Logo-1.jpg",
+    url: "https://i.postimg.cc/YSfBdxzZ/fdpl.jpg",
     utm: "https://web.fatakpay.com/authentication/login?utm_source=575_DLZ56&utm_medium=",
   },
   {
