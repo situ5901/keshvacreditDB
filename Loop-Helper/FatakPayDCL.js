@@ -158,8 +158,8 @@ async function Loop() {
       console.log(`✅ Processed batch of ${leads.length} users`);
 
       // ✅ Wait 5 seconds before hitting the next batch
-      console.log("⏳ Waiting 5 seconds before next batch...");
-      await delay(5000);
+      console.log("⏳ Waiting 2 seconds before next batch...");
+      await delay(2000);
 
       await processNextBatch();
     } catch (err) {
