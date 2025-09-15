@@ -170,6 +170,7 @@ async function processBatch(leads) {
             name: "SmartCoin",
             status: preApprovalResponse.status,
             message: preApprovalResponse.message,
+            leadId: preApprovalResponse.leadId,
             createdAt: new Date().toISOString(),
           },
           RefArr: {
