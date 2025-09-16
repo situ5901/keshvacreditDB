@@ -2,7 +2,7 @@ const axios = require("axios");
 const mongoose = require("mongoose");
 require("dotenv").config();
 
-const MONGODB_URINEW = process.env.MONGODB_URINEW1;
+const MONGODB_URINEW = process.env.MONGODB_URINEW;
 const DEDUPE_API = "https://www.ramfincorp.com/new-api/customers/check_dedupe";
 const LEAD_API = "https://www.ramfincorp.com/new-api/customers/lead_push";
 const BATCH_SIZE = 3;

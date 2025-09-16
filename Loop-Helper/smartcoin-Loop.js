@@ -15,7 +15,7 @@ const UserDB = mongoose.model(
   new mongoose.Schema({}, { collection: "smcoll", strict: false }),
 );
 //this is the api key
-const BATCH_SIZE = 100;
+const BATCH_SIZE = 500;
 const Partner_id = "Keshvacredit";
 const PRE_APPROVAL_API =
   "https://leads.smartcoin.co.in/partner/keshvacredit/lead/create";
