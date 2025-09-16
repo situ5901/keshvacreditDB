@@ -124,7 +124,7 @@ router.post("/partner/bajaj", async (req, res) => {
           appliedROI: "",
         },
         sourcingDetails: {
-          sourcingBranch: "1164",
+          sourcingBranch: "",
           sourcingChannelCategory: "",
           source: "",
           aSMName: "",
