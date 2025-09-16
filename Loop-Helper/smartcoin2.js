@@ -11,9 +11,12 @@ mongoose
   .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
 
 const UserDB = mongoose.model(
-  "comp",
-  new mongoose.Schema({}, { collection: "comp", strict: false }),
+  "testdb",
+  new mongoose.Schema({}, { collection: "testdb", strict: false }),
 );
+
+
+//update new smartcoin 220011
 
 const BATCH_SIZE = 500;
 const Partner_id = "Keshvacredit";
@@ -27,8 +30,6 @@ function getheaders() {
     "admin-api-client-key": "esy7kphMG6G9hu90",
   };
 }
-
-//situ kumar//
 
 function isValidPAN(pan) {
   return /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(pan);
@@ -169,9 +170,10 @@ async function processBatch(leads) {
       const updateDoc = {
         $push: {
           apiResponse: {
-            smartcoin: preApprovalResponse,
+            name: "SmartCoin",
             status: preApprovalResponse.status,
             message: preApprovalResponse.message,
+            leadId: preApprovalResponse.leadId,
             createdAt: new Date().toISOString(),
           },
           RefArr: {
