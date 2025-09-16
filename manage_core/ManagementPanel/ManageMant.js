@@ -1,7 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 const jwt = require("jsonwebtoken");
-
+const { MongoClient } = require("mongodb");
 const {
   MoneyView,
   MoneyView2,
@@ -9,6 +9,7 @@ const {
   dailyworks,
   LoanTaps,
 } = require("../models/CheckLenderSchema");
+const Apismcoll = require("../../models/apismcoll");
 
 exports.dashboard = async (req, res) => {
   try {
@@ -142,5 +143,19 @@ exports.Managementlogin = (req, res) => {
     return res
       .status(401)
       .json({ message: "❌ Invalid Management credentials" });
+  }
+};
+
+exports.CampiangData = async (req, res) => {
+  try {
+    const smartCoin = await Apismcoll.countDocuments();
+
+    return res.json({
+      message: "Campiang data fetched successfully",
+      smartCoin,
+    });
+  } catch (error) {
+    console.error("❌ Error fetching Campiang data:", error);
+    res.status(500).json({ message: error.message });
   }
 };

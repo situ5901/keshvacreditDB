@@ -11,7 +11,7 @@ mongoose
 
 const UserDB = mongoose.model(
   "smcoll",
-  new mongoose.Schema({}, { collection: "smcoll", strict: false }),
+  new mongoose.Schema({}, { collection: "smcoll2", strict: false }),
 );
 
 const BATCH_SIZE = 50;

@@ -2,10 +2,10 @@ const axios = require("axios");
 const mongoose = require("mongoose");
 require("dotenv").config();
 
-const MONGODB_URINEW = process.env.MONGODB_URINEW;
+const MONGODB_URINEW = process.env.MONGODB_URINEW1;
 const DEDUPE_API = "https://www.ramfincorp.com/new-api/customers/check_dedupe";
 const LEAD_API = "https://www.ramfincorp.com/new-api/customers/lead_push";
-const BATCH_SIZE = 5;
+const BATCH_SIZE = 3;
 const Partner_id = "Keshvacredit";
 
 const AUTH_HEADER = {
@@ -20,8 +20,8 @@ mongoose
   .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
 
 const UserDB = mongoose.model(
-  "smcoll",
-  new mongoose.Schema({}, { collection: "smcoll", strict: false }),
+  "smcoll2",
+  new mongoose.Schema({}, { collection: "smcoll2", strict: false }),
 );
 
 async function dedupe(user) {
