@@ -7,9 +7,6 @@ const BASE_URL = "https://fcnode5.faircent.com/v1/api";
 const APP_ID = "b27b11e13af255ef90f7c1939dcab2d2";
 const APP_NAME = "KESHVACREDIT";
 
-/**
- * STEP 1 & 2: Duplicate Check + Register User
- */
 router.post("/faircent/lead", async (req, res) => {
   try {
     const { payload } = req.body;
