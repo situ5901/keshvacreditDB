@@ -693,21 +693,23 @@ router.post("/getUsers", async (req, res) => {
   }
 });
 
-router.post("/getBL", (req, res) => {
+router.post("/getBL", async (req, res) => {
   try {
     const { phone } = req.body;
     if (!phone) {
       return res.status(400).json({ error: "Phone number is required" });
     }
 
-    const user = BL.findOne({ phone });
+    // Await is important
+    const user = await BL.findOne({ phone }).lean(); // .lean() returns plain JS object
+
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
 
-    return res.json(user);
+    return res.json(user); // safe to send
   } catch (error) {
-    console.error("Error fetching user:", error.message);
+    console.error("❌ Error fetching user:", error.message);
     res.status(500).json({ error: "Server error" });
   }
 });
