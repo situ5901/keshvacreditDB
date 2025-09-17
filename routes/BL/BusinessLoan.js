@@ -5,7 +5,7 @@ const BLSchema = require("./BLSchema.js");
 router.post("/form", async (req, res) => {
   const {
     name,
-    mobile,
+    phone,
     email,
     loanAmount,
     gender,
@@ -20,9 +20,9 @@ router.post("/form", async (req, res) => {
     pincode,
     currentAccount,
   } = req.body;
-
+  //udpate
   const existingUser = await BLSchema.findOne({
-    $or: [{ mobile }, { email }],
+    $or: [{ phone }, { email }],
   });
   if (existingUser) {
     return res.status(409).json({
@@ -32,7 +32,7 @@ router.post("/form", async (req, res) => {
   }
   const newUser = new BLSchema({
     name,
-    mobile,
+    phone,
     email,
     loanAmount,
     gender,
