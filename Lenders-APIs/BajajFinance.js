@@ -102,7 +102,7 @@ router.post("/partner/bajaj", async (req, res) => {
           campaignDate: "",
           utmSource: "AFFILIATE",
           utmMedium: "DIGITAL",
-          utmCampaign: "PARTNER NAME",
+          utmCampaign: "AF13_KESHCR",
           utmContent: "PUBLISHER PUT DETAILS",
           utmProduct: "",
           downPaymentReceived: "",
