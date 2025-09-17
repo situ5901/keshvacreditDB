@@ -11,7 +11,7 @@ mongoose
 
 const UserDB = mongoose.model(
   "smcoll",
-  new mongoose.Schema({}, { collection: "smcoll", strict: false }),
+  new mongoose.Schema({}, { collection: "smcoll", strict: false })
 );
 
 const BATCH_SIZE = 50;
@@ -20,6 +20,7 @@ const CREATE_USER_TOKEN_API =
 const ELIGIBILITY_API =
   "https://onboardingapi.fatakpay.com/external-api/v1/emi-insurance-eligibility";
 
+// ----------------- Create Token -----------------
 async function createUserToken() {
   try {
     const payloads = {
@@ -31,10 +32,7 @@ async function createUserToken() {
       headers: { "Content-Type": "application/json" },
     });
 
-    console.log(
-      "\n🎟️ Token API Raw Response:",
-      JSON.stringify(response.data, null, 2),
-    );
+    console.log("\n🎟️ Token API Raw Response:", JSON.stringify(response.data, null, 2));
 
     if (response.data.success && response.data.data?.token) {
       console.log("✅ Token generated successfully:", response.data.data.token);
@@ -49,6 +47,7 @@ async function createUserToken() {
   }
 }
 
+// ----------------- Eligibility Check -----------------
 async function sendEligibilityCheck(user, token) {
   try {
     const payload = {
@@ -57,16 +56,14 @@ async function sendEligibilityCheck(user, token) {
       last_name: user.last_name || "kumar",
       employment_type_id: user.employment,
       pan: user.pan || null,
-      dob: user.dob ? new Date(user.dob).toISOString().split("T")[0] : null, // ✅ DOB formatted here
+      dob: user.dob ? new Date(user.dob).toISOString().split("T")[0] : null,
       email: user.email || "not@provided.com",
-      // dob: formatDOB(user.dob),
       pincode: user.pincode || "400001",
       home_address: user.home_address || "123 MG Road, Mumbai",
       office_address:
         user.office_address || "ABC Pvt Ltd, Andheri East, Mumbai",
       emp_code: user.emp_code || "EMP12345",
       type_of_residence: user.type_of_residence || "Owned",
-      // company_name: user.company_name || "ABC Pvt Ltd",
       consent: true,
       consent_timestamp: new Date().toISOString(),
     };
@@ -81,10 +78,7 @@ async function sendEligibilityCheck(user, token) {
       },
     });
 
-    console.log(
-      "📥 Eligibility API Raw Response:",
-      JSON.stringify(response.data, null, 2),
-    );
+    console.log("📥 Eligibility API Raw Response:", JSON.stringify(response.data, null, 2));
     return response.data;
   } catch (err) {
     const errorMessage = err.response?.data || err.message || "Unknown error";
@@ -93,7 +87,28 @@ async function sendEligibilityCheck(user, token) {
   }
 }
 
-async function processBatch(users, token) {
+// ----------------- Eligibility with Auto Token Refresh -----------------
+async function sendEligibilityCheckWithAutoToken(user, tokenRef) {
+  let response = await sendEligibilityCheck(user, tokenRef.token);
+
+  // Auto refresh if token expired
+  if (response.message === "Token expired.") {
+    console.log("🔄 Token expired detected. Regenerating token...");
+    const newToken = await createUserToken();
+    if (!newToken) {
+      console.error("❌ Token regeneration failed");
+      return { success: false, message: "Token regeneration failed" };
+    }
+    tokenRef.token = newToken;
+    console.log("🔁 Retrying eligibility check with new token...");
+    response = await sendEligibilityCheck(user, tokenRef.token);
+  }
+
+  return response;
+}
+
+// ----------------- Process Batch -----------------
+async function processBatch(users, tokenRef) {
   const promises = users.map(async (user) => {
     console.log(`\n🔄 Processing user: ${user.phone}`);
 
@@ -104,7 +119,7 @@ async function processBatch(users, token) {
       return;
     }
 
-    const eligibilityResponse = await sendEligibilityCheck(user, token);
+    const eligibilityResponse = await sendEligibilityCheckWithAutoToken(user, tokenRef);
 
     const updateDoc = {
       $push: {
@@ -125,39 +140,44 @@ async function processBatch(users, token) {
     await UserDB.updateOne({ phone: user.phone }, updateDoc);
     console.log(`✅ DB updated for: ${user.phone}`);
   });
+
   await Promise.allSettled(promises);
 }
 
+// ----------------- Delay -----------------
 function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+// ----------------- Main Loop -----------------
 async function Loop() {
-  const token = await createUserToken();
-  if (!token) {
+  const initialToken = await createUserToken();
+  if (!initialToken) {
     console.log("❌ Token missing. Aborting...");
     return;
   }
+
+  // Object to hold dynamic token
+  const tokenRef = { token: initialToken };
 
   async function processNextBatch() {
     try {
       console.log("\n🔎 Looking for new leads...");
 
       const leads = await UserDB.aggregate([
-        { $match: { "RefArr.name": { $ne: "FatakPay" } } },
+        { $match: { "RefArr.name": { $ne: "FatakPayDCL" } } },
         { $limit: BATCH_SIZE },
       ]);
 
       if (leads.length === 0) {
         console.log("⏸️ No unprocessed leads. Retrying in 2 seconds...");
-        await delay(2000); // Retry after 2 seconds
+        await delay(2000);
         return processNextBatch();
       }
 
-      await processBatch(leads, token);
+      await processBatch(leads, tokenRef);
       console.log(`✅ Processed batch of ${leads.length} users`);
 
-      // ✅ Wait 5 seconds before hitting the next batch
       console.log("⏳ Waiting 2 seconds before next batch...");
       await delay(2000);
 
