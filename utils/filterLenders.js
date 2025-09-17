@@ -224,6 +224,17 @@ const eligibleLenders = [
     utm: "https://www.creditsea.com/onboarding/sign-up/enter-mobile?source=31048692",
   },
   {
+    name: "Faircent",
+    minAge: 21,
+    maxAge: 58,
+    lenderId: 22,
+    minIncome: 25000,
+    interestRate: "starting from 1.16% per Month",
+    loanAmount: "upto 3 Lakh",
+    url: "https://i.postimg.cc/pXYb8kmC/imgi-1-logo-new.png",
+    utm: "no data",
+  },
+  {
     name: "CapitalNow",
     minAge: 21,
     maxAge: 58,
