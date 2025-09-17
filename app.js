@@ -45,7 +45,7 @@ app.use(`/api${API_VERSION}/LenderAPIs`, require("./Lenders-APIs/Mpokket"));
 app.use(`/api${API_VERSION}/LenderAPIs`, require("./Lenders-APIs/kamakshi"));
 app.use(`/api${API_VERSION}/LenderAPIs`, require("./Lenders-APIs/CapitalNow"));
 app.use(`/api${API_VERSION}/LenderAPIs`, require("./Lenders-APIs/PI.js"));
-app.use(`/api${API_VERSION}/LenderAPIs`, require("./Lenders-APIs/faircent"));
+app.use(`/api${API_VERSION}/LenderAPIs`, require("./Lenders-APIs/Faircent.js"));
 
 app.use(
   `/api${API_VERSION}/LenderAPIs`,
