@@ -13,7 +13,7 @@ mongoose
 
 const UserDB = mongoose.model(
   "MoneyView",
-  new mongoose.Schema({}, { collection: "MoneyView", strict: false }),
+  new mongoose.Schema({}, { collection: "MoneyView1", strict: false }),
 );
 const Healthcheck_API = "https://atlas.whizdm.com/atlas/v1/health";
 const TOKEN_API = "https://atlas.whizdm.com/atlas/v1/token";
