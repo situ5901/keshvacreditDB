@@ -11,8 +11,8 @@ mongoose
   .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
 
 const UserDB = mongoose.model(
-  "notification",
-  new mongoose.Schema({}, { collection: "notification", strict:false }),
+  "notifications",
+  new mongoose.Schema({}, { collection: "notifications", strict:false }),
 );
 
 //update new smartcoin 220011
