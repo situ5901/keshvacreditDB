@@ -5,6 +5,7 @@ const jwt = require("jsonwebtoken");
 const User = require("../models/user.model"); // Ensure correct path
 const Lead = require("../models/RamFinSch");
 const mongoose = require("mongoose");
+const BL = require("../routes/BL/BLSchema");
 const nodemailer = require("nodemailer");
 require("dotenv").config();
 
@@ -224,9 +225,9 @@ router.put("/updateUser", async (req, res) => {
 
   try {
     const updatedUser = await User.findOneAndUpdate(
-      { mobile: phone },             // filter
-      { $set: req.body },            // update
-      { new: true, upsert: false }   // options
+      { mobile: phone }, // filter
+      { $set: req.body }, // update
+      { new: true, upsert: false }, // options
     );
 
     if (!updatedUser) {
@@ -673,4 +674,42 @@ router.post("/final-loan-details", async (req, res) => {
     });
   }
 });
+
+router.post("/getUsers", async (req, res) => {
+  const { phone } = req.body;
+  if (!phone) {
+    return res.status(400).json({ error: "Phone number is required" });
+  }
+  try {
+    const user = await BL.findOne({ phone });
+    if (user) {
+      res.json(user);
+    } else {
+      res.status(404).json({ error: "User not found" });
+    }
+  } catch (error) {
+    console.error("Error fetching user:", error.message);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+router.post("/getBL", (req, res) => {
+  try {
+    const { phone } = req.body;
+    if (!phone) {
+      return res.status(400).json({ error: "Phone number is required" });
+    }
+
+    const user = BL.findOne({ phone });
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    return res.json(user);
+  } catch (error) {
+    console.error("Error fetching user:", error.message);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
 module.exports = router;
