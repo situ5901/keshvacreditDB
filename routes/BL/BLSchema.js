@@ -60,6 +60,7 @@ const businessLoanSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    //stritic: false
     currentAccount: {
       type: String,
       required: true,
