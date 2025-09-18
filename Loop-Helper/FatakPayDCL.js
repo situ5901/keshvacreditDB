@@ -14,7 +14,7 @@ const UserDB = mongoose.model(
   new mongoose.Schema({}, { collection: "smcoll", strict: false })
 );
 
-const BATCH_SIZE = 50;
+const BATCH_SIZE = 20;
 const CREATE_USER_TOKEN_API =
   "https://onboardingapi.fatakpay.com/external-api/v1/create-user-token";
 const ELIGIBILITY_API =
@@ -88,18 +88,22 @@ async function sendEligibilityCheck(user, token) {
 }
 
 // ----------------- Eligibility with Auto Token Refresh -----------------
+// ----------------- Eligibility with Auto Token Refresh -----------------
 async function sendEligibilityCheckWithAutoToken(user, tokenRef) {
   let response = await sendEligibilityCheck(user, tokenRef.token);
 
-  // Auto refresh if token expired
-  if (response.message === "Token expired.") {
+  // Agar token expired error aaya (401 ya message me expired likha ho)
+  if (
+    response?.status_code === 401 ||
+    response?.message?.toLowerCase().includes("token expired")
+  ) {
     console.log("🔄 Token expired detected. Regenerating token...");
     const newToken = await createUserToken();
     if (!newToken) {
       console.error("❌ Token regeneration failed");
       return { success: false, message: "Token regeneration failed" };
     }
-    tokenRef.token = newToken;
+    tokenRef.token = newToken; // update token
     console.log("🔁 Retrying eligibility check with new token...");
     response = await sendEligibilityCheck(user, tokenRef.token);
   }
@@ -179,7 +183,7 @@ async function Loop() {
       console.log(`✅ Processed batch of ${leads.length} users`);
 
       console.log("⏳ Waiting 2 seconds before next batch...");
-      await delay(2000);
+      await delay(5000);
 
       await processNextBatch();
     } catch (err) {
