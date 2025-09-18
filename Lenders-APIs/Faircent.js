@@ -2,8 +2,8 @@ const express = require("express");
 const router = express.Router();
 const axios = require("axios");
 
-const BASE_URL = "https://api.faircent.com";
-const APP_ID = "1cfa78742af22b054a57fac6cf830699";
+const BASE_URL = "https://fcnode5.faircent.com/v1/api";
+const APP_ID = "b27b11e13af255ef90f7c1939dcab2d2";
 const APP_NAME = "KESHVACREDIT";
 
 /**
