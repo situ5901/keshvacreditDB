@@ -675,23 +675,6 @@ router.post("/final-loan-details", async (req, res) => {
   }
 });
 
-router.post("/getUsers", async (req, res) => {
-  const { phone } = req.body;
-  if (!phone) {
-    return res.status(400).json({ error: "Phone number is required" });
-  }
-  try {
-    const user = await BL.findOne({ phone });
-    if (user) {
-      res.json(user);
-    } else {
-      res.status(404).json({ error: "User not found" });
-    }
-  } catch (error) {
-    console.error("Error fetching user:", error.message);
-    res.status(500).json({ error: "Server error" });
-  }
-});
 
 router.post("/getBL", async (req, res) => {
   try {
