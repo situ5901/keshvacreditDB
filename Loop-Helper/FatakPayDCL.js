@@ -20,7 +20,6 @@ const CREATE_USER_TOKEN_API =
 const ELIGIBILITY_API =
   "https://onboardingapi.fatakpay.com/external-api/v1/emi-insurance-eligibility";
 
-// ----------------- Create Token -----------------
 async function createUserToken() {
   try {
     const payloads = {
@@ -50,9 +49,13 @@ async function createUserToken() {
   }
 }
 
+
+
+// ----------------- Eligibility with Auto Token Refresh -----------------
 async function sendEligibilityCheckWithAutoToken(user, tokenRef) {
   let response = await sendEligibilityCheck(user, tokenRef.token);
 
+  // Agar token expired error aaya (401 ya message me expired likha ho)
   if (
     response?.status_code === 401 ||
     response?.message?.toLowerCase().includes("token expired")
@@ -70,7 +73,7 @@ async function sendEligibilityCheckWithAutoToken(user, tokenRef) {
 
   return response;
 }
-
+// ----------------- Eligibility Check -----------------
 async function sendEligibilityCheck(user, token) {
   try {
     const payload = {
@@ -87,6 +90,7 @@ async function sendEligibilityCheck(user, token) {
         user.office_address || "ABC Pvt Ltd, Andheri East, Mumbai",
       emp_code: user.emp_code || "EMP12345",
       type_of_residence: user.type_of_residence || "Owned",
+      company_name: user.company_name || "ABC Pvt Ltd",
       consent: true,
       consent_timestamp: new Date().toISOString(),
     };
@@ -177,7 +181,7 @@ async function Loop() {
     return;
   }
 
-  // Object to hold dynamic token
+  // Object to hold latest token for dynamic update
   const tokenRef = { token: initialToken };
 
   async function processNextBatch() {
@@ -185,7 +189,7 @@ async function Loop() {
       console.log("\n🔎 Looking for new leads...");
 
       const leads = await UserDB.aggregate([
-        { $match: { "RefArr.name": { $ne: "FatakPayDCL" } } },
+        { $match: { "RefArr.name": { $ne: "FatakPay" } } },
         { $limit: BATCH_SIZE },
       ]);
 
