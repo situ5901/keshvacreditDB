@@ -49,8 +49,6 @@ async function createUserToken() {
   }
 }
 
-
-
 // ----------------- Eligibility with Auto Token Refresh -----------------
 async function sendEligibilityCheckWithAutoToken(user, tokenRef) {
   let response = await sendEligibilityCheck(user, tokenRef.token);
@@ -124,7 +122,7 @@ async function processBatch(users) {
 
     const userDoc = await UserDB.findOne({ phone: user.phone });
 
-    if (userDoc?.RefArr?.some((ref) => ref.name === "FatakPay")) {
+    if (userDoc?.RefArr?.some((ref) => ref.name === "FatakPayDCL")) {
       console.log(`⚠️ Skipping ${user.phone} (already processed)`);
       return;
     }
@@ -148,7 +146,7 @@ async function processBatch(users) {
     const updateDoc = {
       $push: {
         apiResponse: {
-          FatakPayPL: true,
+          FatakPayDCL: true,
           status: eligibilityResponse.success ? "Eligible" : "Ineligible",
           message: eligibilityResponse.message,
           data: eligibilityResponse.data || {},
