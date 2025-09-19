@@ -153,7 +153,7 @@ async function processBatch(users) {
           createdAt: new Date().toISOString(),
         },
         RefArr: {
-          name: "FatakPay",
+          name: "FatakPayDCL",
           createdAt: new Date().toISOString(),
         },
       },
