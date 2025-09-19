@@ -20,7 +20,6 @@ const CREATE_USER_TOKEN_API =
 const ELIGIBILITY_API =
   "https://onboardingapi.fatakpay.com/external-api/v1/emi-insurance-eligibility";
 
-// ----------------- Create Token -----------------
 async function createUserToken() {
   try {
     const payloads = {
@@ -49,6 +48,28 @@ async function createUserToken() {
   }
 }
 
+// ----------------- Eligibility with Auto Token Refresh -----------------
+async function sendEligibilityCheckWithAutoToken(user, tokenRef) {
+  let response = await sendEligibilityCheck(user, tokenRef.token);
+
+  // Agar token expired error aaya (401 ya message me expired likha ho)
+  if (
+    response?.status_code === 401 ||
+    response?.message?.toLowerCase().includes("token expired")
+  ) {
+    console.log("🔄 Token expired detected. Regenerating token...");
+    const newToken = await createUserToken();
+    if (!newToken) {
+      console.error("❌ Token regeneration failed");
+      return { success: false, message: "Token regeneration failed" };
+    }
+    tokenRef.token = newToken; // update token
+    console.log("🔁 Retrying eligibility check with new token...");
+    response = await sendEligibilityCheck(user, tokenRef.token);
+  }
+
+  return response;
+}
 // ----------------- Eligibility Check -----------------
 async function sendEligibilityCheck(user, token) {
   try {
@@ -93,31 +114,8 @@ async function sendEligibilityCheck(user, token) {
   }
 }
 
-// ----------------- Eligibility with Auto Token Refresh -----------------
-async function sendEligibilityCheckWithAutoToken(user, tokenRef) {
-  let response = await sendEligibilityCheck(user, tokenRef.token);
-
-  // Agar token expired error aaya (401 ya message me expired likha ho)
-  if (
-    response?.status_code === 401 ||
-    response?.message?.toLowerCase().includes("token expired")
-  ) {
-    console.log("🔄 Token expired detected. Regenerating token...");
-    const newToken = await createUserToken();
-    if (!newToken) {
-      console.error("❌ Token regeneration failed");
-      return { success: false, message: "Token regeneration failed" };
-    }
-    tokenRef.token = newToken; // update token
-    console.log("🔁 Retrying eligibility check with new token...");
-    response = await sendEligibilityCheck(user, tokenRef.token);
-  }
-
-  return response;
-}
-
 // ----------------- Process Batch -----------------
-async function processBatch(users, tokenRef) {
+async function processBatch(users) {
   const promises = users.map(async (user) => {
     console.log(`\n🔄 Processing user: ${user.phone}`);
 
@@ -128,10 +126,21 @@ async function processBatch(users, tokenRef) {
       return;
     }
 
-    const eligibilityResponse = await sendEligibilityCheckWithAutoToken(
-      user,
-      tokenRef,
-    );
+    // 🔑 Har document ke liye fresh token
+    const freshToken = await createUserToken();
+    if (!freshToken) {
+      console.error(
+        `❌ Could not generate token for ${user.phone}, skipping...`,
+      );
+      return;
+    } else {
+      console.log(`👉 Using token for ${user.phone}: ${freshToken}`);
+    }
+
+    console.log(`👉 Using token for ${user.phone}: ${freshToken}`);
+
+    // Direct eligibility check
+    const eligibilityResponse = await sendEligibilityCheck(user, freshToken);
 
     const updateDoc = {
       $push: {

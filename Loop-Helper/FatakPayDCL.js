@@ -11,7 +11,7 @@ mongoose
 
 const UserDB = mongoose.model(
   "smcoll",
-  new mongoose.Schema({}, { collection: "smcoll", strict: false })
+  new mongoose.Schema({}, { collection: "smcoll", strict: false }),
 );
 
 const BATCH_SIZE = 20;
@@ -32,7 +32,10 @@ async function createUserToken() {
       headers: { "Content-Type": "application/json" },
     });
 
-    console.log("\n🎟️ Token API Raw Response:", JSON.stringify(response.data, null, 2));
+    console.log(
+      "\n🎟️ Token API Raw Response:",
+      JSON.stringify(response.data, null, 2),
+    );
 
     if (response.data.success && response.data.data?.token) {
       console.log("✅ Token generated successfully:", response.data.data.token);
@@ -47,7 +50,27 @@ async function createUserToken() {
   }
 }
 
-// ----------------- Eligibility Check -----------------
+async function sendEligibilityCheckWithAutoToken(user, tokenRef) {
+  let response = await sendEligibilityCheck(user, tokenRef.token);
+
+  if (
+    response?.status_code === 401 ||
+    response?.message?.toLowerCase().includes("token expired")
+  ) {
+    console.log("🔄 Token expired detected. Regenerating token...");
+    const newToken = await createUserToken();
+    if (!newToken) {
+      console.error("❌ Token regeneration failed");
+      return { success: false, message: "Token regeneration failed" };
+    }
+    tokenRef.token = newToken; // update token
+    console.log("🔁 Retrying eligibility check with new token...");
+    response = await sendEligibilityCheck(user, tokenRef.token);
+  }
+
+  return response;
+}
+
 async function sendEligibilityCheck(user, token) {
   try {
     const payload = {
@@ -78,7 +101,10 @@ async function sendEligibilityCheck(user, token) {
       },
     });
 
-    console.log("📥 Eligibility API Raw Response:", JSON.stringify(response.data, null, 2));
+    console.log(
+      "📥 Eligibility API Raw Response:",
+      JSON.stringify(response.data, null, 2),
+    );
     return response.data;
   } catch (err) {
     const errorMessage = err.response?.data || err.message || "Unknown error";
@@ -87,55 +113,45 @@ async function sendEligibilityCheck(user, token) {
   }
 }
 
-// ----------------- Eligibility with Auto Token Refresh -----------------
-// ----------------- Eligibility with Auto Token Refresh -----------------
-async function sendEligibilityCheckWithAutoToken(user, tokenRef) {
-  let response = await sendEligibilityCheck(user, tokenRef.token);
-
-  // Agar token expired error aaya (401 ya message me expired likha ho)
-  if (
-    response?.status_code === 401 ||
-    response?.message?.toLowerCase().includes("token expired")
-  ) {
-    console.log("🔄 Token expired detected. Regenerating token...");
-    const newToken = await createUserToken();
-    if (!newToken) {
-      console.error("❌ Token regeneration failed");
-      return { success: false, message: "Token regeneration failed" };
-    }
-    tokenRef.token = newToken; // update token
-    console.log("🔁 Retrying eligibility check with new token...");
-    response = await sendEligibilityCheck(user, tokenRef.token);
-  }
-
-  return response;
-}
-
 // ----------------- Process Batch -----------------
-async function processBatch(users, tokenRef) {
+async function processBatch(users) {
   const promises = users.map(async (user) => {
     console.log(`\n🔄 Processing user: ${user.phone}`);
 
     const userDoc = await UserDB.findOne({ phone: user.phone });
 
-    if (userDoc?.RefArr?.some((ref) => ref.name === "FatakPayDCL")) {
+    if (userDoc?.RefArr?.some((ref) => ref.name === "FatakPay")) {
       console.log(`⚠️ Skipping ${user.phone} (already processed)`);
       return;
     }
 
-    const eligibilityResponse = await sendEligibilityCheckWithAutoToken(user, tokenRef);
+    // 🔑 Har document ke liye fresh token
+    const freshToken = await createUserToken();
+    if (!freshToken) {
+      console.error(
+        `❌ Could not generate token for ${user.phone}, skipping...`,
+      );
+      return;
+    } else {
+      console.log(`👉 Using token for ${user.phone}: ${freshToken}`);
+    }
+
+    console.log(`👉 Using token for ${user.phone}: ${freshToken}`);
+
+    // Direct eligibility check
+    const eligibilityResponse = await sendEligibilityCheck(user, freshToken);
 
     const updateDoc = {
       $push: {
         apiResponse: {
-          FatakPayDCL: true,
+          FatakPayPL: true,
           status: eligibilityResponse.success ? "Eligible" : "Ineligible",
           message: eligibilityResponse.message,
           data: eligibilityResponse.data || {},
           createdAt: new Date().toISOString(),
         },
         RefArr: {
-          name: "FatakPayDCL",
+          name: "FatakPay",
           createdAt: new Date().toISOString(),
         },
       },
