@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const axios = require("axios");
 
-const BASE_URL = "https://api.faircent.com/v1/api"; // ✅ fixed
+const BASE_URL = "https://api.faircent.com/v1/api";
 const APP_ID = "1cfa78742af22b054a57fac6cf830699";
 const APP_NAME = "KESHVACREDIT";
 
@@ -17,8 +17,8 @@ router.post("/faircent/lead", async (req, res) => {
       });
     }
 
-    // ⿡ Duplicate Check
-    const dupRes = await axios.post(`${BASE_URL}/duplicateCheck`, payload, {
+    // Step 1: Duplicate Check
+    const dedupeRes = await axios.post(`${BASE_URL}/duplicateCheck`, payload, {
       headers: {
         "x-application-id": APP_ID,
         "x-application-name": APP_NAME,
@@ -26,17 +26,24 @@ router.post("/faircent/lead", async (req, res) => {
       },
     });
 
-    if (!dupRes.data || dupRes.data?.success === false) {
+    // If duplicate check fails, return actual API response
+    if (!dedupeRes.data?.success || dedupeRes.data?.result?.status === false) {
       return res.status(400).json({
         success: false,
-        message: "Duplicate check failed",
-        data: dupRes.data,
+        message:
+          dedupeRes.data?.result?.message ||
+          dedupeRes.data?.message ||
+          "Duplicate check failed",
+        data: {
+          dedupe: dedupeRes.data,
+          lead: null,
+        },
       });
     }
 
-    // ⿢ Register User
-    const regRes = await axios.post(
-      `${BASE_URL}/aggregator/register/user`, // ✅ fixed spelling
+    // Step 2: Register User
+    const leadRes = await axios.post(
+      `${BASE_URL}/aggregator/register/user`,
       payload,
       {
         headers: {
@@ -47,23 +54,31 @@ router.post("/faircent/lead", async (req, res) => {
       },
     );
 
-    const result = regRes.data?.result || {};
+    const leadResult = leadRes.data?.result || {};
 
-    if (!regRes.data.success || result.status !== "Approved") {
+    // If lead registration fails, return actual API response
+    if (!leadRes.data?.success || leadResult?.status !== "Approved") {
       return res.status(400).json({
         success: false,
-        message: "Registration failed or not approved",
-        data: regRes.data,
+        message:
+          leadRes.data?.message ||
+          leadResult?.message ||
+          "Lead registration failed",
+        data: {
+          dedupe: dedupeRes.data,
+          lead: leadRes.data,
+        },
       });
     }
 
-    // ✅ Success → Return token + loan_id for next step
+    // Both successful → Return combined API responses
     return res.status(200).json({
       success: true,
-      message: "Duplicate check + Register successful",
+      message:
+        leadRes.data?.message || leadResult?.message || "Both APIs successful",
       data: {
-        loan_id: result.loan_id || null,
-        token: result.token || null,
+        dedupe: dedupeRes.data,
+        lead: leadRes.data,
       },
     });
   } catch (err) {
@@ -73,7 +88,8 @@ router.post("/faircent/lead", async (req, res) => {
     );
     return res.status(500).json({
       success: false,
-      message: "Internal Server Error",
+      message:
+        err.response?.data?.message || err.message || "Internal Server Error",
       error: err.response?.data || err.message,
     });
   }
