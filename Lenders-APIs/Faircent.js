@@ -2,13 +2,10 @@ const express = require("express");
 const router = express.Router();
 const axios = require("axios");
 
-const BASE_URL = "https://api.faircent.com";
+const BASE_URL = "https://api.faircent.com/v1/api"; // ✅ fixed
 const APP_ID = "1cfa78742af22b054a57fac6cf830699";
 const APP_NAME = "KESHVACREDIT";
 
-/**
- * STEP 1 & 2: Duplicate Check + Register User
- */
 router.post("/faircent/lead", async (req, res) => {
   try {
     const { payload } = req.body;
@@ -39,7 +36,7 @@ router.post("/faircent/lead", async (req, res) => {
 
     // ⿢ Register User
     const regRes = await axios.post(
-      `${BASE_URL}/aggregrator/register/user`,
+      `${BASE_URL}/aggregator/register/user`, // ✅ fixed spelling
       payload,
       {
         headers: {
