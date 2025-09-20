@@ -2,9 +2,7 @@ const express = require("express");
 const router = express.Router();
 const axios = require("axios");
 
-// Production credentials and base URL provided by the user.
-// The document you provided stated these were "On Request," but you have provided them now.
-const BASE_URL = "https://api.faircent.com/v1/api";
+const BASE_URL = "https://api.faircent.com";
 const APP_ID = "1cfa78742af22b054a57fac6cf830699";
 const APP_NAME = "KESHVACREDIT";
 
@@ -19,42 +17,65 @@ router.post("/faircent/lead", async (req, res) => {
       });
     }
 
-    // The endpoint is /aggregrator/register/user as per the document.
-    const leadRes = await axios.post(
-      `${BASE_URL}/aggregrator/register/user`,
-      payload,
+    const sign_ip = req.header("x-forwarded-for") || req.ip || "127.0.0.1";
+    const sign_time = Math.floor(Date.now() / 1000);
+
+    const faircentPayload = {
+      fname: payload.fname,
+      lname: payload.lname,
+      dob: payload.dob,
+      pan: payload.pan,
+      mobile: payload.mobile,
+      pin: payload.pin,
+      state: payload.state,
+      city: payload.city,
+      address: payload.address,
+      mail: payload.mail,
+      gender: payload.gender,
+      employment_status: payload.employment_status,
+      loan_purpose: payload.loan_purpose,
+      loan_amount: payload.loan_amount,
+      monthly_income: payload.monthly_income,
+      consent: "Y",
+      tnc_link: "https://www.faircent.in/terms-conditions",
+      sign_ip: sign_ip,
+      sign_time: sign_time,
+    };
+
+    const response = await axios.post(
+      `${BASE_URL}/v1/api/aggregrator/register/user`,
+      faircentPayload,
       {
         headers: {
+          "Content-Type": "application/json",
           "x-application-id": APP_ID,
           "x-application-name": APP_NAME,
-          "Content-Type": "application/json",
         },
-      }
+      },
     );
 
-    const leadData = leadRes.data;
-
-    // Check if the response indicates success
-    // The API returns "success": true for successful registration.
-    if (leadData?.success === true) {
+    if (response.data?.success === true) {
       return res.status(200).json({
         success: true,
-        message: leadData?.message || "Lead registration successful",
-        data: leadData,
+        message: response.data.message || "✅ Lead created successfully",
+        data: response.data,
       });
     } else {
-      // If registration fails, return the error message from the API.
       return res.status(400).json({
         success: false,
-        message: leadData?.message || "Lead registration failed",
-        data: leadData,
+        message: response.data.message || "❌ Lead creation failed",
+        data: response.data,
       });
     }
   } catch (err) {
-    console.error("❌ Faircent Lead API Error:", err.response?.data || err.message);
+    console.error(
+      "❌ Faircent Lead API Error:",
+      err.response?.data || err.message,
+    );
     return res.status(500).json({
       success: false,
-      message: err.response?.data?.message || err.message || "Internal Server Error",
+      message:
+        err.response?.data?.message || err.message || "Internal Server Error",
       error: err.response?.data || err.message,
     });
   }
