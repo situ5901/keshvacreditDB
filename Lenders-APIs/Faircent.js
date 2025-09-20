@@ -21,7 +21,7 @@ router.post("/faircent/lead", async (req, res) => {
     }
 
     // ⿡ Duplicate Check
-    const dupRes = await axios.post(${BASE_URL}/duplicateCheck, payload, {
+    const dupRes = await axios.post(`${BASE_URL}/duplicateCheck`, payload, {
       headers: {
         "x-application-id": APP_ID,
         "x-application-name": APP_NAME,
@@ -39,7 +39,7 @@ router.post("/faircent/lead", async (req, res) => {
 
     // ⿢ Register User
     const regRes = await axios.post(
-      ${BASE_URL}/aggregrator/register/user,
+      `${BASE_URL}/aggregrator/register/user`,
       payload,
       {
         headers: {
@@ -82,4 +82,4 @@ router.post("/faircent/lead", async (req, res) => {
   }
 });
 
-module.exports = router;
+module.exports = router;
