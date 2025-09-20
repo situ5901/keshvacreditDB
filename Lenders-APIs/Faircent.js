@@ -1,83 +1,100 @@
 const express = require("express");
-const router = express.Router();
 const axios = require("axios");
+const mongoose = require("mongoose");
+require("dotenv").config();
+const UserDB = require("../routes/BL/BLSchema");
 
-const BASE_URL = "https://fcnode5.faircent.com/v1/api";
-const APP_ID = "b27b11e13af255ef90f7c1939dcab2d2";
+const router = express.Router();
+
+// 🔗 Faircent Config
+const BASE_URL = "https://api.faircent.com";
+const APP_ID = "1cfa78742af22b054a57fac6cf830699";
 const APP_NAME = "KESHVACREDIT";
 
-/**
- * STEP 1 & 2: Duplicate Check + Register User
- */
+// 📌 Lead API Route
 router.post("/faircent/lead", async (req, res) => {
   try {
     const { payload } = req.body;
 
-    if (!payload) {
+    if (!payload || !payload.phone) {
       return res.status(400).json({
         success: false,
-        message: "Payload is required",
+        message: "payload with phone is required",
       });
     }
 
-    // 1️⃣ Duplicate Check
-    const dupRes = await axios.post(`${BASE_URL}/duplicateCheck`, payload, {
-      headers: {
-        "x-application-id": APP_ID,
-        "x-application-name": APP_NAME,
-        "Content-Type": "application/json",
-      },
-    });
+    // 🔑 Extract dedupe fields
+    const dedupePayload = {
+      pan: payload.pan,
+      email: payload.email || payload.mail, // handle both keys if user sends "mail"
+      phone: payload.phone,
+    };
 
-    if (!dupRes.data || dupRes.data?.success === false) {
-      return res.status(400).json({
-        success: false,
-        message: "Duplicate check failed",
-        data: dupRes.data,
-      });
-    }
-
-    // 2️⃣ Register User
-    const regRes = await axios.post(
-      `${BASE_URL}/aggregrator/register/user`,
-      payload,
+    // 1️⃣ Dedupe check
+    const dedupeResponse = await axios.post(
+      `${BASE_URL}/duplicatecheck`,
+      dedupePayload,
       {
         headers: {
+          "Content-Type": "application/json",
           "x-application-id": APP_ID,
           "x-application-name": APP_NAME,
-          "Content-Type": "application/json",
         },
       },
     );
 
-    const result = regRes.data?.result || {};
-
-    if (!regRes.data.success || result.status !== "Approved") {
-      return res.status(400).json({
-        success: false,
-        message: "Registration failed or not approved",
-        data: regRes.data,
-      });
-    }
-
-    // ✅ Success → Return token + loan_id for next step
-    return res.status(200).json({
-      success: true,
-      message: "Duplicate check + Register successful",
-      data: {
-        loan_id: result.loan_id || null,
-        token: result.token || null,
+    // 2️⃣ Lead create
+    const leadCreateResponse = await axios.post(
+      `${BASE_URL}/aggregrator/register/user`,
+      payload, // full payload goes here
+      {
+        headers: {
+          "Content-Type": "application/json",
+          "x-application-id": APP_ID,
+          "x-application-name": APP_NAME,
+        },
       },
+    );
+
+    // 3️⃣ Update user in DB
+    const updateDoc = {
+      $set: {
+        ...payload, // ✅ save user’s full payload
+        updatedAt: new Date().toISOString(),
+      },
+      $push: {
+        apiResponse: {
+          Faircent: {
+            dedupe: dedupeResponse.data,
+            lead: leadCreateResponse.data,
+          },
+          createdAt: new Date().toISOString(),
+        },
+      },
+    };
+
+    const updatedUser = await UserDB.findOneAndUpdate(
+      { phone: payload.phone }, // match phone
+      updateDoc,
+      { new: true, upsert: true },
+    );
+
+    res.json({
+      success: true,
+      message: "Faircent dedupe + lead response updated & user saved",
+      dedupe: dedupeResponse.data,
+      lead: leadCreateResponse.data,
+      user: updatedUser,
     });
-  } catch (err) {
+  } catch (error) {
     console.error(
       "❌ Faircent Lead API Error:",
-      err.response?.data || err.message,
+      error.response?.data || error.message,
     );
-    return res.status(500).json({
+    res.status(500).json({
       success: false,
-      message: "Internal Server Error",
-      error: err.response?.data || err.message,
+      message: "Something went wrong with Faircent lead API",
+      error: error.response?.data || error.message,
     });
   }
 });
