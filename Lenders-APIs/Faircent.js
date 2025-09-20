@@ -17,14 +17,24 @@ router.post("/faircent/lead", async (req, res) => {
       });
     }
 
+    const dedupePayload = {
+      pan: payload.pan,
+      mail: payload.email, // handle both keys if user sends "mail"
+      phone: payload.phone,
+    };
+
     // Step 1: Duplicate Check
-    const dedupeRes = await axios.post(`${BASE_URL}/duplicateCheck`, payload, {
-      headers: {
-        "x-application-id": APP_ID,
-        "x-application-name": APP_NAME,
-        "Content-Type": "application/json",
+    const dedupeRes = await axios.post(
+      `${BASE_URL}/duplicateCheck`,
+      dedupePayload,
+      {
+        headers: {
+          "x-application-id": APP_ID,
+          "x-application-name": APP_NAME,
+          "Content-Type": "application/json",
+        },
       },
-    });
+    );
 
     // If duplicate check fails, return actual API response
     if (!dedupeRes.data?.success || dedupeRes.data?.result?.status === false) {
