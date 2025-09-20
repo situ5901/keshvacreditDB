@@ -4,66 +4,51 @@ const businessLoanSchema = new mongoose.Schema(
   {
     name: {
       type: String,
-      required: true,
     },
     phone: {
       type: String,
-      required: true,
     },
     email: {
       type: String,
-      required: true,
     },
     loanAmount: {
       type: String,
-      required: true,
     },
     gender: {
       type: String,
-      required: true,
     },
     companyType: {
       type: String,
-      required: true,
     },
     selfEmployedProfessional: {
       type: String,
-      required: true,
     },
 
     // Step 2 Fields
     pan: {
       type: String,
-      required: true,
     },
     dob: {
       type: String,
-      required: true,
     },
     businessName: {
       type: String,
-      required: true,
     },
     gstRegistered: {
       type: String,
-      required: true,
     },
     businessAge: {
       type: String,
-      required: true,
     },
     annualTurnover: {
       type: String,
-      required: true,
     },
     pincode: {
       type: String,
-      required: true,
     },
     //stritic: false
     currentAccount: {
       type: String,
-      required: true,
     },
 
     createdAt: {

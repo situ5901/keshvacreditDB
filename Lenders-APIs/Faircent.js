@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const axios = require("axios");
+const UserDB = require("../routes/BL/BLSchema");
 
 // const BASE_URL = "https://fcnode5.faircent.com";
 // const APP_ID = "b27b11e13af255ef90f7c1939dcab2d2";
@@ -54,6 +55,13 @@ router.post("/faircent/lead", async (req, res) => {
       },
     );
 
+    const DBEnter = new UserDB({
+      userData: payload,
+      apiResponse: response.data,
+      createdAt: new Date().toLocaleString(),
+    });
+
+    await DBEnter.save();
     if (response.data?.success === true) {
       return res.status(200).json({
         success: true,
