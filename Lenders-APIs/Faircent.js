@@ -20,7 +20,7 @@ router.post("/faircent/lead", async (req, res) => {
     const dedupePayload = {
       pan: payload.pan,
       mail: payload.email, // handle both keys if user sends "mail"
-      phone: payload.phone,
+      mobile: payload.phone,
     };
 
     // Step 1: Duplicate Check
