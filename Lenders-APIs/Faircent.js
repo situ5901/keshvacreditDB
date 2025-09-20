@@ -2,6 +2,8 @@ const express = require("express");
 const router = express.Router();
 const axios = require("axios");
 
+// Production credentials and base URL provided by the user.
+// The document you provided stated these were "On Request," but you have provided them now.
 const BASE_URL = "https://api.faircent.com/v1/api";
 const APP_ID = "1cfa78742af22b054a57fac6cf830699";
 const APP_NAME = "KESHVACREDIT";
@@ -17,9 +19,9 @@ router.post("/faircent/lead", async (req, res) => {
       });
     }
 
-    // Register User (Lead API)
+    // The endpoint is /aggregrator/register/user as per the document.
     const leadRes = await axios.post(
-      `${BASE_URL}/aggregator/register/user`,
+      `${BASE_URL}/aggregrator/register/user`,
       payload,
       {
         headers: {
@@ -30,23 +32,24 @@ router.post("/faircent/lead", async (req, res) => {
       }
     );
 
-    const leadResult = leadRes.data?.result || {};
+    const leadData = leadRes.data;
 
-    // If registration fails
-    if (!leadRes.data?.success || leadResult?.status !== "Approved") {
+    // Check if the response indicates success
+    // The API returns "success": true for successful registration.
+    if (leadData?.success === true) {
+      return res.status(200).json({
+        success: true,
+        message: leadData?.message || "Lead registration successful",
+        data: leadData,
+      });
+    } else {
+      // If registration fails, return the error message from the API.
       return res.status(400).json({
         success: false,
-        message: leadRes.data?.message || leadResult?.message || "Lead registration failed",
-        data: leadRes.data,
+        message: leadData?.message || "Lead registration failed",
+        data: leadData,
       });
     }
-
-    // Registration successful
-    return res.status(200).json({
-      success: true,
-      message: leadRes.data?.message || leadResult?.message || "Lead registration successful",
-      data: leadRes.data,
-    });
   } catch (err) {
     console.error("❌ Faircent Lead API Error:", err.response?.data || err.message);
     return res.status(500).json({
