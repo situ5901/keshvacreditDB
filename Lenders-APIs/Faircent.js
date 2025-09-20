@@ -29,7 +29,9 @@ router.post("/faircent/lead", async (req, res) => {
     const { payload } = req.body;
 
     if (!payload) {
-      return res.status(400).json({ success: false, message: "Payload is required" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Payload is required" });
     }
 
     const sign_ip = req.header("x-forwarded-for") || req.ip || "127.0.0.1";
@@ -52,7 +54,7 @@ router.post("/faircent/lead", async (req, res) => {
           "x-application-id": APP_ID,
           "x-application-name": APP_NAME,
         },
-      }
+      },
     );
 
     return res.status(response.data?.success ? 200 : 400).json({
@@ -61,10 +63,14 @@ router.post("/faircent/lead", async (req, res) => {
       data: response.data,
     });
   } catch (err) {
-    console.error("❌ Faircent Lead API Error:", err.response?.data || err.message);
+    console.error(
+      "❌ Faircent Lead API Error:",
+      err.response?.data || err.message,
+    );
     return res.status(500).json({
       success: false,
-      message: err.response?.data?.message || err.message || "Internal Server Error",
+      message:
+        err.response?.data?.message || err.message || "Internal Server Error",
       error: err.response?.data || err.message,
     });
   }
@@ -84,7 +90,8 @@ router.post(
       if (!loan_id || !type || !filePath || !access_token) {
         return res.status(400).json({
           success: false,
-          message: "Missing required fields: loan_id, type, access_token, or file.",
+          message:
+            "Missing required fields: loan_id, type, access_token, or file.",
         });
       }
 
@@ -93,14 +100,18 @@ router.post(
       form.append("type", type);
       form.append("docImage", fs.createReadStream(filePath));
 
-      const response = await axios.post(`${FAIRCENT_BASE_URL}/v1/api/uploadprocess`, form, {
-        headers: {
-          ...form.getHeaders(),
-          "x-application-id": APP_ID,
-          "x-application-name": APP_NAME,
-          "x-access-token": access_token,
+      const response = await axios.post(
+        `${FAIRCENT_BASE_URL}/v1/api/uploadprocess`,
+        form,
+        {
+          headers: {
+            ...form.getHeaders(),
+            "x-application-id": APP_ID,
+            "x-application-name": APP_NAME,
+            "x-access-token": access_token,
+          },
         },
-      });
+      );
 
       // Delete uploaded file after proxying
       fs.unlink(filePath, (err) => {
@@ -115,15 +126,16 @@ router.post(
     } catch (err) {
       console.error(
         "❌ Faircent Upload Document Proxy API Error:",
-        err.response?.data || err.message
+        err.response?.data || err.message,
       );
       return res.status(500).json({
         success: false,
-        message: err.response?.data?.message || err.message || "Internal Server Error",
+        message:
+          err.response?.data?.message || err.message || "Internal Server Error",
         error: err.response?.data || err.message,
       });
     }
-  }
+  },
 );
 
 module.exports = router;
