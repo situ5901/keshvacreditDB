@@ -20,8 +20,8 @@ mongoose
   .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
 
 const UserDB = mongoose.model(
-  "testdb",
-  new mongoose.Schema({}, { collection: "testdb", strict: false }),
+  "ram1",
+  new mongoose.Schema({}, { collection: "ram1", strict: false }),
 );
 
 async function dedupe(user) {

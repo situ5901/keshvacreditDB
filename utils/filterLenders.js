@@ -35,7 +35,7 @@ const eligibleLenders = [
     interestRate: "starting from 1.5% per Month",
     loanAmount: "upto 3 Lakh",
     url: "https://www.getzype.com/wp-content/uploads/2024/08/Group-852775729.webp",
-    utm: "https://zype.sng.link/Ajygt/1ba7?_dl=com.zype.mobile&_smtype=3",
+    utm: "https://zype.onelink.me/vx8a?af_xp=custom&pid=CustomerSource&af_dp=com.zype.mobile%3A%2F%2F&deep_link_value=myZype&af_click_lookback=30d&c=Sample",
   },
   {
     name: "FDPL",

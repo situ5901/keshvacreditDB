@@ -4,7 +4,7 @@ require("dotenv").config();
 const path = require("path");
 const xlsx = require("xlsx");
 
-const MONGODB_URINEW = process.env.MONGODB_URINEW;
+const MONGODB_URINEW = process.env.MONGODB_VISHU;
 
 mongoose
   .connect(MONGODB_URINEW)
@@ -12,9 +12,12 @@ mongoose
   .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
 
 const UserDB = mongoose.model(
-  "MoneyView",
-  new mongoose.Schema({}, { collection: "MoneyView", strict: false }),
+  "MoneyView1",
+  new mongoose.Schema({}, { collection: "MoneyView1", strict: false }),
 );
+
+
+
 const Healthcheck_API = "https://atlas.whizdm.com/atlas/v1/health";
 const TOKEN_API = "https://atlas.whizdm.com/atlas/v1/token";
 const DEDUPE_API = "https://atlas.whizdm.com/atlas/v1/lead/dedupe";
