@@ -33,7 +33,6 @@ app.use(
   require("./Show_Lenders/Lender_List"),
 );
 app.use(`/api${API_VERSION}/api`, require("./routes/api"));
-app.use(`/api${API_VERSION}/notify`, require("./Notification/Notification"));
 app.use(`/api${API_VERSION}/getAll`, require("./routes/allapis"));
 app.use(`/api${API_VERSION}/leaveSend`, require("./utils/leaveMail"));
 app.use(`/api${API_VERSION}/employee`, require("./employee/Daily_Work"));
