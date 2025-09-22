@@ -83,7 +83,7 @@ const eligibleLenders = [
     utm: "https://salaryontime.com/apply-now?utm_source=Keshvacredit&utm_medium=Keywords&utm_campaign=Keywords&utm_term=Keywords",
   },
   {
-    name: "smartCoin",
+    name: "Olyv",
     minAge: 21,
     maxAge: 58,
     lenderId: 8,
