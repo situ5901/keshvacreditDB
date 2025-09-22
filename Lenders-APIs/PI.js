@@ -151,7 +151,10 @@ router.post("/partner/pi", async (req, res) => {
 
     res.json({ success: true, data });
   } catch (err) {
-    console.error("❌ Lead API Error:", err.message || err);
+    console.error(
+      "📥 PI API Response Error:",
+      err.response?.data || err.message,
+    );
     res.status(500).json({
       success: false,
       error: { message: err.message || "Unknown error" },
