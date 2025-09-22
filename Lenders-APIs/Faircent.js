@@ -132,16 +132,24 @@ router.post("/faircent/upload", upload.single("docImage"), async (req, res) => {
           "x-application-name": APP_NAME,
           "x-access-token": accessToken,
         },
+        responseType: "text",
       },
     );
+
+    let parsed;
+    try {
+      parsed = JSON.parse(response.data); // agar valid JSON mila to parse ho jayega
+    } catch (e) {
+      parsed = { raw: response.data }; // warna raw string save kar lo
+    }
 
     // cleanup uploaded file
     fs.unlinkSync(file.path);
 
     return res.status(200).json({
-      success: response.data.success || false,
-      message: response.data.message || "✅ Document uploaded successfully",
-      data: response.data,
+      success: parsed.success || false,
+      message: parsed.message || "✅ Document uploaded successfully",
+      data: parsed,
     });
   } catch (err) {
     console.error(
