@@ -41,9 +41,6 @@ async function getAuthToken() {
     const { data } = await axios.post(TOKEN_API_URL, payload, {
       headers: { "Content-Type": "application/json" },
     });
-    if (!data?.auth_token && !data?.data?.auth_token) {
-      throw new Error(JSON.stringify(data)); // show exact API response
-    }
     return data?.auth_token || data?.data?.auth_token;
   } catch (err) {
     console.error(
@@ -61,7 +58,7 @@ function formatDate(dob) {
   return date.toISOString().split("T")[0];
 }
 
-// Helper to build payload
+// Build payload for PI
 function buildPayload(user) {
   const fullName = user.name ? user.name.trim() : "";
   let firstName = "";
@@ -134,14 +131,10 @@ router.post("/partner/pi", async (req, res) => {
   }
 
   try {
-    // Get auth token
     const token = await getAuthToken();
-
-    // Build payload
     const payload = buildPayload(user);
-    console.log("📤 Sending payload:", payload);
+    console.log("📤 Sending Payload:", payload);
 
-    // Hit Lead Create API
     const { data } = await axios.post(LEAD_API_URL, payload, {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -149,15 +142,17 @@ router.post("/partner/pi", async (req, res) => {
       },
     });
 
-    res.json({ success: true, data });
+    console.log("✅ PI API Response:", JSON.stringify(data, null, 2));
+
+    return res.json({ success: true, data });
   } catch (err) {
     console.error(
       "📥 PI API Response Error:",
-      err.response?.data || err.message,
+      JSON.stringify(err.response?.data, null, 2) || err.message,
     );
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
-      error: { message: err.message || "Unknown error" },
+      error: { message: err.response?.data?.message || err.message },
     });
   }
 });
