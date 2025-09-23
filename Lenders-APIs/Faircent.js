@@ -8,13 +8,13 @@ const path = require("path");
 const UserDB = require("../routes/BL/BLSchema");
 
 // ✅ UAT
-const BASE_URL = "https://fcnode5.faircent.com";
-const APP_ID = "b27b11e13af255ef90f7c1939dcab2d2";
-const APP_NAME = "KESHVACREDIT";
-
-// const BASE_URL = "https://api.faircent.com";
-// const APP_ID = "1cfa78742af22b054a57fac6cf830699";
+// const BASE_URL = "https://fcnode5.faircent.com";
+// const APP_ID = "b27b11e13af255ef90f7c1939dcab2d2";
 // const APP_NAME = "KESHVACREDIT";
+
+const BASE_URL = "https://api.faircent.com";
+const APP_ID = "1cfa78742af22b054a57fac6cf830699";
+const APP_NAME = "KESHVACREDIT";
 
 // ✅ multer setup for file upload
 const upload = multer({ dest: "uploads/" });
@@ -97,7 +97,6 @@ router.post("/faircent/lead", async (req, res) => {
   }
 });
 
-// ✅ Upload Process API (accepts form-data)
 router.post("/faircent/upload", upload.single("docImage"), async (req, res) => {
   try {
     const { type, loan_id } = req.body;
@@ -111,15 +110,13 @@ router.post("/faircent/upload", upload.single("docImage"), async (req, res) => {
       });
     }
 
-    // prepare form-data for Faircent
     const form = new FormData();
     form.append("type", type);
     form.append("loan_id", loan_id);
 
-    // ✅ keep original field name "docImage"
     form.append("docImage", fs.createReadStream(file.path), {
-      filename: file.originalname, // ✅ pass original file name
-      contentType: file.mimetype, // ✅ pass correct mime type
+      filename: file.originalname,
+      contentType: file.mimetype,
     });
 
     const response = await axios.post(
@@ -138,17 +135,16 @@ router.post("/faircent/upload", upload.single("docImage"), async (req, res) => {
 
     let parsed;
     try {
-      parsed = JSON.parse(response.data); // agar valid JSON mila to parse ho jayega
+      parsed = JSON.parse(response.data);
     } catch (e) {
-      parsed = { raw: response.data }; // warna raw string save kar lo
+      parsed = { raw: response.data };
     }
 
-    // cleanup uploaded file
     fs.unlinkSync(file.path);
 
     return res.status(200).json({
       success: parsed.success || false,
-      message: parsed.message || "✅ Document uploaded successfully",
+      message: parsed.message || "Document uploaded successfully",
       data: parsed,
     });
   } catch (err) {
