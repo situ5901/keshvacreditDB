@@ -111,7 +111,7 @@ router.post("/faircent/upload", upload.single("docImage"), async (req, res) => {
     }
 
     // ✅ Ensure uploads folder exists
-    const uploadDir = path.join(__dirname, "../uploads");
+    const uploadDir = path.join(__dirname, "./uploads");
     if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
 
     // ✅ Ensure filename with extension
