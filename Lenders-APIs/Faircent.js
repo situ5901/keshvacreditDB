@@ -2,17 +2,17 @@ const express = require("express");
 const router = express.Router();
 const axios = require("axios");
 const FormData = require("form-data");
-const formidable = require("formidable");
-const fs = require("fs");
 const multer = require("multer");
 const UserDB = require("../routes/BL/BLSchema");
 
 // Faircent config
-const BASE_URL = "https://api.faircent.com";
-const APP_ID = "1cfa78742af22b054a57fac6cf830699";
+const BASE_URL = "https://fcnode5.faircent.com";
+const APP_ID = "b27b11e13af255ef90f7c1939dcab2d2";
 const APP_NAME = "KESHVACREDIT";
 
-const upload = multer({ dest: "uploads/" });
+// ------------------ Multer Memory Storage ------------------
+const upload = multer({ storage: multer.memoryStorage() });
+
 // ------------------ Lead API ------------------
 router.post("/faircent/lead", async (req, res) => {
   try {
@@ -49,7 +49,7 @@ router.post("/faircent/lead", async (req, res) => {
           "x-application-id": APP_ID,
           "x-application-name": APP_NAME,
         },
-      },
+      }
     );
 
     const DBEnter = new UserDB({
@@ -72,10 +72,7 @@ router.post("/faircent/lead", async (req, res) => {
         data: response.data,
       });
   } catch (err) {
-    console.error(
-      "❌ Faircent Lead API Error:",
-      err.response?.data || err.message,
-    );
+    console.error("❌ Faircent Lead API Error:", err.response?.data || err.message);
     return res.status(500).json({
       success: false,
       message: err.response?.data?.message || err.message,
@@ -84,6 +81,7 @@ router.post("/faircent/lead", async (req, res) => {
   }
 });
 
+// ------------------ Upload Proxy API ------------------
 router.post("/faircent/proxy", upload.any(), async (req, res) => {
   try {
     // ------------------ Headers ------------------
@@ -93,54 +91,48 @@ router.post("/faircent/proxy", upload.any(), async (req, res) => {
       "x-access-token": req.headers["x-access-token"],
     };
 
-    // Check required headers
     if (
       !headers["x-application-id"] ||
       !headers["x-application-name"] ||
       !headers["x-access-token"]
     ) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Missing headers" });
+      return res.status(400).json({ success: false, message: "Missing headers" });
     }
 
     // ------------------ FormData ------------------
     const formData = new FormData();
 
-    // Add normal fields from body
+    // Append normal fields
     for (let key in req.body) {
       formData.append(key, req.body[key]);
     }
 
-    // Add uploaded files
+    // Append uploaded files (from memory storage)
     if (req.files && req.files.length > 0) {
       req.files.forEach((file) => {
-        formData.append(file.fieldname, fs.createReadStream(file.path), {
+        formData.append(file.fieldname, file.buffer, {
           filename: file.originalname,
           contentType: file.mimetype,
         });
       });
     }
 
-    // ------------------ Forward request to Faircent API ------------------
+    // ------------------ Forward request to Faircent ------------------
     const response = await axios.post(
-      "https://api.faircent.com/v1/api/uploadprocess",
+      `${BASE_URL}/v1/api/uploadprocess`,
       formData,
       {
         headers: {
           ...formData.getHeaders(),
           ...headers,
         },
-      },
+      }
     );
 
-    // ------------------ Return response ------------------
     res.json(response.data);
   } catch (error) {
     console.error(error.response?.data || error.message);
-    res
-      .status(500)
-      .json({ success: false, error: error.response?.data || error.message });
+    res.status(500).json({ success: false, error: error.response?.data || error.message });
   }
 });
 
