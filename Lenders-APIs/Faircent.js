@@ -104,15 +104,13 @@ router.post("/faircent/upload", upload.single("docImage"), async (req, res) => {
     const file = req.file;
 
     if (!type || !loan_id || !file || !accessToken) {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message: "type, loan_id, docImage, x-access-token required",
-        });
+      return res.status(400).json({
+        success: false,
+        message: "type, loan_id, docImage, x-access-token required",
+      });
     }
 
-    const uploadDir = path.join(__dirname, "./uploads");
+    const uploadDir = path.join(__dirname, "../uploads");
     if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
 
     const ext = path.extname(file.originalname) || "";
@@ -139,7 +137,7 @@ router.post("/faircent/upload", upload.single("docImage"), async (req, res) => {
         },
         maxContentLength: Infinity,
         maxBodyLength: Infinity,
-        responseType: "text", // ✅ Treat as text
+        responseType: "text", // ✅ Treat response as text
       },
     );
 
@@ -151,23 +149,19 @@ router.post("/faircent/upload", upload.single("docImage"), async (req, res) => {
       data = { success: true, message: response.data };
     }
 
-    return res
-      .status(200)
-      .json({
-        success: data.success,
-        message: data.message,
-        data,
-        filePath: finalPath,
-      });
+    return res.status(200).json({
+      success: data.success,
+      message: data.message,
+      data,
+      filePath: finalPath,
+    });
   } catch (err) {
     console.error("❌ Upload API Error:", err.response?.data || err.message);
-    return res
-      .status(500)
-      .json({
-        success: false,
-        message: err.message,
-        error: err.response?.data || err.message,
-      });
+    return res.status(500).json({
+      success: false,
+      message: err.message,
+      error: err.response?.data || err.message,
+    });
   }
 });
 
