@@ -1,23 +1,17 @@
 const express = require("express");
 const router = express.Router();
 const axios = require("axios");
-const multer = require("multer");
-const fs = require("fs");
-const path = require("path");
 const FormData = require("form-data");
+const formidable = require("formidable");
+const fs = require("fs");
 const UserDB = require("../routes/BL/BLSchema");
 
-// ------------------ Faircent API Config ------------------
-const BASE_URL = "https://api.faircent.com/v1/api";
-const APP_ID = "1cfa78742af22b054a57fac6cf830699";
+// Faircent config
+const BASE_URL = "https://fcnode5.faircent.com";
+const APP_ID = "b27b11e13af255ef90f7c1939dcab2d2";
 const APP_NAME = "KESHVACREDIT";
-// const BASE_URL = "https://fcnode5.faircent.com";
-// const APP_ID = "b27b11e13af255ef90f7c1939dcab2d2";
-// const APP_NAME = "KESHVACREDIT";
-// ------------------ Multer setup ------------------
-const upload = multer({ dest: "uploads/" });
 
-// ------------------ Lead Creation ------------------
+// ------------------ Lead API ------------------
 router.post("/faircent/lead", async (req, res) => {
   try {
     const { payload } = req.body;
@@ -45,7 +39,7 @@ router.post("/faircent/lead", async (req, res) => {
     };
 
     const response = await axios.post(
-      `${BASE_URL}/aggregrator/register/user`,
+      `${BASE_URL}/v1/api/aggregrator/register/user`,
       faircentPayload,
       {
         headers: {
@@ -56,7 +50,6 @@ router.post("/faircent/lead", async (req, res) => {
       },
     );
 
-    // Save lead in DB
     const DBEnter = new UserDB({
       userData: payload,
       apiResponse: response.data,
@@ -64,11 +57,18 @@ router.post("/faircent/lead", async (req, res) => {
     });
     await DBEnter.save();
 
-    return res.status(200).json({
-      success: response.data?.success || false,
-      message: response.data?.message || "Lead created",
-      data: response.data,
-    });
+    if (response.data?.success)
+      return res.status(200).json({
+        success: true,
+        message: response.data.message,
+        data: response.data,
+      });
+    else
+      return res.status(400).json({
+        success: false,
+        message: response.data.message,
+        data: response.data,
+      });
   } catch (err) {
     console.error(
       "❌ Faircent Lead API Error:",
@@ -76,62 +76,65 @@ router.post("/faircent/lead", async (req, res) => {
     );
     return res.status(500).json({
       success: false,
-      message:
-        err.response?.data?.message || err.message || "Internal Server Error",
+      message: err.response?.data?.message || err.message,
       error: err.response?.data || err.message,
     });
   }
 });
 
-// ------------------ Document Upload ------------------
-router.post("/faircent/upload", upload.single("docImage"), async (req, res) => {
-  try {
-    const { type, loan_id } = req.body; // Form-data fields
-    const file = req.file; // Uploaded file
-    const accessToken = req.header("x-access-token");
+// ------------------ Upload API ------------------
+router.post("/faircent/upload", (req, res) => {
+  const form = formidable({ multiples: false });
 
-    if (!type || !loan_id || !file || !accessToken) {
-      return res.status(400).json({
-        success: false,
-        message: "type, loan_id, docImage and x-access-token are required",
-      });
+  form.parse(req, async (err, fields, files) => {
+    if (err)
+      return res.status(400).json({ success: false, message: err.message });
+
+    const { type, loan_id } = fields;
+    const docImage = files.docImage;
+
+    const {
+      "x-application-id": appId,
+      "x-application-name": appName,
+      "x-access-token": accessToken,
+    } = req.headers;
+
+    if (!type || !loan_id || !docImage || !appId || !appName || !accessToken) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Missing required fields" });
     }
 
-    // ------------------ Prepare FormData ------------------
-    const form = new FormData();
-    form.append("type", type);
-    form.append("loan_id", loan_id);
-    form.append("docImage", fs.createReadStream(file.path), {
-      filename: file.originalname,
-      contentType: file.mimetype,
-    });
+    try {
+      const formData = new FormData();
+      formData.append("type", type);
+      formData.append("loan_id", loan_id);
+      formData.append("docImage", fs.createReadStream(docImage.filepath), {
+        filename: docImage.originalFilename,
+        contentType: docImage.mimetype,
+      });
 
-    // ------------------ Hit Faircent API ------------------
-    const response = await axios.post(`${BASE_URL}/uploadprocess`, form, {
-      headers: {
-        ...form.getHeaders(),
-        "x-application-id": APP_ID,
-        "x-application-name": APP_NAME,
-        "x-access-token": accessToken,
-      },
-      maxContentLength: Infinity,
-      maxBodyLength: Infinity,
-    });
+      const response = await axios.post(
+        `${BASE_URL}/v1/api/uploadprocess`,
+        formData,
+        {
+          headers: {
+            ...formData.getHeaders(),
+            "x-application-id": appId,
+            "x-application-name": appName,
+            "x-access-token": accessToken,
+          },
+        },
+      );
 
-    // Return response to client
-    return res.status(200).json({
-      success: true,
-      faircentResponse: response.data,
-      filePath: file.path, // path where file is temporarily stored
-    });
-  } catch (err) {
-    console.error(err.response?.data || err.message);
-    return res.status(500).json({
-      success: false,
-      message: err.response?.data?.message,
-      error: err.response?.data || err.message,
-    });
-  }
+      res.json(response.data);
+    } catch (error) {
+      console.error(error.response?.data || error.message);
+      res
+        .status(500)
+        .json({ success: false, error: error.response?.data || error.message });
+    }
+  });
 });
 
 module.exports = router;
