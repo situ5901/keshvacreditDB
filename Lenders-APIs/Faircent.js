@@ -130,12 +130,11 @@ router.post("/faircent/proxy", upload.any(), async (req, res) => {
         headers: {
           ...formData.getHeaders(),
           ...headers,
-
-          responseType: "json",
         },
       },
     );
 
+    // Faircent API is returning a JSON response, so we can send it back directly
     res.json(response.data);
   } catch (error) {
     console.error(error.response?.data || error.message);
