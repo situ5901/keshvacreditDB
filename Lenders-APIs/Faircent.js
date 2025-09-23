@@ -84,10 +84,8 @@ router.post("/faircent/lead", async (req, res) => {
   }
 });
 
-// ------------------ Upload Proxy API ------------------
 router.post("/faircent/proxy", upload.any(), async (req, res) => {
   try {
-    // ------------------ Headers ------------------
     const headers = {
       "x-application-id": req.headers["x-application-id"],
       "x-application-name": req.headers["x-application-name"],
@@ -104,15 +102,12 @@ router.post("/faircent/proxy", upload.any(), async (req, res) => {
         .json({ success: false, message: "Missing headers" });
     }
 
-    // ------------------ FormData ------------------
     const formData = new FormData();
 
-    // Append normal fields
     for (let key in req.body) {
       formData.append(key, req.body[key]);
     }
 
-    // Append uploaded files (from memory storage)
     if (req.files && req.files.length > 0) {
       req.files.forEach((file) => {
         formData.append(file.fieldname, file.buffer, {
@@ -122,7 +117,7 @@ router.post("/faircent/proxy", upload.any(), async (req, res) => {
       });
     }
 
-    // ------------------ Forward request to Faircent ------------------
+    // Faircent API ko request bhejo
     const response = await axios.post(
       `${BASE_URL}/v1/api/uploadprocess`,
       formData,
@@ -131,31 +126,38 @@ router.post("/faircent/proxy", upload.any(), async (req, res) => {
           ...formData.getHeaders(),
           ...headers,
         },
-        responseType: "text", // This is the fix
+        responseType: "text", // <-- Yehi hai sabse bada fix, isse axios response ko JSON nahi, text samjhega
       },
     );
 
-    // Attempt to parse the text response as JSON
     try {
+      // Ab hum response ke text ko manually JSON mein parse karne ki koshish karenge
       const jsonData = JSON.parse(response.data);
-      res.json(jsonData);
+      res.json(jsonData); // Agar parse ho gaya, to sahi JSON response bhej do
     } catch (e) {
-      // If it's not valid JSON, send the raw text back
-      console.error("Faircent API response is not valid JSON:", response.data);
+      // Agar parse nahi hua, to matlab response JSON nahi tha
+      console.error(
+        "Faircent API returned non-JSON data on AWS:",
+        response.data,
+      );
       res.status(500).json({
         success: false,
-        message: "Faircent API returned an unexpected response format.",
-        raw_response: response.data,
+        message: "Faircent API se unexpected response aaya.",
+        raw_response: response.data, // Raw response ko client ko dikha do debug karne ke liye
       });
     }
   } catch (error) {
-    console.error(error.response?.data || error.message);
-    res
-      .status(500)
-      .json({ success: false, error: error.response?.data || error.message });
+    // Ye network ya Faircent se aane wale HTTP errors ke liye hai (jaise 404, 500)
+    console.error(
+      "Faircent Proxy Error:",
+      error.response?.data || error.message,
+    );
+    res.status(500).json({
+      success: false,
+      error: error.response?.data || error.message,
+      message: "Faircent API ko request forward karte samay error aa gaya.",
+    });
   }
 });
-
-module.exports = router;
 
 module.exports = router;
