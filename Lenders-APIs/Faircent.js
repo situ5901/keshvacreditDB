@@ -110,19 +110,24 @@ router.post("/faircent/upload", upload.single("docImage"), async (req, res) => {
       });
     }
 
+    // ✅ Ensure uploads folder exists
+    const uploadDir = path.join(__dirname, "../uploads");
+    if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
+
     // ✅ Ensure filename with extension
     const ext = path.extname(file.originalname) || "";
     const safeFilename = `${file.filename}${ext}`;
-    const finalPath = path.join("uploads", safeFilename);
+    const finalPath = path.join(uploadDir, safeFilename);
 
+    // Move uploaded file to uploads folder
     fs.renameSync(file.path, finalPath);
 
-    // ✅ Create form-data
+    // ✅ Create form-data for Faircent
     const form = new FormData();
     form.append("type", type);
     form.append("loan_id", loan_id);
     form.append("docImage", fs.createReadStream(finalPath), {
-      filename: file.originalname, // send original name with extension
+      filename: file.originalname,
       contentType: file.mimetype,
     });
 
@@ -142,12 +147,14 @@ router.post("/faircent/upload", upload.single("docImage"), async (req, res) => {
       },
     );
 
-    fs.unlinkSync(finalPath); // cleanup
+    // ✅ Don't delete file so it stays on server
+    // fs.unlinkSync(finalPath);
 
     return res.status(200).json({
       success: response.data.success || false,
       message: response.data.message || "Success",
       data: response.data,
+      filePath: finalPath, // file path on server
     });
   } catch (err) {
     console.error(
