@@ -131,11 +131,23 @@ router.post("/faircent/proxy", upload.any(), async (req, res) => {
           ...formData.getHeaders(),
           ...headers,
         },
+        responseType: "text", // This is the fix
       },
     );
 
-    // Faircent API is returning a JSON response, so we can send it back directly
-    res.json(response.data);
+    // Attempt to parse the text response as JSON
+    try {
+      const jsonData = JSON.parse(response.data);
+      res.json(jsonData);
+    } catch (e) {
+      // If it's not valid JSON, send the raw text back
+      console.error("Faircent API response is not valid JSON:", response.data);
+      res.status(500).json({
+        success: false,
+        message: "Faircent API returned an unexpected response format.",
+        raw_response: response.data,
+      });
+    }
   } catch (error) {
     console.error(error.response?.data || error.message);
     res
@@ -143,5 +155,7 @@ router.post("/faircent/proxy", upload.any(), async (req, res) => {
       .json({ success: false, error: error.response?.data || error.message });
   }
 });
+
+module.exports = router;
 
 module.exports = router;
