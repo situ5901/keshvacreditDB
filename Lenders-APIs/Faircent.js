@@ -104,20 +104,19 @@ router.post("/faircent/upload", upload.single("docImage"), async (req, res) => {
     const file = req.file;
 
     if (!type || !loan_id || !file || !accessToken) {
-      return res.status(400).json({
-        success: false,
-        message: "type, loan_id, docImage, and x-access-token are required",
-      });
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message: "type, loan_id, docImage, x-access-token required",
+        });
     }
 
-    // Ensure uploads folder exists
     const uploadDir = path.join(__dirname, "./uploads");
     if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
 
     const ext = path.extname(file.originalname) || "";
-    const safeFilename = `${file.filename}${ext}`;
-    const finalPath = path.join(uploadDir, safeFilename);
-
+    const finalPath = path.join(uploadDir, `${file.filename}${ext}`);
     fs.renameSync(file.path, finalPath);
 
     const form = new FormData();
@@ -137,39 +136,38 @@ router.post("/faircent/upload", upload.single("docImage"), async (req, res) => {
           "x-application-id": APP_ID,
           "x-application-name": APP_NAME,
           "x-access-token": accessToken,
-          Accept: "application/json,text/plain", // Accept plain text too
         },
         maxContentLength: Infinity,
         maxBodyLength: Infinity,
-        responseType: "text", // <-- Treat response as text
+        responseType: "text", // ✅ Treat as text
       },
     );
 
-    // Try parsing JSON manually
+    // Manual JSON parse
     let data;
     try {
       data = JSON.parse(response.data);
     } catch (e) {
-      data = { success: true, message: response.data }; // fallback
+      data = { success: true, message: response.data };
     }
 
-    return res.status(200).json({
-      success: data.success || false,
-      message: data.message || "Success",
-      data: data,
-      filePath: finalPath,
-    });
+    return res
+      .status(200)
+      .json({
+        success: data.success,
+        message: data.message,
+        data,
+        filePath: finalPath,
+      });
   } catch (err) {
-    console.error(
-      "❌ Faircent Upload API Error:",
-      err.response?.data || err.message,
-    );
-    return res.status(500).json({
-      success: false,
-      message:
-        err.response?.data?.message || err.message || "Internal Server Error",
-      error: err.response?.data || err.message,
-    });
+    console.error("❌ Upload API Error:", err.response?.data || err.message);
+    return res
+      .status(500)
+      .json({
+        success: false,
+        message: err.message,
+        error: err.response?.data || err.message,
+      });
   }
 });
 
