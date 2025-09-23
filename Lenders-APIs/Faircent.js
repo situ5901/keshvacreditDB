@@ -110,19 +110,16 @@ router.post("/faircent/upload", upload.single("docImage"), async (req, res) => {
       });
     }
 
-    // ✅ Ensure uploads folder exists
+    // Ensure uploads folder exists
     const uploadDir = path.join(__dirname, "./uploads");
     if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
 
-    // ✅ Ensure filename with extension
     const ext = path.extname(file.originalname) || "";
     const safeFilename = `${file.filename}${ext}`;
     const finalPath = path.join(uploadDir, safeFilename);
 
-    // Move uploaded file to uploads folder
     fs.renameSync(file.path, finalPath);
 
-    // ✅ Create form-data for Faircent
     const form = new FormData();
     form.append("type", type);
     form.append("loan_id", loan_id);
@@ -140,21 +137,27 @@ router.post("/faircent/upload", upload.single("docImage"), async (req, res) => {
           "x-application-id": APP_ID,
           "x-application-name": APP_NAME,
           "x-access-token": accessToken,
-          Accept: "application/json",
+          Accept: "application/json,text/plain", // Accept plain text too
         },
         maxContentLength: Infinity,
         maxBodyLength: Infinity,
+        responseType: "text", // <-- Treat response as text
       },
     );
 
-    // ✅ Don't delete file so it stays on server
-    // fs.unlinkSync(finalPath);
+    // Try parsing JSON manually
+    let data;
+    try {
+      data = JSON.parse(response.data);
+    } catch (e) {
+      data = { success: true, message: response.data }; // fallback
+    }
 
     return res.status(200).json({
-      success: response.data.success || false,
-      message: response.data.message || "Success",
-      data: response.data,
-      filePath: finalPath, // file path on server
+      success: data.success || false,
+      message: data.message || "Success",
+      data: data,
+      filePath: finalPath,
     });
   } catch (err) {
     console.error(
