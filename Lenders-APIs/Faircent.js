@@ -16,7 +16,7 @@ const BASE_URL = "https://api.faircent.com";
 const APP_ID = "1cfa78742af22b054a57fac6cf830699";
 const APP_NAME = "KESHVACREDIT";
 
-// ✅ multer setup for file upload
+// ✅ multer setup
 const upload = multer({ dest: "uploads/" });
 
 router.post("/faircent/lead", async (req, res) => {
@@ -110,11 +110,19 @@ router.post("/faircent/upload", upload.single("docImage"), async (req, res) => {
       });
     }
 
+    // ✅ Ensure filename with extension
+    const ext = path.extname(file.originalname) || "";
+    const safeFilename = `${file.filename}${ext}`;
+    const finalPath = path.join("uploads", safeFilename);
+
+    fs.renameSync(file.path, finalPath);
+
+    // ✅ Create form-data
     const form = new FormData();
     form.append("type", type);
     form.append("loan_id", loan_id);
-    form.append("docImage", fs.createReadStream(file.path), {
-      filename: file.originalname,
+    form.append("docImage", fs.createReadStream(finalPath), {
+      filename: file.originalname, // send original name with extension
       contentType: file.mimetype,
     });
 
@@ -129,26 +137,17 @@ router.post("/faircent/upload", upload.single("docImage"), async (req, res) => {
           "x-access-token": accessToken,
           Accept: "application/json",
         },
+        maxContentLength: Infinity,
+        maxBodyLength: Infinity,
       },
     );
 
-    let parsed;
-    try {
-      // axios auto-parses JSON if content-type is application/json
-      parsed =
-        typeof response.data === "string"
-          ? JSON.parse(response.data)
-          : response.data;
-    } catch (e) {
-      parsed = { raw: response.data };
-    }
-
-    fs.unlinkSync(file.path);
+    fs.unlinkSync(finalPath); // cleanup
 
     return res.status(200).json({
-      success: parsed.success || false,
-      message: parsed.message || "Document uploaded successfully",
-      data: parsed,
+      success: response.data.success || false,
+      message: response.data.message || "Success",
+      data: response.data,
     });
   } catch (err) {
     console.error(
