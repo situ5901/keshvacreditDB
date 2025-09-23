@@ -7,11 +7,15 @@ const fs = require("fs");
 const path = require("path");
 const UserDB = require("../routes/BL/BLSchema");
 
-const BASE_URL = "https://api.faircent.com";
-const APP_ID = "1cfa78742af22b054a57fac6cf830699";
+// const BASE_URL = "https://api.faircent.com";
+// const APP_ID = "1cfa78742af22b054a57fac6cf830699";
+// const APP_NAME = "KESHVACREDIT";
+
+const BASE_URL = "https://fcnode5.faircent.com";
+const APP_ID = "b27b11e13af255ef90f7c1939dcab2d2";
 const APP_NAME = "KESHVACREDIT";
 
-// ✅ multer setup
+// Multer setup (temporary storage)
 const upload = multer({ dest: "uploads/" });
 
 // ------------------ Lead API ------------------
@@ -80,6 +84,79 @@ router.post("/faircent/lead", async (req, res) => {
     return res.status(500).json({
       success: false,
       message: err.response?.data?.message || err.message,
+      error: err.response?.data || err.message,
+    });
+  }
+});
+
+router.post("/faircent/upload", upload.single("docImage"), async (req, res) => {
+  try {
+    const { type, loan_id } = req.body;
+    const accessToken = req.header("x-access-token");
+    const file = req.file;
+
+    if (!type || !loan_id || !file || !accessToken) {
+      return res.status(400).json({
+        success: false,
+        message: "type, loan_id, docImage, and x-access-token are required",
+      });
+    }
+
+    // ✅ Ensure uploads folder exists
+    const uploadDir = path.join(__dirname, "../uploads");
+    if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
+
+    // ✅ Ensure filename with extension
+    const ext = path.extname(file.originalname) || "";
+    const safeFilename = `${file.filename}${ext}`;
+    const finalPath = path.join(uploadDir, safeFilename);
+
+    // Move uploaded file to uploads folder
+    fs.renameSync(file.path, finalPath);
+
+    // ✅ Create form-data for Faircent
+    const form = new FormData();
+    form.append("type", type);
+    form.append("loan_id", loan_id);
+    form.append("docImage", fs.createReadStream(finalPath), {
+      filename: file.originalname,
+      contentType: file.mimetype,
+    });
+
+    const response = await axios.post(
+      `${BASE_URL}/v1/api/uploadprocess`,
+      form,
+      {
+        headers: {
+          ...form.getHeaders(),
+          "x-application-id": APP_ID,
+          "x-application-name": APP_NAME,
+          "x-access-token": accessToken,
+          Accept: "application/json",
+        },
+        maxContentLength: Infinity,
+        maxBodyLength: Infinity,
+      },
+    );
+
+    // ✅ Don't delete file so it stays on server
+    // fs.unlinkSync(finalPath);
+
+    return res.status(200).json({
+      success: response.data.success || false,
+      message: response.data.message || "Success",
+      data: response.data,
+      filePath: finalPath, // file path on server
+    });
+  } catch (err) {
+    console.error(
+      "❌ Faircent Upload API Error:",
+      err.response?.data || err.message,
+    );
+    return res.status(500).json({
+      success: false,
+      message:
+        err.response?.data?.message || err.message || "Internal Server Error",
       error: err.response?.data || err.message,
     });
   }
