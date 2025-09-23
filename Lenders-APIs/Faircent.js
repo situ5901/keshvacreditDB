@@ -49,7 +49,7 @@ router.post("/faircent/lead", async (req, res) => {
           "x-application-id": APP_ID,
           "x-application-name": APP_NAME,
         },
-      }
+      },
     );
 
     const DBEnter = new UserDB({
@@ -72,7 +72,10 @@ router.post("/faircent/lead", async (req, res) => {
         data: response.data,
       });
   } catch (err) {
-    console.error("❌ Faircent Lead API Error:", err.response?.data || err.message);
+    console.error(
+      "❌ Faircent Lead API Error:",
+      err.response?.data || err.message,
+    );
     return res.status(500).json({
       success: false,
       message: err.response?.data?.message || err.message,
@@ -96,7 +99,9 @@ router.post("/faircent/proxy", upload.any(), async (req, res) => {
       !headers["x-application-name"] ||
       !headers["x-access-token"]
     ) {
-      return res.status(400).json({ success: false, message: "Missing headers" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Missing headers" });
     }
 
     // ------------------ FormData ------------------
@@ -125,14 +130,18 @@ router.post("/faircent/proxy", upload.any(), async (req, res) => {
         headers: {
           ...formData.getHeaders(),
           ...headers,
+
+          responseType: "json",
         },
-      }
+      },
     );
 
     res.json(response.data);
   } catch (error) {
     console.error(error.response?.data || error.message);
-    res.status(500).json({ success: false, error: error.response?.data || error.message });
+    res
+      .status(500)
+      .json({ success: false, error: error.response?.data || error.message });
   }
 });
 
