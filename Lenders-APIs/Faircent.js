@@ -8,13 +8,13 @@ const path = require("path");
 const UserDB = require("../routes/BL/BLSchema");
 
 // ✅ UAT
-// const BASE_URL = "https://fcnode5.faircent.com";
-// const APP_ID = "b27b11e13af255ef90f7c1939dcab2d2";
-// const APP_NAME = "KESHVACREDIT";
-
-const BASE_URL = "https://api.faircent.com";
-const APP_ID = "1cfa78742af22b054a57fac6cf830699";
+const BASE_URL = "https://fcnode5.faircent.com";
+const APP_ID = "b27b11e13af255ef90f7c1939dcab2d2";
 const APP_NAME = "KESHVACREDIT";
+
+// const BASE_URL = "https://api.faircent.com";
+// const APP_ID = "1cfa78742af22b054a57fac6cf830699";
+// const APP_NAME = "KESHVACREDIT";
 
 // ✅ multer setup for file upload
 const upload = multer({ dest: "uploads/" });
@@ -113,7 +113,6 @@ router.post("/faircent/upload", upload.single("docImage"), async (req, res) => {
     const form = new FormData();
     form.append("type", type);
     form.append("loan_id", loan_id);
-
     form.append("docImage", fs.createReadStream(file.path), {
       filename: file.originalname,
       contentType: file.mimetype,
@@ -128,14 +127,18 @@ router.post("/faircent/upload", upload.single("docImage"), async (req, res) => {
           "x-application-id": APP_ID,
           "x-application-name": APP_NAME,
           "x-access-token": accessToken,
+          Accept: "application/json",
         },
-        responseType: "text",
       },
     );
 
     let parsed;
     try {
-      parsed = JSON.parse(response.data);
+      // axios auto-parses JSON if content-type is application/json
+      parsed =
+        typeof response.data === "string"
+          ? JSON.parse(response.data)
+          : response.data;
     } catch (e) {
       parsed = { raw: response.data };
     }
