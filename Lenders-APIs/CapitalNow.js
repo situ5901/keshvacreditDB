@@ -1,34 +1,34 @@
-// CapitalNow.js
 const express = require("express");
 const router = express.Router();
 const axios = require("axios");
 const fs = require("fs");
 const { SecurePartnerClient } = require("@capitalnow/secure-partner-sdk");
 
-// ---------- CapitalNow Credentials ----------
+// ------------------- Credentials -------------------
 const CAPNOW_USER = "keshvacredit_1001";
-const CAPNOW_PASS = "pk_test_BNvUulzyvKJq0kSDTOz";
-const Partner_id = "keshvacredit_1001";
-let accessToken = null;
-let refreshToken = null;
+const CAPNOW_PASS = "pk_live_1S0rE5ozX9jGkhhrn1iTkCRlO";
+const PARTNER_ID = "keshvacredit_1001";
 
-// ---------- API URLs ----------
-const BASE_URL = "https://partner-api.staging.capitalnow.in/api/v1/partner";
+// ------------------- API URLs -------------------
+const BASE_URL = "https://partnerapi.capitalnow.in/api/v1/partner"; // Live
 const LOGIN_API = `${BASE_URL}/login`;
 const REFRESH_API = `${BASE_URL}/refresh-token`;
 const DEDUPE_API = `${BASE_URL}/lead-dedupe-check`;
 
-// ---------- Initialize CapitalNow SDK ----------
+// ------------------- SDK & Keys -------------------
 const client = new SecurePartnerClient({ keyDir: "./Loop-Helper/privateKey" });
 const partnerPublicKey = fs.readFileSync(
   "./Loop-Helper/privateKey/partner_public.pem",
   "utf8",
 );
 
-const url = "bit.ly/opencnapp";
+let accessToken = null;
+let refreshToken = null;
 
-// ---------- Helper: Login to CapitalNow ----------
+// ------------------- Helper Functions -------------------
 async function loginPartner() {
+  if (accessToken) return; // Don't login if token exists
+
   try {
     const authString = Buffer.from(`${CAPNOW_USER}:${CAPNOW_PASS}`).toString(
       "base64",
@@ -36,24 +36,21 @@ async function loginPartner() {
     const loginRes = await axios.post(
       LOGIN_API,
       {},
-      {
-        headers: { Authorization: `Basic ${authString}` },
-      },
+      { headers: { Authorization: `Basic ${authString}` } },
     );
-    const decryptedLogin = client.decryptFromPartner(
+    const decrypted = client.decryptFromPartner(
       loginRes.data,
       partnerPublicKey,
     );
-    accessToken = decryptedLogin.data.access_token;
-    refreshToken = decryptedLogin.data.refresh_token;
-    console.log("🔑 Access + Refresh token saved.");
+    accessToken = decrypted.data.access_token;
+    refreshToken = decrypted.data.refresh_token;
+    console.log("🔑 Access + Refresh token saved");
   } catch (err) {
     console.error("❌ Login Failed:", err.response?.data || err.message);
     throw new Error("Failed to authenticate with CapitalNow.");
   }
 }
 
-// ---------- Helper: Refresh Access Token ----------
 async function refreshAccessToken() {
   try {
     const authString = Buffer.from(`${CAPNOW_USER}:${CAPNOW_PASS}`).toString(
@@ -71,26 +68,22 @@ async function refreshAccessToken() {
     );
     const decrypted = client.decryptFromPartner(res.data, partnerPublicKey);
     accessToken = decrypted.data.access_token;
-    console.log("🔄 Access Token refreshed.");
+    console.log("🔄 Access Token refreshed");
   } catch (err) {
     console.warn("⚠️ Refresh Failed. Logging in again...");
+    accessToken = null;
     await loginPartner();
   }
 }
 
-// ---------- Helper: Get Authorization Header ----------
-// ---------- Helper: Get Authorization Header ----------
 async function getHeader() {
-  // Har bar login call karo (force fresh token)
-  await loginPartner();
-
+  if (!accessToken) await loginPartner();
   return {
     "Content-Type": "application/json",
     Authorization: `Bearer ${accessToken}`,
   };
 }
 
-// ---------- Helper: Build Payload ----------
 function buildPayload(user) {
   const [fname, ...lnameParts] = (user.name || "").trim().split(" ");
   return {
@@ -103,56 +96,42 @@ function buildPayload(user) {
 
 async function sendToCapitalNow(user) {
   try {
-    const rawPayload = buildPayload(user);
     const encryptedPayload = client.encryptForPartner(
-      Partner_id,
-      rawPayload,
+      PARTNER_ID,
+      buildPayload(user),
       partnerPublicKey,
     );
-
     const response = await axios.post(DEDUPE_API, encryptedPayload, {
       headers: await getHeader(),
     });
 
-    const finalData =
-      response.data.partnerId === Partner_id
+    let finalData =
+      response.data.partnerId === PARTNER_ID
         ? client.decryptFromPartner(response.data, partnerPublicKey)
         : response.data;
 
-    // Agar code 2005 hai, toh URL ko response me add karo
-    if (finalData.code === 2005) {
-      return {
-        ...finalData, // poora response
-        url: finalData.url || "http://bit.ly/opencnapp", // URL ensure
-      };
-    }
-
-    // Agar code 2005 nahi hai, normal response
+    if (finalData.code === 2005) finalData.url = "http://bit.ly/opencnapp";
     return finalData;
   } catch (err) {
     if (err.response?.status === 401 || err.response?.data?.code === 4118) {
-      console.warn("⚠️ Token expired or invalid. Refreshing...");
       await refreshAccessToken();
       return sendToCapitalNow(user);
     }
-    console.error("❌ API Failed:", err.response?.data || err.message);
     return { error: err.response?.data || err.message };
   }
 }
 
-// ---------- API Route ----------
+// ------------------- API Route -------------------
 router.post("/partner/capitalnow", async (req, res) => {
   try {
     const { phone, name, last_name, pancard } = req.body;
-    if (!phone || !name || !pancard) {
+    if (!phone || !name || !pancard)
       return res
         .status(400)
         .json({ error: "phone, name, and pancard are required" });
-    }
 
     const user = { phone, name, last_name, pancard };
     const finalData = await sendToCapitalNow(user);
-
     res.json({ success: true, data: finalData });
   } catch (err) {
     console.error("❌ Route Error:", err.message);
