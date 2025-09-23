@@ -138,8 +138,10 @@ async function sendToPI(user, token) {
   }
 }
 let successCount = 0;
-async function processBatch(users, token, validPincodes) {
+async function processBatch(users, validPincodes) {
   for (const user of users) {
+    const token = await getAuthToken();
+    console.log(`🔑${user.phone} Token: ${token}`);
     const userPincode = String(user.pincode).trim();
     const income = Number(user.income || 0);
     let updateDoc;
@@ -214,7 +216,6 @@ async function processBatch(users, token, validPincodes) {
 
 async function main() {
   try {
-    const token = await getAuthToken();
     const validPincodes = loadValidPincodes();
 
     if (validPincodes.size === 0) {
@@ -237,7 +238,7 @@ async function main() {
         break;
       }
 
-      await processBatch(leads, token, validPincodes);
+      await processBatch(leads, validPincodes);
       console.log(`✅ Processed ${leads.length} leads in this batch`);
     }
   } catch (err) {
