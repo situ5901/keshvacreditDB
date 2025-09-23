@@ -20,8 +20,8 @@ mongoose
   .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
 
 const UserDB = mongoose.model(
-  "testdb",
-  new mongoose.Schema({}, { collection: "testdb", strict: false }),
+  "smcoll2",
+  new mongoose.Schema({}, { collection: "smcoll2", strict: false }),
 );
 
 async function dedupe(user) {
@@ -176,7 +176,7 @@ async function main() {
 
       // 🕒 Wait for 3 seconds before hitting the next batch
       console.log("⏳ Waiting 3 seconds before next batch...");
-      await delay(3000);
+      await delay(5000);
     }
 
     console.log("--------------------------------------------------");

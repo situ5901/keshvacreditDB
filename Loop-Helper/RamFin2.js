@@ -176,7 +176,7 @@ async function main() {
 
       // 🕒 Wait for 3 seconds before hitting the next batch
       console.log("⏳ Waiting 3 seconds before next batch...");
-      await delay(3000);
+      await delay(5000);
     }
 
     console.log("--------------------------------------------------");
