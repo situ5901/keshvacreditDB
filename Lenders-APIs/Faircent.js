@@ -16,35 +16,22 @@ const APP_NAME = "KESHVACREDIT";
 // const APP_ID = "b27b11e13af255ef90f7c1939dcab2d2";
 // const APP_NAME = "KESHVACREDIT";
 
+// ------------------ Multer Disk Storage with Temp Folder ------------------
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    // Temp folder per request - Use '/tmp' for AWS Lambda/EC2 compatibility
-    const tempFolder = path.join('/tmp', Date.now().toString()); // AWS writable dir
+    // Temp folder per request
+    const tempFolder = path.join(process.cwd(), "temp", Date.now().toString()); // AWS compatible
     if (!fs.existsSync(tempFolder)) {
       fs.mkdirSync(tempFolder, { recursive: true });
     }
     cb(null, tempFolder);
   },
   filename: function (req, file, cb) {
-    // Ensure only PDF files are allowed (add file filter below)
     cb(null, Date.now() + "-" + file.originalname);
   },
 });
 
-// File filter to allow only PDFs
-const fileFilter = (req, file, cb) => {
-  if (file.mimetype === 'application/pdf') {
-    cb(null, true);
-  } else {
-    cb(new Error('Only PDF files are allowed!'), false);
-  }
-};
-
-const upload = multer({ 
-  storage,
-  fileFilter,
-  limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit, adjust as needed
-});
+const upload = multer({ storage });
 
 // ------------------ Lead API ------------------
 router.post("/faircent/lead", async (req, res) => {
@@ -117,51 +104,76 @@ router.post("/faircent/lead", async (req, res) => {
   }
 });
 
-router.post("/upload-pdf", upload.single('pdf'), (req, res) => {
+router.post("/faircent/proxy", upload.any(), async (req, res) => {
   try {
-    if (!req.file) {
-      return res.status(400).json({
-        success: false,
-        message: 'No PDF file uploaded or invalid file type.'
+    const headers = {
+      "x-application-id": req.headers["x-application-id"],
+      "x-application-name": req.headers["x-application-name"],
+      "x-access-token": req.headers["x-access-token"],
+    };
+
+    if (
+      !headers["x-application-id"] ||
+      !headers["x-application-name"] ||
+      !headers["x-access-token"]
+    ) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Missing headers" });
+    }
+
+    const formData = new FormData();
+
+    // Normal fields
+    for (let key in req.body) {
+      formData.append(key, req.body[key]);
+    }
+
+    // Files from memory
+    if (req.files && req.files.length > 0) {
+      req.files.forEach((file) => {
+        formData.append(file.fieldname, file.buffer, {
+          filename: file.originalname,
+          contentType: file.mimetype,
+        });
       });
     }
 
-    const filePath = req.file.path;
-    const tempFolder = path.dirname(filePath);
+    // Forward to Faircent
+    const response = await axios.post(
+      `${BASE_URL}/v1/api/uploadprocess`,
+      formData,
+      {
+        headers: {
+          ...formData.getHeaders(),
+          ...headers,
+        },
+        responseType: "text",
+      },
+    );
 
-    if (!fs.accessSync(tempFolder, fs.constants.R_OK | fs.constants.W_OK)) {
+    let jsonData;
+    try {
+      jsonData = JSON.parse(response.data);
+    } catch (e) {
+      console.error("⚠️ Faircent non-JSON response:", response.data);
       return res.status(500).json({
         success: false,
-        message: 'Insufficient permissions on temp folder.'
+        message: "Faircent API returned non-JSON",
+        raw_response: response.data,
       });
     }
 
-    console.log(`PDF uploaded successfully to: ${filePath}`);
-    console.log(`Temp folder created: ${tempFolder}`);
-
-    res.status(200).json({
-      success: true,
-      message: 'PDF uploaded and saved in temp folder successfully.',
-      data: {
-        filePath: filePath,
-        tempFolder: tempFolder,
-        originalName: req.file.originalname,
-        size: req.file.size
-      }
-    });
-
-  } catch (err) {
-    console.error('❌ PDF Upload Error:', err.message);
-    // Clean up temp folder on error if needed
-    if (req.file && req.file.path) {
-      const tempFolder = path.dirname(req.file.path);
-      if (fs.existsSync(tempFolder)) {
-        fs.rmSync(tempFolder, { recursive: true, force: true });
-      }
-    }
+    res.json(jsonData);
+  } catch (error) {
+    console.error(
+      "Faircent Proxy Error:",
+      error.response?.data || error.message,
+    );
     res.status(500).json({
       success: false,
-      message: 'Error uploading PDF: ' + err.message
+      error: error.response?.data || error.message,
+      message: "Faircent API ko request forward karte samay error aa gaya.",
     });
   }
 });
