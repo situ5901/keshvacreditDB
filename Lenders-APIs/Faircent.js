@@ -14,8 +14,9 @@ const BASE_URL = "https://api.faircent.com";
 const APP_ID = "1cfa78742af22b054a57fac6cf830699";
 const APP_NAME = "KESHVACREDIT";
 
-// ------------------ Multer Memory Storage ------------------
-const upload = multer({ storage: multer.memoryStorage() });
+// Multer config: memory storage (no local save)
+const storage = multer.memoryStorage();
+const upload = multer({ storage });
 
 // ------------------ Lead API ------------------
 router.post("/faircent/lead", async (req, res) => {
@@ -90,6 +91,7 @@ router.post("/faircent/lead", async (req, res) => {
 
 router.post("/faircent/proxy", upload.any(), async (req, res) => {
   try {
+    // Required headers from client
     const headers = {
       "x-application-id": req.headers["x-application-id"],
       "x-application-name": req.headers["x-application-name"],
@@ -106,12 +108,15 @@ router.post("/faircent/proxy", upload.any(), async (req, res) => {
         .json({ success: false, message: "Missing headers" });
     }
 
+    // Create FormData for forwarding to Faircent
     const formData = new FormData();
 
+    // Forward all text fields
     for (let key in req.body) {
       formData.append(key, req.body[key]);
     }
 
+    // Forward files (example: docImage)
     if (req.files && req.files.length > 0) {
       req.files.forEach((file) => {
         formData.append(file.fieldname, file.buffer, {
@@ -121,7 +126,7 @@ router.post("/faircent/proxy", upload.any(), async (req, res) => {
       });
     }
 
-    // Faircent API ko request bhejo
+    // Send request to Faircent API
     const response = await axios.post(
       `${BASE_URL}/v1/api/uploadprocess`,
       formData,
@@ -130,28 +135,23 @@ router.post("/faircent/proxy", upload.any(), async (req, res) => {
           ...formData.getHeaders(),
           ...headers,
         },
-        responseType: "text", // <-- Yehi hai sabse bada fix, isse axios response ko JSON nahi, text samjhega
+        responseType: "text", // Keep text to avoid JSON parse errors
       },
     );
 
+    // Try parsing response
     try {
-      // Ab hum response ke text ko manually JSON mein parse karne ki koshish karenge
       const jsonData = JSON.parse(response.data);
-      res.json(jsonData); // Agar parse ho gaya, to sahi JSON response bhej do
+      res.json(jsonData);
     } catch (e) {
-      // Agar parse nahi hua, to matlab response JSON nahi tha
-      console.error(
-        "Faircent API returned non-JSON data on AWS:",
-        response.data,
-      );
+      console.error("Faircent API returned non-JSON:", response.data);
       res.status(500).json({
         success: false,
         message: "Faircent API se unexpected response aaya.",
-        raw_response: response.data, // Raw response ko client ko dikha do debug karne ke liye
+        raw_response: response.data,
       });
     }
   } catch (error) {
-    // Ye network ya Faircent se aane wale HTTP errors ke liye hai (jaise 404, 500)
     console.error(
       "Faircent Proxy Error:",
       error.response?.data || error.message,
