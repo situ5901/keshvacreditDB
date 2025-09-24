@@ -3,34 +3,14 @@ const router = express.Router();
 const axios = require("axios");
 const FormData = require("form-data");
 const multer = require("multer");
-const fs = require("fs");
-const path = require("path");
 const UserDB = require("../routes/BL/BLSchema");
 
 const BASE_URL = "https://api.faircent.com";
 const APP_ID = "1cfa78742af22b054a57fac6cf830699";
 const APP_NAME = "KESHVACREDIT";
 
-// Faircent config
-// const BASE_URL = "https://fcnode5.faircent.com";
-// const APP_ID = "b27b11e13af255ef90f7c1939dcab2d2";
-// const APP_NAME = "KESHVACREDIT";
-
-// ------------------ Multer Disk Storage with Temp Folder ------------------
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    // Temp folder per request
-    const tempFolder = path.join(process.cwd(), "temp", Date.now().toString()); // AWS compatible
-    if (!fs.existsSync(tempFolder)) {
-      fs.mkdirSync(tempFolder, { recursive: true });
-    }
-    cb(null, tempFolder);
-  },
-  filename: function (req, file, cb) {
-    cb(null, Date.now() + "-" + file.originalname);
-  },
-});
-
+// ------------------ Multer Memory Storage (No disk) ------------------
+const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
 // ------------------ Lead API ------------------
@@ -38,9 +18,7 @@ router.post("/faircent/lead", async (req, res) => {
   try {
     const { payload } = req.body;
     if (!payload)
-      return res
-        .status(400)
-        .json({ success: false, message: "Payload is required" });
+      return res.status(400).json({ success: false, message: "Payload is required" });
 
     const faircentPayload = {
       fname: payload.fname,
@@ -69,7 +47,7 @@ router.post("/faircent/lead", async (req, res) => {
           "x-application-id": APP_ID,
           "x-application-name": APP_NAME,
         },
-      },
+      }
     );
 
     const DBEnter = new UserDB({
@@ -80,22 +58,12 @@ router.post("/faircent/lead", async (req, res) => {
     await DBEnter.save();
 
     if (response.data?.success)
-      return res.status(200).json({
-        success: true,
-        message: response.data.message,
-        data: response.data,
-      });
+      return res.status(200).json({ success: true, message: response.data.message, data: response.data });
     else
-      return res.status(400).json({
-        success: false,
-        message: response.data.message,
-        data: response.data,
-      });
+      return res.status(400).json({ success: false, message: response.data.message, data: response.data });
+
   } catch (err) {
-    console.error(
-      "❌ Faircent Lead API Error:",
-      err.response?.data || err.message,
-    );
+    console.error("❌ Faircent Lead API Error:", err.response?.data || err.message);
     return res.status(500).json({
       success: false,
       message: err.response?.data?.message || err.message,
@@ -104,6 +72,7 @@ router.post("/faircent/lead", async (req, res) => {
   }
 });
 
+// ------------------ Proxy API ------------------
 router.post("/faircent/proxy", upload.any(), async (req, res) => {
   try {
     const headers = {
@@ -112,15 +81,8 @@ router.post("/faircent/proxy", upload.any(), async (req, res) => {
       "x-access-token": req.headers["x-access-token"],
     };
 
-    if (
-      !headers["x-application-id"] ||
-      !headers["x-application-name"] ||
-      !headers["x-access-token"]
-    ) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Missing headers" });
-    }
+    if (!headers["x-application-id"] || !headers["x-application-name"] || !headers["x-access-token"])
+      return res.status(400).json({ success: false, message: "Missing headers" });
 
     const formData = new FormData();
 
@@ -140,17 +102,10 @@ router.post("/faircent/proxy", upload.any(), async (req, res) => {
     }
 
     // Forward to Faircent
-    const response = await axios.post(
-      `${BASE_URL}/v1/api/uploadprocess`,
-      formData,
-      {
-        headers: {
-          ...formData.getHeaders(),
-          ...headers,
-        },
-        responseType: "text",
-      },
-    );
+    const response = await axios.post(`${BASE_URL}/v1/api/uploadprocess`, formData, {
+      headers: { ...formData.getHeaders(), ...headers },
+      responseType: "text",
+    });
 
     let jsonData;
     try {
@@ -166,10 +121,7 @@ router.post("/faircent/proxy", upload.any(), async (req, res) => {
 
     res.json(jsonData);
   } catch (error) {
-    console.error(
-      "Faircent Proxy Error:",
-      error.response?.data || error.message,
-    );
+    console.error("Faircent Proxy Error:", error.response?.data || error.message);
     res.status(500).json({
       success: false,
       error: error.response?.data || error.message,
