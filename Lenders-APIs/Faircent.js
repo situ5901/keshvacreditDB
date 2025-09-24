@@ -79,22 +79,30 @@ router.post("/faircent/lead", async (req, res) => {
 // ------------------ Upload Proxy API ------------------
 router.post("/faircent/upload", upload.single("docImage"), async (req, res) => {
   try {
+    // ------------------ Headers ------------------
     const headers = {
       "x-application-id": req.headers["x-application-id"] || APP_ID,
       "x-application-name": req.headers["x-application-name"] || APP_NAME,
       "x-access-token": req.headers["x-access-token"],
+      // Remove Content-Type JSON because we'll use FormData
+      // "Content-Type": "application/json",
     };
 
-    if (!headers["x-access-token"])
-      return res.status(400).json({ success: false, message: "Missing x-access-token" });
-
     const { type, loan_id } = req.body;
-    if (!type || !loan_id)
+    if (!type || !loan_id) {
       return res.status(400).json({ success: false, message: "Missing type or loan_id" });
+    }
 
-    if (!req.file)
+    if (!req.file) {
       return res.status(400).json({ success: false, message: "File 'docImage' is required" });
+    }
 
+    // ------------------ Convert to Base64 locally (optional) ------------------
+    const base64String = req.file.buffer.toString("base64");
+    console.log("Base64 length:", base64String.length); // optional log
+
+    // ------------------ Prepare FormData for Faircent ------------------
+    const FormData = require("form-data");
     const formData = new FormData();
     formData.append("type", type);
     formData.append("loan_id", loan_id);
@@ -103,36 +111,29 @@ router.post("/faircent/upload", upload.single("docImage"), async (req, res) => {
       contentType: req.file.mimetype,
     });
 
-    const response = await axios.post(`${BASE_URL}/v1/api/uploadprocess`, formData, {
-      headers: { ...formData.getHeaders(), ...headers },
-      responseType: "text"
-    });
+    console.log("Sending file to Faircent via FormData...");
 
-    let result;
-
-    // Try JSON parse
-    try {
-      result = JSON.parse(response.data);
-      console.log("✅ Response is JSON:", result);
-    } catch (jsonErr) {
-      // Not JSON, treat as plain text
-      if (typeof response.data === "string") {
-        result = { text: response.data };
-        console.log("📝 Response is Plain Text:", response.data);
-      } else {
-        // Some unknown type
-        result = { raw: response.data };
-        console.log("⚠️ Response is Raw:", response.data);
+    const response = await axios.post(
+      `${BASE_URL}/v1/api/uploadprocess`,
+      formData,
+      {
+        headers: { ...formData.getHeaders(), ...headers },
       }
-    }
+    );
 
-    res.status(200).json(result);
+    console.log("✅ Faircent Upload Response:", response.data);
 
+    // ------------------ Return response with Base64 included (optional) ------------------
+    res.status(200).json({
+      ...response.data,
+      fileBase64: base64String, // optional: return Base64 string
+    });
   } catch (err) {
-    console.error("❌ Faircent Upload Error:", err.response?.data || err.message);
+    console.error("❌ Upload Error:", err.response?.data || err.message);
     res.status(500).json({
       success: false,
-      message: err.response?.data || err.message,
+      message: err.response?.data?.message || err.message,
+      error: err.response?.data || err.message,
     });
   }
 });
