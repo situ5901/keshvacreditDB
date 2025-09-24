@@ -7,14 +7,14 @@ const fs = require("fs");
 const path = require("path");
 const UserDB = require("../routes/BL/BLSchema");
 
-// const BASE_URL = "https://api.faircent.com";
-// const APP_ID = "1cfa78742af22b054a57fac6cf830699";
-// const APP_NAME = "KESHVACREDIT";
+const BASE_URL = "https://api.faircent.com";
+const APP_ID = "1cfa78742af22b054a57fac6cf830699";
+const APP_NAME = "KESHVACREDIT";
 
 // Faircent config
-const BASE_URL = "https://fcnode5.faircent.com";
-const APP_ID = "b27b11e13af255ef90f7c1939dcab2d2";
-const APP_NAME = "KESHVACREDIT";
+// const BASE_URL = "https://fcnode5.faircent.com";
+// const APP_ID = "b27b11e13af255ef90f7c1939dcab2d2";
+// const APP_NAME = "KESHVACREDIT";
 
 // ------------------ Multer Disk Storage with Temp Folder ------------------
 const storage = multer.diskStorage({
