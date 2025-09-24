@@ -50,6 +50,7 @@ router.post("/faircent/lead", async (req, res) => {
       }
     );
 
+    // Save to DB
     const DBEnter = new UserDB({
       userData: payload,
       apiResponse: response.data,
@@ -86,12 +87,12 @@ router.post("/faircent/proxy", upload.any(), async (req, res) => {
 
     const formData = new FormData();
 
-    // Normal fields
+    // Append normal fields
     for (let key in req.body) {
       formData.append(key, req.body[key]);
     }
 
-    // Files from memory
+    // Append files from memory
     if (req.files && req.files.length > 0) {
       req.files.forEach((file) => {
         formData.append(file.fieldname, file.buffer, {
@@ -104,22 +105,18 @@ router.post("/faircent/proxy", upload.any(), async (req, res) => {
     // Forward to Faircent
     const response = await axios.post(`${BASE_URL}/v1/api/uploadprocess`, formData, {
       headers: { ...formData.getHeaders(), ...headers },
-      responseType: "text",
+      responseType: "text", // Important: non-JSON response handled
     });
 
-    let jsonData;
+    // Try parse JSON, fallback to raw text
     try {
-      jsonData = JSON.parse(response.data);
+      const jsonData = JSON.parse(response.data);
+      res.json(jsonData);
     } catch (e) {
-      console.error("⚠️ Faircent non-JSON response:", response.data);
-      return res.status(500).json({
-        success: false,
-        message: "Faircent API returned non-JSON",
-        raw_response: response.data,
-      });
+      // Non-JSON response (e.g., multipart/form-data)
+      res.status(200).send(response.data);
     }
 
-    res.json(jsonData);
   } catch (error) {
     console.error("Faircent Proxy Error:", error.response?.data || error.message);
     res.status(500).json({
