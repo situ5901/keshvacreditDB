@@ -3,22 +3,35 @@ const router = express.Router();
 const axios = require("axios");
 const FormData = require("form-data");
 const multer = require("multer");
+const fs = require("fs");
+const path = require("path");
 const UserDB = require("../routes/BL/BLSchema");
+
+const BASE_URL = "https://api.faircent.com";
+const APP_ID = "1cfa78742af22b054a57fac6cf830699";
+const APP_NAME = "KESHVACREDIT";
 
 // Faircent config
 // const BASE_URL = "https://fcnode5.faircent.com";
 // const APP_ID = "b27b11e13af255ef90f7c1939dcab2d2";
 // const APP_NAME = "KESHVACREDIT";
 
-const BASE_URL = "https://api.faircent.com";
-const APP_ID = "1cfa78742af22b054a57fac6cf830699";
-const APP_NAME = "KESHVACREDIT";
+// ------------------ Multer Disk Storage ------------------
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    const uploadPath = path.join(__dirname, "../uploads");
+    if (!fs.existsSync(uploadPath)) {
+      fs.mkdirSync(uploadPath, { recursive: true }); // folder bana lo agar nahi hai
+    }
+    cb(null, uploadPath);
+  },
+  filename: function (req, file, cb) {
+    cb(null, Date.now() + "-" + file.originalname);
+  },
+});
 
-// Multer config: memory storage (no local save)
-const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
-// ------------------ Lead API ------------------
 router.post("/faircent/lead", async (req, res) => {
   try {
     const { payload } = req.body;
@@ -89,9 +102,9 @@ router.post("/faircent/lead", async (req, res) => {
   }
 });
 
+// ------------------ Faircent Proxy ------------------
 router.post("/faircent/proxy", upload.any(), async (req, res) => {
   try {
-    // Required headers from client
     const headers = {
       "x-application-id": req.headers["x-application-id"],
       "x-application-name": req.headers["x-application-name"],
@@ -108,25 +121,26 @@ router.post("/faircent/proxy", upload.any(), async (req, res) => {
         .json({ success: false, message: "Missing headers" });
     }
 
-    // Create FormData for forwarding to Faircent
     const formData = new FormData();
 
-    // Forward all text fields
+    // Body ke normal fields
     for (let key in req.body) {
       formData.append(key, req.body[key]);
     }
 
-    // Forward files (example: docImage)
+    // Uploaded files ko forward karo
     if (req.files && req.files.length > 0) {
       req.files.forEach((file) => {
-        formData.append(file.fieldname, file.buffer, {
+        const filePath = path.join(file.destination, file.filename);
+
+        formData.append(file.fieldname, fs.createReadStream(filePath), {
           filename: file.originalname,
           contentType: file.mimetype,
         });
       });
     }
 
-    // Send request to Faircent API
+    // Faircent API ko request bhejo
     const response = await axios.post(
       `${BASE_URL}/v1/api/uploadprocess`,
       formData,
@@ -135,22 +149,23 @@ router.post("/faircent/proxy", upload.any(), async (req, res) => {
           ...formData.getHeaders(),
           ...headers,
         },
-        responseType: "text", // Keep text to avoid JSON parse errors
+        responseType: "text", // text le lo, phir parse karenge
       },
     );
 
-    // Try parsing response
+    let jsonData;
     try {
-      const jsonData = JSON.parse(response.data);
-      res.json(jsonData);
+      jsonData = JSON.parse(response.data); // JSON parse karne ki koshish
     } catch (e) {
-      console.error("Faircent API returned non-JSON:", response.data);
-      res.status(500).json({
+      console.error("⚠️ Faircent non-JSON response:", response.data);
+      return res.status(500).json({
         success: false,
-        message: "Faircent API se unexpected response aaya.",
+        message: "Faircent API returned non-JSON",
         raw_response: response.data,
       });
     }
+
+    res.json(jsonData);
   } catch (error) {
     console.error(
       "Faircent Proxy Error:",
