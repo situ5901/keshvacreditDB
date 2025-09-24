@@ -1,13 +1,15 @@
-
 // routes/branch.js
 const express = require("express");
 const router = express.Router();
 const axios = require("axios");
 const crypto = require("crypto");
 
+// ------------------- Helper Functions -------------------
 function getHeader() {
+  const token = "d63pdkqwmhkhUqyTT9UsJwPvJOaPFf/H";
+  console.log("Using token:", token); // Log the token here
   return {
-    "X-BRANCH-API-KEY": "d63pdkqwmhkhUqyTT9UsJwPvJOaPFf/H",
+    "X-BRANCH-API-KEY": token,
     "Content-Type": "application/json",
   };
 }
@@ -71,7 +73,6 @@ function getStateCode(stateName) {
   return stateMapping[key] || key;
 }
 
-
 async function createLead(user) {
   const { firstName, lastName } = splitName(user.name);
 
@@ -99,7 +100,7 @@ async function createLead(user) {
     const { data } = await axios.post(
       "https://branch.co/partners/v1/soft_offers",
       payload,
-      { headers: getHeader() },
+      { headers: getHeader() }
     );
     return { success: true, data };
   } catch (err) {
@@ -107,7 +108,7 @@ async function createLead(user) {
   }
 }
 
-// API Route
+// ------------------- API Route -------------------
 router.post("/branch/create", async (req, res) => {
   const user = req.body;
 
