@@ -5,6 +5,11 @@ const FormData = require("form-data");
 const multer = require("multer");
 const UserDB = require("../routes/BL/BLSchema");
 
+// ✅ UAT
+// const BASE_URL = "https://fcnode5.faircent.com";
+// const APP_ID = "b27b11e13af255ef90f7c1939dcab2d2";
+// const APP_NAME = "KESHVACREDIT";
+
 const BASE_URL = "https://api.faircent.com";
 const APP_ID = "1cfa78742af22b054a57fac6cf830699";
 const APP_NAME = "KESHVACREDIT";
@@ -83,53 +88,15 @@ router.post("/faircent/lead", async (req, res) => {
 });
 
 router.post("/faircent/upload", upload.single("docImage"), async (req, res) => {
-  console.log("==========================================");
-  console.log("🔹 New upload request received at:", new Date().toLocaleString());
-
   try {
-    console.log("Step 1️⃣ - Incoming request headers:");
-    console.log(req.headers);
-
-    console.log("Step 2️⃣ - Incoming request body:");
-    console.log(req.body);
-
-    console.log("Step 3️⃣ - Incoming file info:");
-    if (req.file) {
-      console.log({
-        fieldname: req.file.fieldname,
-        originalname: req.file.originalname,
-        mimetype: req.file.mimetype,
-        size: req.file.size,
-      });
-    } else {
-      console.log("No file received");
-    }
-
     const headers = {
       "x-application-id": req.headers["x-application-id"] || APP_ID,
       "x-application-name": req.headers["x-application-name"] || APP_NAME,
       "x-access-token": req.headers["x-access-token"],
     };
-    console.log("Step 4️⃣ - Headers used for Faircent API:");
-    console.log(headers);
-
-    if (!headers["x-access-token"]) {
-      console.log("❌ Step 5️⃣ - Missing x-access-token");
-      return res.status(400).json({ success: false, message: "Missing x-access-token" });
-    }
 
     const { type, loan_id } = req.body;
-    if (!type || !loan_id) {
-      console.log("❌ Step 6️⃣ - Missing type or loan_id in request body");
-      return res.status(400).json({ success: false, message: "Missing type or loan_id" });
-    }
 
-    if (!req.file) {
-      console.log("❌ Step 7️⃣ - File 'docImage' is required but not received");
-      return res.status(400).json({ success: false, message: "File 'docImage' is required" });
-    }
-
-    console.log("Step 8️⃣ - Preparing FormData to forward to Faircent API");
     const formData = new FormData();
     formData.append("type", type);
     formData.append("loan_id", loan_id);
@@ -137,26 +104,21 @@ router.post("/faircent/upload", upload.single("docImage"), async (req, res) => {
       filename: req.file.originalname,
       contentType: req.file.mimetype,
     });
-    console.log("Step 9️⃣ - FormData prepared successfully");
 
-    console.log("Step 🔟 - Forwarding request to Faircent API...");
-    const response = await axios.post(`${BASE_URL}/v1/api/uploadprocess`, formData, {
-      headers: { ...formData.getHeaders(), ...headers },
-      responseType: "json",
-    });
+    const response = await axios.post(
+      `${BASE_URL}/v1/api/uploadprocess`,
+      formData,
+      {
+        headers: { ...formData.getHeaders(), ...headers },
+        responseType: "json",
+      },
+    );
 
-    console.log("Step 1️⃣1️⃣ - Response received from Faircent API:");
-    console.log(response.data);
-
-    console.log("==========================================");
     res.status(200).json(response.data);
   } catch (err) {
-    console.error("❌ Step 1️⃣2️⃣ - Faircent Upload Error:", err.response?.data || err.message);
-    res.status(500).json({
-      success: false,
-      message: err.response?.data?.message || err.message,
-      error: err.response?.data || err.message,
-    });
+    res
+      .status(500)
+      .json({ success: false, error: err.response?.data || err.message });
   }
 });
 
