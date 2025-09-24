@@ -12,75 +12,41 @@ const PARTNER_ID = "keshvacredit_1001";
 // ------------------- API URLs -------------------
 const BASE_URL = "https://partnerapi.capitalnow.in/api/v1/partner"; // Live
 const LOGIN_API = `${BASE_URL}/login`;
-const REFRESH_API = `${BASE_URL}/refresh-token`;
 const DEDUPE_API = `${BASE_URL}/lead-dedupe-check`;
 
 // ------------------- SDK & Keys -------------------
 const client = new SecurePartnerClient({ keyDir: "./Loop-Helper/privateKey" });
 const partnerPublicKey = fs.readFileSync(
   "./Loop-Helper/privateKey/partner_public.pem",
-  "utf8",
+  "utf8"
 );
-
-let accessToken = null;
-let refreshToken = null;
 
 // ------------------- Helper Functions -------------------
 async function loginPartner() {
-  if (accessToken) return; // Don't login if token exists
-
   try {
     const authString = Buffer.from(`${CAPNOW_USER}:${CAPNOW_PASS}`).toString(
-      "base64",
+      "base64"
     );
     const loginRes = await axios.post(
       LOGIN_API,
       {},
-      { headers: { Authorization: `Basic ${authString}` } },
+      { headers: { Authorization: `Basic ${authString}` } }
     );
-    const decrypted = client.decryptFromPartner(
-      loginRes.data,
-      partnerPublicKey,
-    );
-    accessToken = decrypted.data.access_token;
-    refreshToken = decrypted.data.refresh_token;
-    console.log("🔑 Access + Refresh token saved");
+
+    const decrypted = client.decryptFromPartner(loginRes.data, partnerPublicKey);
+    console.log("🔑 New token generated");
+    return decrypted.data.access_token;
   } catch (err) {
     console.error("❌ Login Failed:", err.response?.data || err.message);
     throw new Error("Failed to authenticate with CapitalNow.");
   }
 }
 
-async function refreshAccessToken() {
-  try {
-    const authString = Buffer.from(`${CAPNOW_USER}:${CAPNOW_PASS}`).toString(
-      "base64",
-    );
-    const res = await axios.post(
-      REFRESH_API,
-      {},
-      {
-        headers: {
-          Authorization: `Basic ${authString}`,
-          refresh_token: `Bearer ${refreshToken}`,
-        },
-      },
-    );
-    const decrypted = client.decryptFromPartner(res.data, partnerPublicKey);
-    accessToken = decrypted.data.access_token;
-    console.log("🔄 Access Token refreshed");
-  } catch (err) {
-    console.warn("⚠️ Refresh Failed. Logging in again...");
-    accessToken = null;
-    await loginPartner();
-  }
-}
-
 async function getHeader() {
-  if (!accessToken) await loginPartner();
+  const newAccessToken = await loginPartner(); // हर बार नया token
   return {
     "Content-Type": "application/json",
-    Authorization: `Bearer ${accessToken}`,
+    Authorization: `Bearer ${newAccessToken}`,
   };
 }
 
@@ -99,8 +65,9 @@ async function sendToCapitalNow(user) {
     const encryptedPayload = client.encryptForPartner(
       PARTNER_ID,
       buildPayload(user),
-      partnerPublicKey,
+      partnerPublicKey
     );
+
     const response = await axios.post(DEDUPE_API, encryptedPayload, {
       headers: await getHeader(),
     });
@@ -113,10 +80,6 @@ async function sendToCapitalNow(user) {
     if (finalData.code === 2005) finalData.url = "http://bit.ly/opencnapp";
     return finalData;
   } catch (err) {
-    if (err.response?.status === 401 || err.response?.data?.code === 4118) {
-      await refreshAccessToken();
-      return sendToCapitalNow(user);
-    }
     return { error: err.response?.data || err.message };
   }
 }
