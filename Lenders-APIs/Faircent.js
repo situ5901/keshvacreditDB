@@ -16,14 +16,15 @@ const APP_NAME = "KESHVACREDIT";
 // const APP_ID = "b27b11e13af255ef90f7c1939dcab2d2";
 // const APP_NAME = "KESHVACREDIT";
 
-// ------------------ Multer Disk Storage ------------------
+// ------------------ Multer Disk Storage with Temp Folder ------------------
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    const uploadPath = path.join(__dirname, "../uploads");
-    if (!fs.existsSync(uploadPath)) {
-      fs.mkdirSync(uploadPath, { recursive: true }); // folder bana lo agar nahi hai
+    // Temp folder per request
+    const tempFolder = path.join(__dirname, "../temp", Date.now().toString());
+    if (!fs.existsSync(tempFolder)) {
+      fs.mkdirSync(tempFolder, { recursive: true });
     }
-    cb(null, uploadPath);
+    cb(null, tempFolder);
   },
   filename: function (req, file, cb) {
     cb(null, Date.now() + "-" + file.originalname);
@@ -32,6 +33,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
+// ------------------ Lead API ------------------
 router.post("/faircent/lead", async (req, res) => {
   try {
     const { payload } = req.body;
@@ -102,7 +104,7 @@ router.post("/faircent/lead", async (req, res) => {
   }
 });
 
-// ------------------ Faircent Proxy ------------------
+// ------------------ Proxy API with Temp Folder ------------------
 router.post("/faircent/proxy", upload.any(), async (req, res) => {
   try {
     const headers = {
@@ -123,16 +125,15 @@ router.post("/faircent/proxy", upload.any(), async (req, res) => {
 
     const formData = new FormData();
 
-    // Body ke normal fields
+    // Normal fields
     for (let key in req.body) {
       formData.append(key, req.body[key]);
     }
 
-    // Uploaded files ko forward karo
+    // Files
     if (req.files && req.files.length > 0) {
       req.files.forEach((file) => {
         const filePath = path.join(file.destination, file.filename);
-
         formData.append(file.fieldname, fs.createReadStream(filePath), {
           filename: file.originalname,
           contentType: file.mimetype,
@@ -140,7 +141,7 @@ router.post("/faircent/proxy", upload.any(), async (req, res) => {
       });
     }
 
-    // Faircent API ko request bhejo
+    // Forward to Faircent
     const response = await axios.post(
       `${BASE_URL}/v1/api/uploadprocess`,
       formData,
@@ -149,13 +150,13 @@ router.post("/faircent/proxy", upload.any(), async (req, res) => {
           ...formData.getHeaders(),
           ...headers,
         },
-        responseType: "text", // text le lo, phir parse karenge
+        responseType: "text",
       },
     );
 
     let jsonData;
     try {
-      jsonData = JSON.parse(response.data); // JSON parse karne ki koshish
+      jsonData = JSON.parse(response.data);
     } catch (e) {
       console.error("⚠️ Faircent non-JSON response:", response.data);
       return res.status(500).json({
@@ -164,6 +165,15 @@ router.post("/faircent/proxy", upload.any(), async (req, res) => {
         raw_response: response.data,
       });
     }
+
+    // Cleanup: Delete temp files & folder
+    req.files.forEach((file) => {
+      const filePath = path.join(file.destination, file.filename);
+      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+    });
+    // Delete the temp folder itself
+    const tempFolder = req.files[0]?.destination;
+    if (tempFolder && fs.existsSync(tempFolder)) fs.rmdirSync(tempFolder);
 
     res.json(jsonData);
   } catch (error) {
