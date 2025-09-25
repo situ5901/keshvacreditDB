@@ -1,21 +1,25 @@
 const express = require("express");
 const router = express.Router();
 const multer = require("multer");
-const fs = require("fs");
+const fs = require('fs');
 const axios = require("axios");
 const FormData = require("form-data");
-const upload = multer({ dest: "uploads/" });
 
 // ✅ UAT
-// const BASE_URL = "https://fcnode5.faircent.com";
-// const APP_ID = "b27b11e13af255ef90f7c1939dcab2d2";
-// const APP_NAME = "KESHVACREDIT";
-
-const BASE_URL = "https://api.faircent.com";
-const APP_ID = "1cfa78742af22b054a57fac6cf830699";
+const BASE_URL = "https://fcnode5.faircent.com";
+const APP_ID = "b27b11e13af255ef90f7c1939dcab2d2";
 const APP_NAME = "KESHVACREDIT";
-const UPLOAD_ENDPOINT = "/v1/api/uploadprocess";
 
+// const BASE_URL = "https://api.faircent.com";
+// const APP_ID = "1cfa78742af22b054a57fac6cf830699";
+// const APP_NAME = "KESHVACREDIT";
+const UPLOAD_ENDPOINT = '/v1/api/uploadprocess';
+
+// Multer memory storage (RAM only, no disk)
+const storage = multer.memoryStorage();
+const upload = multer({ storage });
+
+// ------------------ Lead API ------------------
 router.post("/faircent/lead", async (req, res) => {
   try {
     console.log("🔹 Lead API request received");
@@ -74,17 +78,58 @@ router.post("/faircent/lead", async (req, res) => {
   }
 });
 
-
+// ------------------ Upload API ------------------
 router.post("/faircent/upload", upload.single("docImage"), async (req, res) => {
-console.log(req.body);
-console.log(req.file);
-    return res.status(200).json({
-      success: true,
-      message: "File uploaded successfully",
-      data: req.file,
-    });
+  try {
+    console.log("🔹 Upload API request received");
+
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: "Please upload file!" });
+    }
+    
+    // Extract form data from the request body
+    const { loan_id, type } = req.body;
+    // Get access token from request headers
+    const accessToken = req.headers['x-access-token'];
+
+    // Validate required fields
+    if (!loan_id) {
+      return res.status(400).json({ success: false, message: "loan_id value Required" });
+    }
+    if (!type) {
+      return res.status(400).json({ success: false, message: "type value Required" });
+    }
+    if (!accessToken) {
+      return res.status(400).json({ success: false, message: "x-access-token header is missing." });
+    }
+
+    // Create a new FormData instance
+    const formData = new FormData();
+    formData.append('loan_id', loan_id);
+    formData.append('type', type);
+    // append the file buffer and filename to the form data
+    formData.append('docImage', req.file.buffer, req.file.originalname);
+
+    const headers = {
+      ...formData.getHeaders(), // Important for multipart/form-data
+      'x-application-id': APP_ID,
+      'x-application-name': APP_NAME,
+      'x-access-token': accessToken
+    };
+
+    const url = `${BASE_URL}${UPLOAD_ENDPOINT}`;
+
+    const response = await axios.post(url, formData, { headers });
+
+    console.log("✅ Upload API Response:", response.data);
+
+    return res.status(200).json(response.data);
+
+  } catch (err) {
+    console.error("❌ Upload API Error:", err.response?.data || err.message);
+    const errorResponse = err.response?.data || { success: false, message: err.message };
+    return res.status(err.response?.status || 500).json(errorResponse);
+  }
 });
-
-
 
 module.exports = router;
