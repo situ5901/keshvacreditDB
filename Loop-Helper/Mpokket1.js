@@ -10,8 +10,8 @@ mongoose
   .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
 
 const UserDB = mongoose.model(
-  "testdb",
-  new mongoose.Schema({}, { collection: "testdb", strict: false }),
+  "zypealter",
+  new mongoose.Schema({}, { collection: "zypealter", strict: false }),
 );
 
 const BATCH_SIZE = 100;
