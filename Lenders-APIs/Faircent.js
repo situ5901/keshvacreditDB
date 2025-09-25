@@ -4,6 +4,7 @@ const multer = require("multer");
 const fs = require("fs");
 const axios = require("axios");
 const FormData = require("form-data");
+const upload = multer({ dest: "uploads/" });
 
 // ✅ UAT
 // const BASE_URL = "https://fcnode5.faircent.com";
@@ -15,11 +16,6 @@ const APP_ID = "1cfa78742af22b054a57fac6cf830699";
 const APP_NAME = "KESHVACREDIT";
 const UPLOAD_ENDPOINT = "/v1/api/uploadprocess";
 
-// Multer memory storage (RAM only, no disk)
-const storage = multer.memoryStorage();
-const upload = multer({ storage });
-
-// ------------------ Lead API ------------------
 router.post("/faircent/lead", async (req, res) => {
   try {
     console.log("🔹 Lead API request received");
@@ -78,59 +74,17 @@ router.post("/faircent/lead", async (req, res) => {
   }
 });
 
-// ------------------ Upload API ------------------
-router.post(
-  "/faircent/upload",
-  upload.single("docImage"),
-  async (req, res) => {
-    try {
-      // Check if file was uploaded
-      if (!req.file) {
-        return res.status(400).json({
-          success: false,
-          message: "No file uploaded. Please provide a document.",
-        });
-      }
 
-      // File details are now available in req.file
-      const file = req.file;
-      console.log("Uploaded file:", {
-        originalName: file.originalname,
-        fileName: file.filename,
-        path: file.path,
-        size: file.size,
-        mimetype: file.mimetype,
-      });
+router.post("/faircent/upload", upload.single("docImage"), async (req, res) => {
+console.log(req.body);
+console.log(req.file);
+    return res.status(200).json({
+      success: true,
+      message: "File uploaded successfully",
+      data: req.file,
+    });
+});
 
-      res.status(200).json({
-        success: true,
-        message: "Document uploaded successfully!",
-        file: {
-          originalName: file.originalname,
-          fileName: file.filename,
-          path: file.path, // Relative or absolute path to the file
-          size: file.size,
-          mimetype: file.mimetype,
-        },
-      });
 
-    } catch (error) {
-      console.error("Upload error:", error);
-
-      if (req.file) {
-        const fs = require('fs');
-        fs.unlink(req.file.path, (err) => {
-          if (err) console.error("Error deleting file:", err);
-        });
-      }
-
-      res.status(500).json({
-        success: false,
-        message: "Server error during upload. Please try again.",
-        error: error.message, // In production, avoid sending full error details
-      });
-    }
-  }
-);
 
 module.exports = router;
