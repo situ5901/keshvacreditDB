@@ -76,7 +76,6 @@ router.post("/faircent/lead", async (req, res) => {
   }
 });
 
-// ------------------ Upload Proxy API ------------------
 router.post("/faircent/upload", upload.single("docImage"), async (req, res) => {
   try {
     // ------------------ Headers ------------------
@@ -84,20 +83,24 @@ router.post("/faircent/upload", upload.single("docImage"), async (req, res) => {
       "x-application-id": req.headers["x-application-id"] || APP_ID,
       "x-application-name": req.headers["x-application-name"] || APP_NAME,
       "x-access-token": req.headers["x-access-token"],
-      // Remove Content-Type JSON because we'll use FormData
-      // "Content-Type": "application/json",
     };
+
+    console.log("Headers:", headers);
 
     const { type, loan_id } = req.body;
     if (!type || !loan_id) {
-      return res.status(400).json({ success: false, message: "Missing type or loan_id" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Missing type or loan_id" });
     }
-
+    console.log("Type:", type);
+    console.log("Loan ID:", loan_id);
     if (!req.file) {
-      return res.status(400).json({ success: false, message: "File 'docImage' is required" });
+      return res
+        .status(400)
+        .json({ success: false, message: "File 'docImage' is required" });
     }
 
-    // ------------------ Convert to Base64 locally (optional) ------------------
     const base64String = req.file.buffer.toString("base64");
     console.log("Base64 length:", base64String.length); // optional log
 
@@ -118,7 +121,7 @@ router.post("/faircent/upload", upload.single("docImage"), async (req, res) => {
       formData,
       {
         headers: { ...formData.getHeaders(), ...headers },
-      }
+      },
     );
 
     console.log("✅ Faircent Upload Response:", response.data);
