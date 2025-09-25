@@ -77,68 +77,7 @@ router.post("/faircent/lead", async (req, res) => {
 });
 
 router.post("/faircent/upload", upload.single("docImage"), async (req, res) => {
-  try {
-    // ------------------ Headers ------------------
-    const headers = {
-      "x-application-id": req.headers["x-application-id"] || APP_ID,
-      "x-application-name": req.headers["x-application-name"] || APP_NAME,
-      "x-access-token": req.headers["x-access-token"],
-    };
-
-    console.log("Headers:", headers);
-
-    const { type, loan_id } = req.body;
-    if (!type || !loan_id) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Missing type or loan_id" });
-    }
-    console.log("Type:", type);
-    console.log("Loan ID:", loan_id);
-    if (!req.file) {
-      return res
-        .status(400)
-        .json({ success: false, message: "File 'docImage' is required" });
-    }
-
-    const base64String = req.file.buffer.toString("base64");
-    console.log("Base64 length:", base64String.length); // optional log
-
-    // ------------------ Prepare FormData for Faircent ------------------
-    const FormData = require("form-data");
-    const formData = new FormData();
-    formData.append("type", type);
-    formData.append("loan_id", loan_id);
-    formData.append("docImage", req.file.buffer, {
-      filename: req.file.originalname,
-      contentType: req.file.mimetype,
-    });
-
-    console.log("Sending file to Faircent via FormData...");
-
-    const response = await axios.post(
-      `${BASE_URL}/v1/api/uploadprocess`,
-      formData,
-      {
-        headers: { ...formData.getHeaders(), ...headers },
-      },
-    );
-
-    console.log("✅ Faircent Upload Response:", response.data);
-
-    // ------------------ Return response with Base64 included (optional) ------------------
-    res.status(200).json({
-      ...response.data,
-      fileBase64: base64String, // optional: return Base64 string
-    });
-  } catch (err) {
-    console.error("❌ Upload Error:", err.response?.data || err.message);
-    res.status(500).json({
-      success: false,
-      message: err.response?.data?.message || err.message,
-      error: err.response?.data || err.message,
-    });
-  }
+  console.log("🔹 Faircent Upload API request received");
 });
 
 module.exports = router;
