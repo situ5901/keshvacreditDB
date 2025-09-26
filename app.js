@@ -7,6 +7,7 @@ const { API_VERSION } = require("./config/config");
 
 const app = express();
 
+app.use(`/api${API_VERSION}/LenderAPIs`, require("./Lenders-APIs/FaircentUpload.js")); // Added Faircent Upload
 setInterval(() => {
   const used = process.memoryUsage();
   console.log(`Memory Usage (in MB):`);
