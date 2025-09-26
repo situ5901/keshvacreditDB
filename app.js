@@ -10,6 +10,7 @@ const { API_VERSION } = require("./config/config");
 const app = express();
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
+app.use(`/api${API_VERSION}/LenderAPIs`, require("./Lenders-APIs/FaircentUpload.js"));
 setInterval(() => {
   const used = process.memoryUsage();
   console.log(`Memory Usage (in MB):`);
@@ -24,7 +25,6 @@ setInterval(() => {
   );
 }, 50000); // Every 5 seconds
 app.use(corsMiddleware);
-app.use(express.json());
 app.use(logger("dev"));
 app.use(cookieParser());
 app.use(`/api${API_VERSION}/auth`, require("./routes/auth"));
@@ -46,7 +46,6 @@ app.use(`/api${API_VERSION}/LenderAPIs`, require("./Lenders-APIs/kamakshi"));
 app.use(`/api${API_VERSION}/LenderAPIs`, require("./Lenders-APIs/CapitalNow"));
 app.use(`/api${API_VERSION}/LenderAPIs`, require("./Lenders-APIs/PI.js"));
 app.use(`/api${API_VERSION}/LenderAPIs`, require("./Lenders-APIs/Faircent.js"));
-app.use(`/api${API_VERSION}/LenderAPIs`, require("./Lenders-APIs/FaircentUpload.js"));
 app.use(`/api${API_VERSION}/LenderAPIs`, require("./Lenders-APIs/Branch.js"));
 app.use(
   `/api${API_VERSION}/LenderAPIs`,
