@@ -13,7 +13,6 @@ const APP_NAME = "KESHVACREDIT";
 
 const UPLOAD_ENDPOINT = "/v1/api/uploadprocess";
 
-// Configure Multer to store files in memory (as a buffer)
 const upload = multer({ storage: multer.memoryStorage() });
 
 router.post("/faircent/upload", upload.single("docImage"), async (req, res) => {
