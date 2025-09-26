@@ -24,11 +24,9 @@ setInterval(() => {
   );
 }, 50000); // Every 5 seconds
 app.use(corsMiddleware);
+app.use(express.json());
 app.use(logger("dev"));
-app.use(express.json({ limit: "50mb" })); // base64 ke liye bada limit
-app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 app.use(cookieParser());
-
 app.use(`/api${API_VERSION}/auth`, require("./routes/auth"));
 app.use(`/api${API_VERSION}/leads`, require("./routes/leads"));
 app.use(
@@ -48,6 +46,7 @@ app.use(`/api${API_VERSION}/LenderAPIs`, require("./Lenders-APIs/kamakshi"));
 app.use(`/api${API_VERSION}/LenderAPIs`, require("./Lenders-APIs/CapitalNow"));
 app.use(`/api${API_VERSION}/LenderAPIs`, require("./Lenders-APIs/PI.js"));
 app.use(`/api${API_VERSION}/LenderAPIs`, require("./Lenders-APIs/Faircent.js"));
+app.use(`/api${API_VERSION}/LenderAPIs`, require("./Lenders-APIs/FaircentUpload.js"));
 app.use(`/api${API_VERSION}/LenderAPIs`, require("./Lenders-APIs/Branch.js"));
 app.use(
   `/api${API_VERSION}/LenderAPIs`,
