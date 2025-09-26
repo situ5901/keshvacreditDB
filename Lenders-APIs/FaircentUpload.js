@@ -7,8 +7,9 @@ const fs = require("fs");
 const path = require("path");
 
 // --- API Configuration ---
-const BASE_URL = "https://api.faircent.com";
-const APP_ID = "1cfa78742af22b054a57fac6cf830699";
+// Note: Using the second set of credentials as they are the ones active in your code
+const BASE_URL = "https://fcnode5.faircent.com";
+const APP_ID = "b27b11e13af255ef90f7c1939dcab2d2";
 const APP_NAME = "KESHVACREDIT";
 
 const UPLOAD_ENDPOINT = "/v1/api/uploadprocess";
@@ -53,7 +54,7 @@ router.post("/faircent/upload", upload.single("docImage"), async (req, res) => {
     tempPath = path.join(tempDir, uniqueFilename);
 
     fs.writeFileSync(tempPath, req.file.buffer);
-    console.log(`Temporary file written to: ${tempPath}`);
+    console.log(`Temporary file written to: ${tempPath}`); // This log still shows full path for debugging/verification
 
     // Prepare and send to Faircent API
     const formData = new FormData();
@@ -100,11 +101,14 @@ router.post("/faircent/upload", upload.single("docImage"), async (req, res) => {
   } finally {
     // Cleanup temp file
     if (tempPath && fs.existsSync(tempPath)) {
+      // 🎯 MODIFICATION: Calculate the relative path for logging
+      // This will show only the filename (e.g., '1710928800000-document.jpg')
+      const logPath = path.relative(path.join(__dirname, 'temp'), tempPath);
+
       fs.unlinkSync(tempPath);
-      console.log("Temporary file deleted:", tempPath);
+      console.log("Temporary file deleted:", logPath);
     }
   }
 });
 
-// Export the router
 module.exports = router;
