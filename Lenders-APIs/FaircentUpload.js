@@ -11,60 +11,63 @@ const BASE_URL = "https://fcnode5.faircent.com";
 const APP_ID = "b27b11e13af255ef90f7c1939dcab2d2";
 const APP_NAME = "KESHVACREDIT";
 
-router.post("/upload", upload.single("docImage"), async (req, res) => {
-  console.log("🔹 File upload request received");
+router.post("/faircent/upload", upload.single("docImage"), async (req, res) => {
+  let tempPath;
   try {
-    const token = req.body?.token || req.headers?.["x-access-token"];
-
-    // This log is added for debugging to ensure token is being read
-    // console.log("Token status:", token ? "Found" : "Not Found");
-
-    if (!token)
+    if (!req.file) {
       return res
         .status(400)
-        .json({ success: false, message: "Access token is required" });
+        .json({ success: false, message: "File is required" });
+    }
 
-    if (!req.file)
-      return res
-        .status(400)
-        .json({ success: false, message: "No file uploaded" });
+    // ✅ Debug info before hitting Faircent
+    console.log("Received file:", req.file.originalname);
+    console.log("Loan ID:", req.body.loan_id);
+    console.log("Type:", req.body.type);
 
+    // ✅ Temp file creation
+    const tempDir = path.join(__dirname, "temp");
+    if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir);
+    tempPath = path.join(tempDir, req.file.originalname);
+    fs.writeFileSync(tempPath, req.file.buffer);
+
+    // ✅ Prepare FormData
     const formData = new FormData();
-    // Use optional chaining for safe access to req.body properties
-    formData.append("type", req.body?.type || "PANCARD");
-    formData.append("loan_id", req.body?.loan_id || "1004688383");
+    formData.append("type", req.body.type);
+    formData.append("loan_id", req.body.loan_id);
+    formData.append("docImage", fs.createReadStream(tempPath));
 
-    formData.append("docImage", req.file.buffer, {
-      filename: req.file.originalname,
-      contentType: req.file.mimetype,
-    });
+    console.log("FormData prepared, ready to hit Faircent API");
 
+    // ✅ Axios request
     const response = await axios.post(
-      "https://fcnode5.faircent.com/v1/api/uploadprocess",
+      `${BASE_URL}${UPLOAD_ENDPOINT}`,
       formData,
       {
         headers: {
+          ...formData.getHeaders(),
           "x-application-id": APP_ID,
           "x-application-name": APP_NAME,
-          "x-access-token": token, // ✅ dynamic token
-          ...formData.getHeaders(),
         },
-        maxContentLength: Infinity,
-        maxBodyLength: Infinity,
       },
     );
 
-    res.json(response.data);
-  } catch (err) {
-    // Log the actual error object for better debugging
-    console.error("Error during file upload:", err);
+    console.log("✅ Faircent Upload API Response:", response.data);
 
-    // Handle axios error response data or use a generic 500
-    res
-      .status(500)
-      .json(
-        err.response?.data || { error: err.message || "Internal Server Error" },
-      );
+    return res.status(200).json({ success: true, data: response.data });
+  } catch (err) {
+    console.error("❌ Upload API Error:", err.response?.data || err.message);
+    return res.status(500).json({
+      success: false,
+      message: err.response?.data?.message || err.message,
+      error: err.response?.data || err.message,
+    });
+  } finally {
+    // ✅ Cleanup temp file
+    if (tempPath && fs.existsSync(tempPath)) {
+      fs.unlinkSync(tempPath);
+      console.log("Temporary file deleted:", tempPath);
+    }
   }
 });
 
