@@ -5,18 +5,17 @@ const fs = require("fs");
 const path = require("path");
 const axios = require("axios");
 const FormData = require("form-data");
+
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
-// ✅ UAT
-// const BASE_URL = "https://fcnode5.faircent.com";
-// const APP_ID = "b27b11e13af255ef90f7c1939dcab2d2";
-// const APP_NAME = "KESHVACREDIT";
 
+// ✅ UAT / PROD Settings
 const BASE_URL = "https://api.faircent.com";
 const APP_ID = "1cfa78742af22b054a57fac6cf830699";
 const APP_NAME = "KESHVACREDIT";
 const UPLOAD_ENDPOINT = "/v1/api/uploadprocess";
 
+// ------------------ Lead API ------------------
 router.post("/faircent/lead", async (req, res) => {
   try {
     console.log("🔹 Lead API request received");
@@ -77,24 +76,34 @@ router.post("/faircent/lead", async (req, res) => {
 
 // ------------------ Upload API ------------------
 router.post("/faircent/upload", upload.single("docImage"), async (req, res) => {
+  let tempPath;
   try {
     if (!req.file) {
-      return res.status(400).json({
-        success: false,
-        message: "File is required",
-      });
+      return res
+        .status(400)
+        .json({ success: false, message: "File is required" });
     }
 
-    // ✅ FormData banana chahiye yahan
+    // ✅ Debug info before hitting Faircent
+    console.log("Received file:", req.file.originalname);
+    console.log("Loan ID:", req.body.loan_id);
+    console.log("Type:", req.body.type);
+
+    // ✅ Temp file creation
+    const tempDir = path.join(__dirname, "temp");
+    if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir);
+    tempPath = path.join(tempDir, req.file.originalname);
+    fs.writeFileSync(tempPath, req.file.buffer);
+
+    // ✅ Prepare FormData
     const formData = new FormData();
     formData.append("type", req.body.type);
     formData.append("loan_id", req.body.loan_id);
-    formData.append("docImage", req.file.buffer, {
-      filename: req.file.originalname,
-      contentType: req.file.mimetype,
-    });
+    formData.append("docImage", fs.createReadStream(tempPath));
 
-    // ✅ Forward request to Faircent
+    console.log("FormData prepared, ready to hit Faircent API");
+
+    // ✅ Axios request
     const response = await axios.post(
       `${BASE_URL}${UPLOAD_ENDPOINT}`,
       formData,
@@ -107,10 +116,9 @@ router.post("/faircent/upload", upload.single("docImage"), async (req, res) => {
       },
     );
 
-    return res.status(200).json({
-      success: true,
-      data: response.data,
-    });
+    console.log("✅ Faircent Upload API Response:", response.data);
+
+    return res.status(200).json({ success: true, data: response.data });
   } catch (err) {
     console.error("❌ Upload API Error:", err.response?.data || err.message);
     return res.status(500).json({
@@ -118,6 +126,12 @@ router.post("/faircent/upload", upload.single("docImage"), async (req, res) => {
       message: err.response?.data?.message || err.message,
       error: err.response?.data || err.message,
     });
+  } finally {
+    // ✅ Cleanup temp file
+    if (tempPath && fs.existsSync(tempPath)) {
+      fs.unlinkSync(tempPath);
+      console.log("Temporary file deleted:", tempPath);
+    }
   }
 });
 
