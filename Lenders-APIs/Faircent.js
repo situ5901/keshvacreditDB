@@ -15,7 +15,6 @@ const APP_ID = "1cfa78742af22b054a57fac6cf830699";
 const APP_NAME = "KESHVACREDIT";
 const UPLOAD_ENDPOINT = "/v1/api/uploadprocess";
 
-// ------------------ Lead API ------------------
 router.post("/faircent/lead", async (req, res) => {
   try {
     console.log("🔹 Lead API request received");
@@ -76,28 +75,5 @@ router.post("/faircent/lead", async (req, res) => {
 
 // ------------------ Upload API ------------------
 
-router.post("/faircent/upload", upload.single("docImage"), async (req, res) => {
-  console.log("🔹 Upload API request received");
-
-  // ✅ Debug file info
-  if (!req.file) {
-    console.log("❌ No file received");
-  } else {
-    console.log("File received:");
-    console.log("  Original Name:", req.file.originalname);
-    console.log("  Mime Type   :", req.file.mimetype);
-    console.log("  Size (bytes):", req.file.size);
-    console.log("  Buffer exists?:", !!req.file.buffer);
-  }
-
-  // ✅ Debug other form fields
-  console.log("Form data received:", req.body);
-
-  return res.status(200).json({
-    success: true,
-    message: "Upload API request received",
-    data: req.file,
-  });
-});
 
 module.exports = router;
