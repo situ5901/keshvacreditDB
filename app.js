@@ -10,7 +10,6 @@ const { API_VERSION } = require("./config/config");
 const app = express();
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
-app.use(`/api${API_VERSION}/LenderAPIs`, require("./Lenders-APIs/FaircentUpload.js"));
 setInterval(() => {
   const used = process.memoryUsage();
   console.log(`Memory Usage (in MB):`);
