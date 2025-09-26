@@ -75,12 +75,14 @@ router.post("/faircent/lead", async (req, res) => {
 });
 
 // ------------------ Upload API ------------------
+
 router.post("/faircent/upload", upload.single("docImage"), async (req, res) => {
-  console.log("🔹 Upload API request received");
-return res.status(200).json({
-  success: true,
-  message: "Upload API request received",
-  data: req.file,
+  console.log("Upload API request received");
+  return res.status(200).json({
+    success: true,
+    message: "Upload API request received",
+    data: req.file,
+  });
 });
 
 module.exports = router;
