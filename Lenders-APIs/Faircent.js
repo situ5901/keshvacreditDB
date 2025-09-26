@@ -77,6 +77,7 @@ router.post("/faircent/lead", async (req, res) => {
 // ------------------ Upload API ------------------
 router.post("/faircent/upload", upload.single("docImage"), async (req, res) => {
   let tempPath;
+  console.log("🔹 Upload API request received");
   try {
     if (!req.file) {
       return res
