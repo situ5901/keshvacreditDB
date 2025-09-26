@@ -83,31 +83,41 @@ router.post("/faircent/upload", upload.single("docImage"), async (req, res) => {
         success: false,
         message: "File is required",
       });
-      const formData = new FormData();
-      formData.append("type", req.body.type);
-      formData.append("loan_id", req.body.fname);
-      formData.append("docImage", req.file.buffer, {
-        filename: req.file.originalname,
-        contentType: req.file.mimetype,
-      });
     }
 
-    console.log(formData);
+    // ✅ FormData banana chahiye yahan
+    const formData = new FormData();
+    formData.append("type", req.body.type);
+    formData.append("loan_id", req.body.loan_id);
+    formData.append("docImage", req.file.buffer, {
+      filename: req.file.originalname,
+      contentType: req.file.mimetype,
+    });
 
+    // ✅ Forward request to Faircent
     const response = await axios.post(
       `${BASE_URL}${UPLOAD_ENDPOINT}`,
       formData,
       {
         headers: {
-          "Content-Type": "multipart/form-data",
+          ...formData.getHeaders(),
           "x-application-id": APP_ID,
           "x-application-name": APP_NAME,
         },
       },
     );
-    console.log(response);
+
+    return res.status(200).json({
+      success: true,
+      data: response.data,
+    });
   } catch (err) {
-    console.log(err);
+    console.error("❌ Upload API Error:", err.response?.data || err.message);
+    return res.status(500).json({
+      success: false,
+      message: err.response?.data?.message || err.message,
+      error: err.response?.data || err.message,
+    });
   }
 });
 
