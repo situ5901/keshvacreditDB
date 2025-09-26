@@ -14,7 +14,7 @@ const BASE_URL = "https://api.faircent.com";
 const APP_ID = "1cfa78742af22b054a57fac6cf830699";
 const APP_NAME = "KESHVACREDIT";
 const UPLOAD_ENDPOINT = "/v1/api/uploadprocess";
-
+//setup
 router.post("/faircent/lead", async (req, res) => {
   try {
     console.log("🔹 Lead API request received");
@@ -74,6 +74,5 @@ router.post("/faircent/lead", async (req, res) => {
 });
 
 // ------------------ Upload API ------------------
-
 
 module.exports = router;
