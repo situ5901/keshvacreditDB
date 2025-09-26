@@ -1,15 +1,12 @@
 const express = require("express");
 const cookieParser = require("cookie-parser");
 const logger = require("morgan");
-const multer = require("multer");
-const FormData = require("form-data");
 const corsMiddleware = require("./middlewares/cors");
 const errorHandler = require("./middlewares/errorHandler");
 const { API_VERSION } = require("./config/config");
 
 const app = express();
-const storage = multer.memoryStorage();
-const upload = multer({ storage });
+
 setInterval(() => {
   const used = process.memoryUsage();
   console.log(`Memory Usage (in MB):`);
@@ -25,7 +22,10 @@ setInterval(() => {
 }, 50000); // Every 5 seconds
 app.use(corsMiddleware);
 app.use(logger("dev"));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+
 app.use(`/api${API_VERSION}/auth`, require("./routes/auth"));
 app.use(`/api${API_VERSION}/leads`, require("./routes/leads"));
 app.use(
