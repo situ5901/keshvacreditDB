@@ -102,7 +102,7 @@ router.post("/faircent/upload", upload.single("docImage"), async (req, res) => {
     formData.append("docImage", fs.createReadStream(tempPath));
 
     console.log("FormData prepared, ready to hit Faircent API");
-
+    console.log("FormData:", formData);
     // ✅ Axios request
     const response = await axios.post(
       `${BASE_URL}${UPLOAD_ENDPOINT}`,
@@ -115,7 +115,7 @@ router.post("/faircent/upload", upload.single("docImage"), async (req, res) => {
         },
       },
     );
-
+    console.log("✅ Faircent Upload API Request:", response.data);
     console.log("✅ Faircent Upload API Response:", response.data);
 
     return res.status(200).json({ success: true, data: response.data });
