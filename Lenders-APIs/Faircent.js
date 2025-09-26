@@ -92,6 +92,8 @@ router.post("/faircent/upload", upload.single("docImage"), async (req, res) => {
       });
     }
 
+    console.log(formData);
+
     const response = await axios.post(
       `${BASE_URL}${UPLOAD_ENDPOINT}`,
       formData,
@@ -103,6 +105,7 @@ router.post("/faircent/upload", upload.single("docImage"), async (req, res) => {
         },
       },
     );
+    console.log(response);
   } catch (err) {
     console.log(err);
   }
