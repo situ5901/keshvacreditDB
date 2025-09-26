@@ -13,7 +13,7 @@ mongoose
   .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
 
 const UserDB = mongoose.model(
-  "smcoll",
+  "smcoll2",
   new mongoose.Schema({}, { collection: "smcoll", strict: false }),
 );
 
