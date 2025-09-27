@@ -12,7 +12,6 @@ const path = require("path");
 // const APP_ID = "b27b11e13af255ef90f7c1939dcab2d2";
 // const APP_NAME = "KESHVACREDIT";
 
-
 const BASE_URL = "https://api.faircent.com";
 const APP_ID = "1cfa78742af22b054a57fac6cf830699";
 const APP_NAME = "KESHVACREDIT";
@@ -25,12 +24,11 @@ router.post("/faircent/upload", upload.single("docImage"), async (req, res) => {
   let tempPath;
 
   try {
-    // DEBUG: Show incoming request info
     console.log("=== Incoming Request ===");
     console.log("Headers:", req.headers);
     console.log("Body:", req.body);
     console.log("File:", req.file);
-    console.log("========================");
+    console.log("========================>");
 
     const token = req.body?.token || req.headers?.["x-access-token"];
 
@@ -64,9 +62,9 @@ router.post("/faircent/upload", upload.single("docImage"), async (req, res) => {
     // Prepare and send to Faircent API
     // 🎯 MODIFICATION: Hardcode the Content-Type by setting a custom boundary in FormData
     // This ensures the boundary is fixed and matches exactly in the Content-Type header
-    const customBoundary = '----my-custom-boundary-12345'; // You can change this to any unique string
+    const customBoundary = "----my-custom-boundary-12345"; // You can change this to any unique string
     const formData = new FormData({ boundary: customBoundary });
-    
+
     formData.append("type", type || "PANCARD");
     formData.append("loan_id", loanId || "1004688383");
     formData.append("docImage", fs.createReadStream(tempPath));
@@ -89,7 +87,7 @@ router.post("/faircent/upload", upload.single("docImage"), async (req, res) => {
         },
         maxContentLength: Infinity,
         maxBodyLength: Infinity,
-      }
+      },
     );
 
     console.log("✅ Faircent Upload API Response:", response.data);
@@ -116,7 +114,7 @@ router.post("/faircent/upload", upload.single("docImage"), async (req, res) => {
     if (tempPath && fs.existsSync(tempPath)) {
       // 🎯 MODIFICATION: Calculate the relative path for logging
       // This will show only the filename (e.g., '1710928800000-document.jpg')
-      const logPath = path.relative(path.join(__dirname, 'temp'), tempPath);
+      const logPath = path.relative(path.join(__dirname, "temp"), tempPath);
 
       fs.unlinkSync(tempPath);
       console.log("Temporary file deleted:", logPath);
