@@ -57,10 +57,18 @@ router.post("/faircent/upload", upload.single("docImage"), async (req, res) => {
     console.log(`Temporary file written to: ${tempPath}`); // This log still shows full path for debugging/verification
 
     // Prepare and send to Faircent API
-    const formData = new FormData();
+    // 🎯 MODIFICATION: Hardcode the Content-Type by setting a custom boundary in FormData
+    // This ensures the boundary is fixed and matches exactly in the Content-Type header
+    const customBoundary = '----my-custom-boundary-12345'; // You can change this to any unique string
+    const formData = new FormData({ boundary: customBoundary });
+    
     formData.append("type", type || "PANCARD");
     formData.append("loan_id", loanId || "1004688383");
     formData.append("docImage", fs.createReadStream(tempPath));
+
+    // Log the generated headers for debugging (shows the hardcoded Content-Type)
+    const formHeaders = formData.getHeaders();
+    console.log("Hardcoded FormData Headers:", formHeaders);
 
     console.log("FormData prepared, ready to hit Faircent API");
 
@@ -69,7 +77,7 @@ router.post("/faircent/upload", upload.single("docImage"), async (req, res) => {
       formData,
       {
         headers: {
-          ...formData.getHeaders(),
+          ...formData.getHeaders(), // This now includes the hardcoded boundary in Content-Type
           "x-access-token": token,
           "x-application-id": APP_ID,
           "x-application-name": APP_NAME,
