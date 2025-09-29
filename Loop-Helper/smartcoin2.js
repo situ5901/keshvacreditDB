@@ -11,8 +11,8 @@ mongoose
   .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
 
 const UserDB = mongoose.model(
-  "zypealter",
-  new mongoose.Schema({}, { collection: "zypealter", strict: false }),
+  "zypeAlter",
+  new mongoose.Schema({}, { collection: "zypeAlter", strict: false }),
 );
 
 //update new smartcoin 220011
