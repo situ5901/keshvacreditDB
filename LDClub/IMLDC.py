@@ -21,7 +21,7 @@ BATCH_SIZE = 5
 
 client = MongoClient(MONGO_URI)
 db = client["KeshvaCredit"]
-collection = db["smcoll"]
+collection = db["zypeAlter"]
 print("✅ MongoDB Connected Successfully")
 
 def pad(data: str) -> bytes:
