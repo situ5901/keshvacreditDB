@@ -357,7 +357,6 @@ router.post("/zypewebapi", async (req, res) => {
       dob,
       income,
       employmentType,
-      orgName,
     } = req.body;
 
     // ✅ Basic validation
@@ -368,8 +367,7 @@ router.post("/zypewebapi", async (req, res) => {
       !name ||
       !dob ||
       !income ||
-      !employmentType ||
-      !orgName
+      !employmentType 
     ) {
       return res.status(400).json({ message: "All fields are required" });
     }
@@ -406,7 +404,6 @@ router.post("/zypewebapi", async (req, res) => {
         dob,
         income,
         employmentType,
-        orgName,
         partnerId: "a8ce06a0-4fbd-489f-8d75-345548fb98a8",
         bureauType: 1,
         bureauName: "experian",
@@ -428,7 +425,6 @@ router.post("/zypewebapi", async (req, res) => {
       dob,
       income,
       employmentType,
-      orgName,
       status,
       offer,
     });
