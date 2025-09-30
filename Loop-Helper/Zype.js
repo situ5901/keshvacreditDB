@@ -105,7 +105,7 @@ async function getPreApproval(user) {
       employmentType: user.employment,
       orgName: "Infosys Ltd",
       partnerId: PartnerID,
-      bureauType: 1,
+      bureauType: 3,
       bureauName: "experian",
       bureauData: JSON.stringify({ score: 765, reportDate: "2024-03-20" }),
     };
