@@ -368,8 +368,8 @@ router.post("/zypewebapi", async (req, res) => {
       !name ||
       !dob ||
       !income ||
-      !employmentType ||
-    ) {
+      !employmentType 
+     ) {
       return res.status(400).json({ message: "All fields are required" });
     }
 
