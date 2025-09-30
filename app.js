@@ -7,7 +7,10 @@ const { API_VERSION } = require("./config/config");
 
 const app = express();
 
-app.use(`/api${API_VERSION}/LenderAPIs`, require("./Lenders-APIs/FaircentUpload.js")); // Added Faircent Upload
+app.use(
+  `/api${API_VERSION}/LenderAPIs`,
+  require("./Lenders-APIs/FaircentUpload.js"),
+); // Added Faircent Upload
 setInterval(() => {
   const used = process.memoryUsage();
   console.log(`Memory Usage (in MB):`);
@@ -84,7 +87,7 @@ app.use(`/api${API_VERSION}/member`, memberRoutes);
 //............Agent Working............//
 app.use(
   `/api${API_VERSION}/agent`,
-  require("./manage_core/admin_panel/routes/agentRoute.js"),
+  require("./manage_core/agentPanel/AgentController/agentRoute.js"),
 );
 
 //............Management Panel Working............//
