@@ -181,7 +181,7 @@ exports.createAgent = async (req, res) => {
   }
 
   try {
-    const existing = awaientModel.findOne({
+    const existing = await AgentModel.findOne({
       $or: [{ AgentMail }, { Agentname }],
     });
 

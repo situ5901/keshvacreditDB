@@ -2,6 +2,12 @@ const bcrypt = require("bcrypt");
 const AgentModel = require("../../models/AgentModel.js");
 const jwt = require("jsonwebtoken");
 
+
+exports.test = async (req, res) => {
+return res.status(200).json({ message: "test" });
+}
+
+
 exports.login = async (req, res) => {
   try {
     const { Agentname, AgentMail, AgentPassword } = req.body;
