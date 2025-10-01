@@ -192,7 +192,7 @@ async function Loop() {
 
       if (leads.length === 0) {
         console.log("⏸️ No unprocessed leads. Retrying in 2 seconds...");
-        await delay(2000);
+        await delay(5000);
         return processNextBatch();
       }
 
