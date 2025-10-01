@@ -24,7 +24,7 @@ BATCH_SIZE = 5
 # === MongoDB Setup ===
 client = MongoClient(MONGO_URI)
 db = client["KeshvaCredit"]
-collection = db["comp"]
+collection = db["smcoll"]
 print("✅ MongoDB Connected Successfully")
 
 # === Crypto Utils ===
