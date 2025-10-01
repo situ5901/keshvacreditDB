@@ -5,7 +5,7 @@ require("dotenv").config();
 const MONGODB_URINEW = process.env.MONGODB_URINEW;
 const DEDUPE_API = "https://www.ramfincorp.com/new-api/customers/check_dedupe";
 const LEAD_API = "https://www.ramfincorp.com/new-api/customers/lead_push";
-const BATCH_SIZE = 3;
+const BATCH_SIZE = 20;
 const Partner_id = "Keshvacredit";
 
 const AUTH_HEADER = {
