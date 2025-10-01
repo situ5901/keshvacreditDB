@@ -95,7 +95,25 @@ def build_dedupe_payload(user):
         "attributes": {},
     }
 
+# === Payload Builders ===
 def build_lead_payload(user):
+    # Get the DOB from the user dictionary
+    dob_str = user.get("dob")
+    formatted_dob = "01/01/1990"  # Default value
+
+    if dob_str:
+        try:
+            # 1. Parse the existing date string (e.g., '1988-10-26')
+            date_obj = datetime.strptime(dob_str, "%Y-%m-%d")
+            
+            # 2. Format the date object into the required string (e.g., '26/10/1988')
+            formatted_dob = date_obj.strftime("%d/%m/%Y")
+            
+        except ValueError:
+            # Handle cases where the DOB might not be in the expected 'YYYY-MM-DD' format
+            print(f"⚠️ Warning: Could not parse DOB '{dob_str}'. Using default.")
+            pass # Keep the default '01/01/1990'
+
     return {
         "params": {},
         "fields": {},
@@ -105,7 +123,7 @@ def build_lead_payload(user):
                 "email": user.get("email", "test@gmail.com"),
                 "name": user.get("name", "Demo User"),
                 "pan": user.get("pan", "ABCDE1234F"),
-                "date_of_birth": user.get("dob", "01/01/1990"),
+                "date_of_birth": formatted_dob, # <-- Use the new formatted date here
                 "pincode": int(user.get("pincode", 400001)),
             },
             "professional_details": {
