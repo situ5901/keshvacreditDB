@@ -71,6 +71,7 @@ const userSchema = new Schema(
     },
   },
   { timestamps: true },
+  { strict: false },
 );
 
 module.exports = model("webUserDB", userSchema);
