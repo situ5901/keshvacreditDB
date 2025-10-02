@@ -225,16 +225,16 @@ router.put("/updateUser", async (req, res) => {
 
   try {
     const updatedUser = await User.findOneAndUpdate(
-      { phone: phone }, 
-      { $set: req.body }, 
-      { new: false, upsert: false }, 
+      { phone: phone }, // filter
+      { $set: req.body }, // update
+      { new: false, upsert: false }, // options
     );
 
     if (!updatedUser) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    res.json(updatedUser);
+    res.json("Successfully updated user");
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
