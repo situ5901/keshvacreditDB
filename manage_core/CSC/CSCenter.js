@@ -80,32 +80,49 @@ exports.register = async (req, res) => {
   }
 };
 
+// Assuming CSCmodel has fields: cscMail (for email) and cscPassword (for password)
+
 exports.login = async (req, res) => {
-  try {
-    const { email, password } = req.body;
-    if (!email || !password) {
-      return res.status(400).json({ error: "Email and password are required" });
-    }
+    try {
+        const { email, password } = req.body;
+        
+        if (!email || !password) {
+            return res.status(400).json({ error: "Email and password are required" });
+        }
 
-    const user = await CsCenter.findOne({ email });
-    if (!user) {
-      return res.status(401).json({ error: "Invalid credentials" });
-    }
+        // 1. FETCH USER AND EXPLICITLY SELECT THE PASSWORD FIELD
+        // If your schema field is 'cscPassword', you must select it.
+        const user = await CSCmodel.findOne({ cscMail: email }).select('+cscPassword');
+        
+        if (!user) {
+            return res.status(401).json({ error: "Invalid credentials (User not found)" });
+        }
+        
+        // Ensure the password hash exists before comparing
+        if (!user.cscPassword) {
+            console.error(`User ${email} found, but cscPassword is missing in the retrieved document.`);
+            return res.status(500).json({ error: "Server error (Missing password hash)" });
+        }
 
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-    if (!isPasswordValid) {
-      return res.status(401).json({ error: "Invalid credentials" });
-    }
+        // 2. COMPARE THE PASSWORD
+        const isPasswordValid = await bcrypt.compare(password, user.cscPassword);
+        
+        if (!isPasswordValid) {
+            return res.status(401).json({ error: "Invalid credentials (Password mismatch)" });
+        }
 
-    return res.json({
-      role: "csc",
-      message: "CSC partner logged in",
-      username: user.username,
-    });
-  } catch (err) {
-    console.error("Login error:", err.message);
-    return res.status(500).json({ error: "Server error" });
-  }
+        // 3. SUCCESS RESPONSE
+        // Note: You should check if `user.username` exists in your schema.
+        return res.json({
+            role: "csc",
+            message: "CSC partner logged in",
+            username: user.cscName, // Use cscName if that's the name field
+        });
+        
+    } catch (err) {
+        console.error("Login error:", err.message);
+        return res.status(500).json({ error: "Server error" });
+    }
 };
 
 exports.getUserDetail = async (req, res) => {
@@ -154,3 +171,7 @@ exports.updateUser = async (req, res) => {
     return res.status(500).json({ error: "Server error" });
   }
 };
+
+exports.getCscDataWithCenterID = async (req,res) =>{
+    const centerID = req.params.centerID;
+}
