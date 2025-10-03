@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const mongoose = require("mongoose");
-const GoldLoan = require("../CSC/CSCschema.js");
+const {GoldLoan} = require("../CSC/CSCschema.js");
 
 exports.applyGoldLoan = async (req, res) => {
     try {
