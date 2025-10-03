@@ -87,6 +87,7 @@ router.post("/userinfo", async (req, res) => {
       businessType,
       doesFileITR,
       doesFileGST,
+      agent_id,
       dob, // fixed
     } = req.body;
 
@@ -176,6 +177,7 @@ router.post("/userinfo", async (req, res) => {
       doesFileITR,
       company_name,
       doesFileGST,
+      agent_id,
       partner: "Keshvacredit",
       consent:
         "We value your privacy. To proceed, we need your consent to collect and process your personal data, such as name, phone number, and PAN details.By continuing, you agree to our Privacy Policy and Terms & Conditions.",
@@ -367,7 +369,7 @@ router.post("/zypewebapi", async (req, res) => {
       !name ||
       !dob ||
       !income ||
-      !employmentType 
+      !employmentType
     ) {
       return res.status(400).json({ message: "All fields are required" });
     }
@@ -670,7 +672,6 @@ router.post("/final-loan-details", async (req, res) => {
     });
   }
 });
-
 
 router.post("/getBL", async (req, res) => {
   try {
