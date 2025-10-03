@@ -8,6 +8,8 @@ const Partner_id = "Keshvacredit";
 const partnerKey = "iDWUDj8oljS9XHeHXzsJCGViewdHRUiR";
 const iv = Buffer.alloc(16, 0);
 
+//update the partner key and iv
+
 function generateXApiAuth() {
   const epochSeconds = Math.floor(Date.now() / 1000).toString();
   const cipher = crypto.createCipheriv(
