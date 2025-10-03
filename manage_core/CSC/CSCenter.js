@@ -131,7 +131,7 @@ exports.getUserDetail = async (req, res) => {
     const isPhone = /^\d{10}$/.test(identifier);
     const query = isPhone ? { phone: identifier } : { username: identifier };
 
-    const user = await CsCenter.findOne(query).select("-password");
+    const user = await CSCmodel.findOne(query).select("-password");
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
@@ -172,6 +172,3 @@ exports.updateUser = async (req, res) => {
   }
 };
 
-exports.getCscDataWithCenterID = async (req, res) => {
-  const centerID = req.params.centerID;
-};
