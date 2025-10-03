@@ -25,7 +25,6 @@ const userSchema = new Schema(
     agent_id: {
       type: String,
       unique: true,
-      required: true,
     },
     salaryMode: { type: String },
     bankName: { type: String },
