@@ -21,4 +21,8 @@ router.get("/get/LenderData", adminAuth, adminController.getLendersData);
 router.post("/get/partnerData", adminAuth, adminController.getPartnerData);
 router.post("/get/membersData", adminController.getMembersData);
 router.post("/Leaderslogin", adminController.Adminlogin);
+
+//...............CSC..Panels.........................................................................
+router.post("/create/cscCenter", adminAuth, adminController.cscAgents);
+
 module.exports = router;

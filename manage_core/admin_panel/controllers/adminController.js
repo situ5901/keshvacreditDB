@@ -8,6 +8,7 @@ const Member = require("../../models/Member");
 const User = require("../../../models/user.model.js");
 const Users = require("../../../models/checkdata.js");
 const AgentModel = require("../../models/AgentModel.js");
+const { CSCmodel } = require("../../CSC/CSCschema.js");
 const CheckUser = require("../../models/checkuser");
 const MemberData = require("../../../models/infiSchema");
 const {
@@ -535,5 +536,46 @@ exports.getMembersData = async (req, res) => {
       message: "❌ Server Error",
       error: error.message,
     });
+  }
+};
+
+//...............CSC..Panels.........................................................................
+
+exports.cscAgents = async (req, res) => {
+  const { cscName, cscMail, cscPassword } = req.body;
+
+  if (!cscName || !cscMail || !cscPassword) {
+    return res.status(400).json({
+      message: "❌ CSC name, email, and password are required",
+    });
+  }
+
+  try {
+    const existing = await CSCmodel.findOne({
+      $or: [{ cscName: cscName }, { cscMail: cscMail }],
+    });
+
+    if (existing) {
+      return res.status(400).json({ message: "❌ CSC User already exists" });
+    }
+
+    const hashedPassword = await bcrypt.hash(cscPassword, 10);
+
+    const newCSCCenter = new CSCmodel({
+      cscName,
+      cscMail,
+      cscPassword: hashedPassword,
+    });
+
+    await newCSCCenter.save();
+
+    res
+      .status(201)
+      .json({ message: "✅ CSC User created successfully", newCSCCenter });
+  } catch (error) {
+    console.error(error);
+    res
+      .status(500)
+      .json({ message: "An error occurred during user registration" });
   }
 };

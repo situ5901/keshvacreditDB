@@ -10,6 +10,7 @@ mongoose
   .then(() => console.log("✅ MongoDB Connected Successfully"))
   .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
 
+// MongoDB Models
 const UserDB = mongoose.model(
   "LoanTap",
   new mongoose.Schema({}, { collection: "LoanTap", strict: false }),
@@ -23,6 +24,7 @@ const MetaDB = mongoose.model(
   }),
 );
 
+// Variables for API Authentication
 const partnerKey = "iDWUDj8oljS9XHeHXzsJCGViewdHRUiR"; // example
 const iv = Buffer.alloc(16, 0);
 
@@ -48,8 +50,7 @@ function getHeaders() {
 }
 
 const API_URL = "https://loantap.in/v1-application/transact";
-const MAX_LEADS = 1;
-const Partner_id = "Keshvacredit";
+const Partner_id = "Keshvacredit"; // Used in request body
 
 function convertDobToYYYYMMDD(dob) {
   if (!dob) return null;
@@ -85,14 +86,16 @@ async function sendToNewAPI(lead) {
 
     const requestBody = { add_application: applicant };
 
-    console.log("📤 Sending Payload to API:");
-    console.dir(requestBody, { depth: null });
+    console.log("📤 Sending Payload to API for:", lead.phone);
 
     const response = await axios.post(API_URL, requestBody, {
       headers: getHeaders(),
     });
-    console.log("📥 API Response:");
-    console.dir(response.data, { depth: null });
+    console.log(
+      "📥 API Response Status:",
+      response.data?.add_application?.answer?.status,
+    );
+
     const status = response.data?.add_application?.answer?.status || "unknown";
     const message =
       response.data?.add_application?.answer?.message || "No message";
@@ -103,7 +106,12 @@ async function sendToNewAPI(lead) {
       rawResponse: response.data,
     };
   } catch (error) {
-    console.error("❌ API Error:", error.response?.data || error.message);
+    console.error(
+      "❌ API Error for",
+      lead.phone,
+      ":",
+      error.response?.data || error.message,
+    );
     return {
       status: "failed",
       message: error.response?.data?.message || "API error",
@@ -112,8 +120,10 @@ async function sendToNewAPI(lead) {
   }
 }
 
-// ✅ Process one batch of users
+// ✅ Process one batch of users (using Promise.allSettled)
 async function processBatch(users) {
+  // Promise.allSettled ensures that all API calls are made,
+  // even if some fail, and then proceeds.
   const results = await Promise.allSettled(
     users.map(async (user) => {
       const result = await sendToNewAPI(user);
@@ -124,9 +134,7 @@ async function processBatch(users) {
           $push: {
             apiResponse: {
               LoanTap: {
-                message: result.message,
-                status: result.status,
-                fullResponse: result.rawResponse,
+                fullResponse: result.rawResponse.add_application.answer,
                 createdAt: new Date().toISOString(),
               },
             },
@@ -138,7 +146,6 @@ async function processBatch(users) {
           $unset: { accounts: "" },
         },
       );
-      //situ
       console.log(`✅ Mongo Updated: ${user.phone}`);
       return result;
     }),
@@ -147,75 +154,53 @@ async function processBatch(users) {
   return results;
 }
 
-// ✅ Daily count helpers
-async function getDailyCount() {
-  const today = new Date().toISOString().split("T")[0];
-  let record = await MetaDB.findOne({ key: "loantap_daily_counter" });
-
-  if (!record || record.value.date !== today) {
-    await MetaDB.updateOne(
-      { key: "loantap_daily_counter" },
-      { $set: { value: { date: today, count: 0 } } },
-      { upsert: true },
-    );
-    return 0;
-  }
-
-  return record.value.count;
-}
-
-async function incrementDailyCount(by = 1) {
-  const today = new Date().toISOString().split("T")[0];
-  await MetaDB.updateOne(
-    { key: "loantap_daily_counter" },
-    {
-      $inc: { "value.count": by },
-      $set: { "value.date": today },
-    },
-    { upsert: true },
-  );
-}
-
-// ✅ Main loop with 10,000 daily limit
-let processedCount = 0;
-async function loop() {
+// ✅ Main execution function (Batch size set to 100)
+async function runAllLeads() {
   try {
     let hasMore = true;
+    let totalLeadsProcessed = 0;
+
+    // --- YAHAN BATCH SIZE 100 KAR DIYA GAYA HAI ---
+    const BATCH_SIZE = 1;
+    // ----------------------------------------------
+
+    console.log("🚀 Starting lead processing with a batch size of 100...");
 
     while (hasMore) {
-      const currentCount = await getDailyCount();
+      console.log(`\n🔍 Fetching next batch of leads (Size: ${BATCH_SIZE})...`);
 
-      if (currentCount >= 10000) {
-        console.log("✅ Daily limit reached (10,000). Waiting for next day...");
-        break;
-      }
-
-      const batchSize = Math.min(MAX_LEADS, 10000 - currentCount);
-      console.log("🔍 Fetching leads...");
-
+      // Fetch leads that have not been sent to LoanTap yet
       const leads = await UserDB.aggregate([
         { $match: { "RefArr.name": { $ne: "LoanTap" } } },
-        { $limit: batchSize },
+        { $limit: BATCH_SIZE }, // 100 leads at a time
       ]);
 
       if (leads.length === 0) {
         hasMore = false;
-        console.log("🚫 No more leads to process.");
+        console.log("🚫 No more leads to process. Stopping.");
       } else {
+        console.log(`✨ Processing batch of ${leads.length} leads...`);
+        // ProcessBatch calls Promise.allSettled for parallel API hits (100 at once)
         await processBatch(leads);
-        await incrementDailyCount(leads.length);
-        processedCount += leads.length;
-        console.log(`📊 Total Processed Today: ${currentCount + leads.length}`);
-        await new Promise((res) => setTimeout(res, 1000));
+
+        totalLeadsProcessed += leads.length;
+        console.log(
+          `📊 Total Leads Processed in this run: ${totalLeadsProcessed}`,
+        );
+
+        // Thoda sa delay tak ki API ko overload na ho (optional)
+        await new Promise((res) => setTimeout(res, 500));
       }
     }
   } catch (err) {
-    console.error("❗ Loop Error:", err.message);
+    console.error("❗ Main Process Error:", err.message);
   } finally {
+    // Wait a moment to ensure all updates are written before closing
+    await new Promise((res) => setTimeout(res, 500));
     mongoose.connection.close();
-    console.log("🔒 MongoDB connection closed.");
+    console.log("🔒 MongoDB connection closed. Process finished.");
   }
 }
 
 // ✅ Start
-loop();
+runAllLeads();

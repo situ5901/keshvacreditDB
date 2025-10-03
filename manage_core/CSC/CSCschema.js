@@ -1,7 +1,8 @@
 const mongoose = require("mongoose");
 
 // --- 1. User Schema Definition ---
-const UserSchema = new mongoose.Schema({
+const UserSchema = new mongoose.Schema(
+  {
     firstName: { type: String, required: true },
     lastName: { type: String },
     username: { type: String, required: true, unique: true },
@@ -15,10 +16,13 @@ const UserSchema = new mongoose.Schema({
     accountNumber: { type: String },
     bankName: { type: String },
     IFSC: { type: String },
-});
+  },
+  { versionKey: false },
+);
 
 // --- 2. Gold Loan Schema Definition ---
-const goldLoanSchema = new mongoose.Schema({
+const goldLoanSchema = new mongoose.Schema(
+  {
     name: String,
     phone: String,
     email: String,
@@ -33,10 +37,31 @@ const goldLoanSchema = new mongoose.Schema({
     monthlyIncome: String,
     existingEMI: String,
     agree: Boolean,
-}, { strict: false });
+  },
+  { strict: false, versionKey: false },
+);
 
-// --- 3. Export both models in an object ---
+const CSCSchema = new mongoose.Schema(
+  {
+    cscName: {
+      type: String,
+      required: true,
+    },
+    cscMail: {
+      type: String,
+      required: true,
+      unique: true,
+    },
+    cscPassword: {
+      type: String,
+      required: true,
+    },
+  },
+  { versionKey: false },
+);
+
 module.exports = {
-    CsCenter: mongoose.model("CsCenter", UserSchema),
-    GoldLoan: mongoose.model("GoldLoan", goldLoanSchema)
+  CsCenter: mongoose.model("CsCenter", UserSchema),
+  GoldLoan: mongoose.model("GoldLoan", goldLoanSchema),
+  CSCmodel: mongoose.model("CSCmodel", CSCSchema),
 };
