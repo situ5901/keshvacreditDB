@@ -1,4 +1,4 @@
-const { model, Schema } = require("mongoose");
+/agentonst { model, Schema } = require("mongoose");
 
 const userSchema = new Schema(
   {
@@ -24,7 +24,6 @@ const userSchema = new Schema(
     businessType: { type: String },
     agent_id: {
       type: String,
-      unique: true,
     },
     salaryMode: { type: String },
     bankName: { type: String },
