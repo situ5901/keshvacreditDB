@@ -49,7 +49,7 @@ function getHeaders() {
   };
 }
 
-const API_URL = "https://loantap.in/v1-application/transact";
+const API_URL = "https://api.loantap.in/v1-application/dist";
 const Partner_id = "Keshvacredit"; // Used in request body
 
 function convertDobToYYYYMMDD(dob) {
@@ -161,7 +161,7 @@ async function runAllLeads() {
     let totalLeadsProcessed = 0;
 
     // --- YAHAN BATCH SIZE 100 KAR DIYA GAYA HAI ---
-    const BATCH_SIZE = 20;
+    const BATCH_SIZE = 50;
     // ----------------------------------------------
 
     console.log("🚀 Starting lead processing with a batch size of 100...");
