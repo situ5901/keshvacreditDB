@@ -11,4 +11,5 @@ router.get("/detail/user/:identifier", contoller.getUserDetail);
 router.put("/update/:username", contoller.updateUser);
 
 router.post("/apply/gold/loan", GoldLoan.applyGoldLoan);
+router.get("/test", contoller.test);
 module.exports = router;

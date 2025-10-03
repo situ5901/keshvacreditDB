@@ -1,8 +1,8 @@
 const express = require("express");
 const router = express.Router();
 const bcrypt = require("bcrypt");
-const CsCenter = require("./CSCschema.js");
-
+const { CSCmodel } = require("../CSC/CSCschema.js");
+const { CsCenter } = require("../CSC/CSCschema.js");
 const generateUsername = async (firstName) => {
   const baseName = firstName.toLowerCase().replace(/\s+/g, "");
   let username = `${baseName}${Math.floor(1000 + Math.random() * 9000)}`;
@@ -10,6 +10,10 @@ const generateUsername = async (firstName) => {
     username = `${baseName}${Math.floor(1000 + Math.random() * 9000)}`;
   }
   return username;
+};
+
+exports.test = async (req, res) => {
+  return res.status(200).json({ message: "✅ Test API" });
 };
 
 exports.register = async (req, res) => {
