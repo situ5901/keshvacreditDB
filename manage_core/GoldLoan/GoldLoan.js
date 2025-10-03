@@ -7,7 +7,6 @@ exports.applyGoldLoan = async (req, res) => {
     try {
         const { phone, email } = req.body;
 
-        // 🔍 Check for existing application
         const existing = await GoldLoan.findOne({
             $or: [{ phone }, { email }]
         });
@@ -19,7 +18,6 @@ exports.applyGoldLoan = async (req, res) => {
             });
         }
 
-        // ✅ Save new application
         const loan = new GoldLoan(req.body);
         await loan.save();
         
