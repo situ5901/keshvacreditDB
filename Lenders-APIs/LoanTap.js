@@ -3,7 +3,7 @@ const crypto = require("crypto");
 const router = express.Router();
 const axios = require("axios");
 
-const API_URL = "https://loantap.in/v1-application/transact";
+const API_URL = "https://api.loantap.in/v1-application/dist";
 const Partner_id = "Keshvacredit";
 const partnerKey = "iDWUDj8oljS9XHeHXzsJCGViewdHRUiR";
 const iv = Buffer.alloc(16, 0);
