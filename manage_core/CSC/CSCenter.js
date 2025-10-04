@@ -3,6 +3,7 @@ const router = express.Router();
 const bcrypt = require("bcrypt");
 const { CSCmodel } = require("../CSC/CSCschema.js");
 const { CsCenter } = require("../CSC/CSCschema.js");
+const User = require("../../models/user.model.js");
 const generateUsername = async (firstName) => {
   const baseName = firstName.toLowerCase().replace(/\s+/g, "");
   let username = `${baseName}${Math.floor(1000 + Math.random() * 9000)}`;
@@ -172,3 +173,32 @@ exports.updateUser = async (req, res) => {
   }
 };
 
+exports.getCPartnerDatabyID = async (req, res) => {
+  const { agent_id } = req.body;
+
+  if (!agent_id) {
+    return res.status(400).json({ error: "Please enter center ID" });
+  }
+
+  try {
+    const user = await User.find({ agent_id: agent_id });
+
+    if (!user) {
+      return res
+        .status(404)
+        .json({ error: "User not found with this center ID" });
+    }
+    const count = await User.countDocuments({ agent_id: agent_id });
+
+    return res.status(200).json({
+      message: "Data retrieved successfully",
+      match_count: count, // Added the count
+      user_data: user, // Renamed 'user' to 'user_data' for clarity
+    });
+  } catch (err) {
+    console.error("Data retrieval error:", err.message);
+    return res
+      .status(500)
+      .json({ error: "Server error during data retrieval" });
+  }
+};
