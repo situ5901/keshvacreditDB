@@ -25,4 +25,5 @@ router.post("/Leaderslogin", adminController.Adminlogin);
 //...............CSC..Panels.........................................................................
 router.post("/create/cscCenter", adminAuth, adminController.cscAgents);
 router.get("/get/cscAgent", adminAuth, adminController.getCSCAgents);
+router.post("/delete/cscAgent", adminAuth, adminController.deletecsc);
 module.exports = router;

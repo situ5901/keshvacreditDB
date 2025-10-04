@@ -594,3 +594,17 @@ exports.getCSCAgents = async (req, res) => {
     res.status(500).json({ message: "❌ Server error" });
   }
 };
+
+exports.deletecsc = async (req, res) => {
+  const { cscName, cscMail } = req.body;
+  try {
+    const { cscName, cscMail } = req.body;
+    const CSCagents = await CSCmodel.findOneAndDelete({ cscName, cscMail });
+    if (!CSCagents)
+      return res.status(404).json({ message: "❌ Agent not found" });
+    return res.status(200).json({ message: "✅ Agent deleted successfully" });
+  } catch (error) {
+    console.error("❌ Error getting agents:", error);
+    res.status(500).json({ message: "❌ Server error" });
+  }
+};
