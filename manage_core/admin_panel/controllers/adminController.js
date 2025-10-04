@@ -8,9 +8,9 @@ const Member = require("../../models/Member");
 const User = require("../../../models/user.model.js");
 const Users = require("../../../models/checkdata.js");
 const AgentModel = require("../../models/AgentModel.js");
-const { CSCmodel } = require("../../CSC/CSCschema.js");
 const CheckUser = require("../../models/checkuser");
 const MemberData = require("../../../models/infiSchema");
+const { CSCmodel } = require("../../CSC/CSCschema.js");
 const {
   MoneyView,
   MoneyView2,
@@ -577,5 +577,20 @@ exports.cscAgents = async (req, res) => {
     res
       .status(500)
       .json({ message: "An error occurred during user registration" });
+  }
+};
+
+exports.getCSCAgents = async (req, res) => {
+  try {
+    const CSCAgents = await CSCmodel.find();
+    const CSCAgentsCount = await CSCmodel.countDocuments();
+    return res.status(200).json({
+      message: "✅ CSC Agents retrieved successfully",
+      CSCAgentsCount,
+      CSCAgents,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "❌ Server error" });
   }
 };
