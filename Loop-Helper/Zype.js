@@ -15,7 +15,7 @@ const UserDB = mongoose.model(
 );
 
 const BATCH_SIZE = 100;
-const PartnerID = "a8ce06a0-4fbd-489f-8d75-345548fb98a8";
+const PartnerID = "1e7c776d-752e-4604-baba-aacd1ce1fe7a";
 const ELIGIBILITY_API =
   "https://prod.zype.co.in/attribution-service/api/v1/underwriting/customerEligibility";
 const PRE_APPROVAL_API =
