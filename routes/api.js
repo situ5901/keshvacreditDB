@@ -87,7 +87,7 @@ router.post("/userinfo", async (req, res) => {
       businessType,
       doesFileITR,
       doesFileGST,
-      agent_id,
+      agentphone,
       dob, // fixed
     } = req.body;
 
@@ -177,7 +177,7 @@ router.post("/userinfo", async (req, res) => {
       doesFileITR,
       company_name,
       doesFileGST,
-      agent_id,
+      agentphone,
       partner: "Keshvacredit",
       consent:
         "We value your privacy. To proceed, we need your consent to collect and process your personal data, such as name, phone number, and PAN details.By continuing, you agree to our Privacy Policy and Terms & Conditions.",
@@ -333,7 +333,7 @@ router.post("/ramfinwebAPI", async (req, res) => {
 
 // Your POST API
 const webRamfinSchema = new mongoose.Schema({
-  mobileNumber: String,
+  phone: String,
   email: String,
   panNumber: String,
   name: String,
@@ -348,22 +348,21 @@ const webRamfinSchema = new mongoose.Schema({
 
 const WebRamfin = mongoose.model("webRamfin", webRamfinSchema);
 
-// API Route
 router.post("/zypewebapi", async (req, res) => {
-  try {
-    const {
-      mobileNumber,
-      email,
-      panNumber,
-      name,
-      dob,
-      income,
-      employmentType,
-    } = req.body;
+  const phone = req.body.phone;
+  let eligibilityResponse = null;
+  let preApprovalResponse = null;
 
-    // ✅ Basic validation
+  // Final Status और Offer को डिफाइन करें
+  let finalStatus = "FAILED";
+  let finalOffer = 0;
+
+  try {
+    const { email, panNumber, name, dob, income, employmentType } = req.body;
+
+    // --- 1. Basic Validation ---
     if (
-      !mobileNumber ||
+      !phone ||
       !email ||
       !panNumber ||
       !name ||
@@ -371,14 +370,16 @@ router.post("/zypewebapi", async (req, res) => {
       !income ||
       !employmentType
     ) {
-      return res.status(400).json({ message: "All fields are required" });
+      return res
+        .status(400)
+        .json({ message: "All fields are required (including phone)" });
     }
 
-    // ✅ First API: customerEligibility
-    const eligibilityResponse = await axios.post(
+    // --- 2. Zype Eligibility API Call ---
+    eligibilityResponse = await axios.post(
       "https://prod.zype.co.in/attribution-service/api/v1/underwriting/customerEligibility",
       {
-        mobileNumber,
+        mobileNumber: phone,
         panNumber,
         partnerId: "a8ce06a0-4fbd-489f-8d75-345548fb98a8",
       },
@@ -387,60 +388,127 @@ router.post("/zypewebapi", async (req, res) => {
       },
     );
 
-    // ✅ Check if eligible
-    if (eligibilityResponse.data.status !== "ACCEPT") {
-      return res.status(200).json({
-        message: "Customer not eligible",
-        status: eligibilityResponse.data.status,
+    // Eligibility Status को फाइनल Status के रूप में सेट करें
+    finalStatus = eligibilityResponse.data.status;
+
+    // --- 3. Conditional Pre-Approval Logic ---
+    if (eligibilityResponse.data.status === "ACCEPT") {
+      // --- 3a. Duplicate Check (RefArr: Zype) ---
+      const existingRef = await User.findOne({
+        phone: phone,
+        "RefArr.name": "Zype",
       });
+
+      if (existingRef) {
+        // अगर पहले ही Zype को हिट किया जा चुका है, तो Pre-Approval API को छोड़ दें
+        console.log(
+          `⚠️ User ${phone} already hit Zype. Skipping Pre-Approval API.`,
+        );
+        finalStatus = "DUPLICATE";
+        finalOffer = existingRef.offer || 0;
+      } else {
+        // --- 3b. Call Pre-Approval API (Only if eligible and not duplicate) ---
+        preApprovalResponse = await axios.post(
+          "https://prod.zype.co.in/attribution-service/api/v1/underwriting/preApprovalOffer",
+          {
+            mobileNumber: phone,
+            email,
+            panNumber,
+            name,
+            dob,
+            income,
+            employmentType,
+            partnerId: "a8ce06a0-4fbd-489f-8d75-345548fb98a8",
+            bureauType: 1,
+            bureauName: "experian",
+            bureauData: "<BureauSampleDataInXMLText>",
+          },
+          {
+            headers: { "Content-Type": "application/json" },
+          },
+        );
+
+        // Final Status और Offer को Pre-Approval response से अपडेट करें
+        finalStatus = preApprovalResponse.data.status;
+        finalOffer = preApprovalResponse.data.offer;
+      }
     }
 
-    // ✅ Second API: preApprovalOffer
-    const preApprovalResponse = await axios.post(
-      "https://prod.zype.co.in/attribution-service/api/v1/underwriting/preApprovalOffer",
-      {
-        mobileNumber,
+    // --- 4. Prepare DB Update Payload (Logs All Attempts) ---
+    const zypeApiRespone = {
+      eligibility: eligibilityResponse.data,
+      // Pre-Approval response अगर null है तो उसे भी handle करें
+      preApproval: preApprovalResponse ? preApprovalResponse.data : null,
+    };
+
+    const apiResponseEntry = {
+      Zype: zypeApiRespone,
+      createdAt: new Date().toLocaleString(),
+    };
+
+    const refArrEntry = {
+      name: "Zype",
+      createdAt: new Date().toLocaleString(),
+    };
+
+    const updateDoc = {
+      // Push the new attempt's log
+      $push: {
+        apiResponse: apiResponseEntry,
+        RefArr: refArrEntry,
+      },
+      // Set/Update basic user details and the latest status/offer
+      $set: {
+        phone: phone, // DB field name 'phone'
         email,
         panNumber,
         name,
         dob,
         income,
         employmentType,
-        partnerId: "a8ce06a0-4fbd-489f-8d75-345548fb98a8",
-        bureauType: 1,
-        bureauName: "experian",
-        bureauData: "<BureauSampleDataInXMLText>",
+        status: finalStatus, // Always save the final status
+        offer: finalOffer, // Always save the final offer (can be 0)
       },
-      {
-        headers: { "Content-Type": "application/json" },
-      },
+      $unset: { accounts: "" },
+    };
+
+    // --- 5. DB Update (User) ---
+    // ✅ GUARANTEED UPDATE/LOG: Har attempt ko User document mein update karein
+    await User.updateOne({ phone: phone }, updateDoc, { upsert: true });
+    console.log(
+      `✅ User document updated/inserted for attempt: ${phone} with status: ${finalStatus}`,
     );
 
-    const { status, offer } = preApprovalResponse.data;
-
-    // ✅ Save to DB
+    // --- 6. Save Log to WebRamfin ---
+    // ✅ GUARANTEED SAVE: WebRamfin log collection mein complete data save karein
     const saveData = new WebRamfin({
-      mobileNumber,
+      phone: phone, // DB field name 'phone'
       email,
       panNumber,
       name,
       dob,
       income,
       employmentType,
-      status,
-      offer,
+      status: finalStatus,
+      offer: finalOffer,
+      apiResponse: [apiResponseEntry],
+      RefArr: [refArrEntry],
     });
 
     await saveData.save();
+    console.log("✅ Log document saved to WebRamfin.");
 
-    // ✅ Return response
-    res.status(200).json({
-      message: "Data saved successfully",
+    return res.status(200).json({
+      message: "Data saved successfully and user document updated",
       status,
       offer,
     });
   } catch (error) {
-    console.error("Zype API Error:", error.response?.data || error.message);
+    // --- Handle Zype API / DB Errors ---
+    console.error(
+      `Zype API Error for ${phone}:`,
+      error.response?.data || error.message,
+    );
     res.status(500).json({
       message: "Error processing request",
       error: error.response?.data || error.message,
