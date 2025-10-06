@@ -148,12 +148,10 @@ exports.updateUser = async (req, res) => {
   try {
     const { username } = req.params;
     const updates = { ...req.body };
-
     delete updates.username;
-    delete updates.phone;
     delete updates.password;
 
-    const user = await CsCenter.findOneAndUpdate(
+    const user = await CSCmodel.findOneAndUpdate(
       { username },
       { $set: updates },
       { new: true, runValidators: true }, // Return updated document and run schema validators

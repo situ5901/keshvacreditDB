@@ -57,7 +57,7 @@ const CSCSchema = new mongoose.Schema(
       required: true,
     },
   },
-  { versionKey: false },
+  { versionKey: false, strict: false }
 );
 
 module.exports = {
