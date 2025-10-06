@@ -16,8 +16,8 @@ MONGO_URI = os.getenv("MONGODB_URINEW", "mongodb://localhost:27017/")
 # === API Setup ===
 BASE_URL = "https://dev-rspl-imlsp.lendenclub.com/v1"
 PARTNER_CODE = "KC"
-KEY = "49dde96a1f057656ede3cf85f1be2b29"   # utf-8 string
-IV = "a4da4265bfa4bac0"                   # utf-8 string
+KEY = "76f541a77bb26ff4389c47ede508c80f"   # utf-8 string
+IV = "8795d9c2dfda62da"                   # utf-8 string
 AES_BLOCK_SIZE = 32
 BATCH_SIZE = 50
 
