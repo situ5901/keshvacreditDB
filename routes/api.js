@@ -381,7 +381,7 @@ router.post("/zypewebapi", async (req, res) => {
       {
         mobileNumber: phone,
         panNumber,
-        partnerId: "a8ce06a0-4fbd-489f-8d75-345548fb98a8",
+        partnerId: "1e7c776d-752e-4604-baba-aacd1ce1fe7a",
       },
       {
         headers: { "Content-Type": "application/json" },
@@ -418,7 +418,7 @@ router.post("/zypewebapi", async (req, res) => {
             dob,
             income,
             employmentType,
-            partnerId: "a8ce06a0-4fbd-489f-8d75-345548fb98a8",
+            partnerId: "1e7c776d-752e-4604-baba-aacd1ce1fe7a",
             bureauType: 1,
             bureauName: "experian",
             bureauData: "<BureauSampleDataInXMLText>",
