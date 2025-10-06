@@ -200,3 +200,32 @@ exports.getCPartnerDatabyID = async (req, res) => {
       .json({ error: "Server error during data retrieval" });
   }
 };
+
+exports.addAmount = async (req, res) => {
+  try {
+    const { username } = req.params;
+    const { addAmount } = req.body; // Expects: { "addAmount": 500 }
+
+    if (typeof addAmount !== "number") {
+      return res.status(400).json({ error: "addAmount must be a number" });
+    }
+
+    const user = await CSCmodel.findOneAndUpdate(
+      { username },
+      { $inc: { amount: addAmount } },
+      { new: true, runValidators: true },
+    ).select("-password");
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    return res.status(200).json({
+      message: "Amount added successfully",
+      user,
+    });
+  } catch (err) {
+    console.error("Add amount error:", err.message);
+    return res.status(500).json({ error: "Server error" });
+  }
+};
