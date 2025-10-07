@@ -161,7 +161,7 @@ async function runAllLeads() {
     let totalLeadsProcessed = 0;
 
     // --- YAHAN BATCH SIZE 100 KAR DIYA GAYA HAI ---
-    const BATCH_SIZE = 50;
+    const BATCH_SIZE = 5;
     // ----------------------------------------------
 
     console.log("🚀 Starting lead processing with a batch size of 100...");
