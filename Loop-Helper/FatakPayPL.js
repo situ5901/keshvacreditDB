@@ -10,8 +10,8 @@ mongoose
   .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
 
 const UserDB = mongoose.model(
-  "coin",
-  new mongoose.Schema({}, { collection: "coin", strict: false }),
+  "smcoll",
+  new mongoose.Schema({}, { collection: "smcoll", strict: false }),
 );
 
 const BATCH_SIZE = 80;
@@ -145,11 +145,12 @@ async function processBatch(users) {
     const updateDoc = {
       $push: {
         apiResponse: {
-          FatakPayPL: true,
-          status: eligibilityResponse.success ? "Eligible" : "Ineligible",
-          message: eligibilityResponse.message,
-          data: eligibilityResponse.data || {},
-          createdAt: new Date().toISOString(),
+          FatakPayPL: {
+            status: eligibilityResponse.success ? "Eligible" : "Ineligible",
+            message: eligibilityResponse.message,
+            data: eligibilityResponse.data || {},
+            createdAt: new Date().toISOString(),
+          },
         },
         RefArr: {
           name: "FatakPay",

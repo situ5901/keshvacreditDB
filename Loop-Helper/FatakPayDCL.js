@@ -146,11 +146,12 @@ async function processBatch(users) {
     const updateDoc = {
       $push: {
         apiResponse: {
-          FatakPayDCL: true,
-          status: eligibilityResponse.success ? "Eligible" : "Ineligible",
-          message: eligibilityResponse.message,
-          data: eligibilityResponse.data || {},
-          createdAt: new Date().toISOString(),
+          FatakPayDCL: {
+            status: eligibilityResponse.success ? "Eligible" : "Ineligible",
+            message: eligibilityResponse.message,
+            data: eligibilityResponse.data || {},
+            createdAt: new Date().toISOString(),
+          },
         },
         RefArr: {
           name: "FatakPayDCL",
