@@ -353,10 +353,110 @@ router.post("/zypewebapi", async (req, res) => {
     let eligibilityResponse = null;
     let preApprovalResponse = null;
 
-    // Final Status, Offer, and Message (Hindi: डिफाइन करें)
+    // Final Status, Offer, and Message
     let finalStatus = "FAILED";
     let finalOffer = 0;
-    let finalmessage = "Request processing failed due to unknown error."; // Set a default failure message
+    let finalmessage = null; // Start as null to strictly enforce API messages
+
+    try {
+        const { email, panNumber, name, dob, income, employmentType } = req.body;
+
+        // --- 1. Basic Validation ---
+        if (
+            !phone || !email || !panNumber || !name || !dob || !income || !employmentType
+        ) {
+            finalmessage = "All required fields were not provided.";
+            return res
+                .status(400)
+                .json({ message: finalmessage, status: "VALIDATION_FAILED", offer: 0 });
+        }
+
+        // --- 2. Zype Eligibility API Call (with Robust Error Handling) ---
+        try {
+            eligibilityResponse = await axios.post(
+                "https://prod.zype.co.in/attribution-service/api/v1/underwriting/customerEligibility",
+                {
+                    mobileNumber: phone,
+                    panNumber,
+                    partnerId: "a8ce06a0-4fbd-489f-8d75-345548fb98a8",
+                },
+                {
+                    headers: { "Content-Type": "application/json" },
+                },
+            );
+        } catch (error) {
+            // CRITICAL FIX: Handle Zype's non-standard "SUCCESS" message that throws an HTTP error.
+            if (error.response && error.response.data && error.response.data.message === "SUCCESS_DEDUPE_NOT_FOUND") {
+                // Synthesize a successful response object to continue the flow
+                eligibilityResponse = {
+                    data: {
+                        status: "ACCEPT",
+                        message: "SUCCESS_DEDUPE_NOT_FOUND",
+                    }
+                };
+            } else {
+                // If it's a real error (like connection fail or other API error), re-throw to the main catch block
+                throw error;
+            }
+        }
+
+        // Set Status and Message from Eligibility Response (or the synthesized response)
+        finalStatus = eligibilityResponse.data.status;
+        finalmessage = eligibilityResponse.data.message;
+
+        // --- 3. Conditional Pre-Approval Logic ---
+        if (eligibilityResponse.data.status === "ACCEPT") {
+            
+            // --- 3a. Duplicate Check (RefArr: Zype) ---
+            const existingRef = await User.findOne({
+                phone: phone,
+                "RefArr.name": "Zype",
+            });
+
+            if (existingRef) {
+                console.log(`⚠️ User ${phone} already hit Zype. Skipping Pre-Approval API.`);
+                finalStatus = "DUPLICATE";
+                finalOffer = existingRef.offer || 0; 
+                finalmessage = existingRef.message || "Duplicate application detected.";
+
+            } else {
+                // --- 3b. Call Pre-Approval API (Only if eligible and not duplicate) ---
+                preApprovalResponse = await axios.post(
+                    "https://prod.zype.co.in/attribution-service/api/v1/underwriting/preApprovalOffer",
+                    {
+                        mobileNumber: phone,
+                        email,
+                        panNumber,
+                        name,
+                        dob,
+                        income,
+                        employmentType,
+                        partnerId: "a8ce06a0-4fbd-489f-8d75-345548fb98a8",
+                        bureauType: 1,
+                        bureauName: "experian",
+                        bureauData: "<BureauSampleDataInXMLText>",
+                    },
+                    {
+                        headers: { "Content-Type": "application/json" },
+                    },
+                );
+
+                // ✅ CRITICAL BUG FIX: Update Status, Offer, and Message from Pre-Approval response
+                finalStatus = preApprovalResponse.data.status;
+                finalOffer = preApprovalResponse.data.offer || preApprovalResponse.data.limit || 0; 
+                
+                // Set message from Pre-Approval API. Use a generic message only as a last resort.
+                if (preApprovalResponse.data.message) {
+                    finalmessage = preApprovalResponse.data.message;router.post("/zypewebapi", async (req, res) => {
+    const phone = req.body.phone;
+    let eligibilityResponse = null;
+    let preApprovalResponse = null;
+
+    // Final Status, Offer, and Message
+    let finalStatus = "FAILED";
+    let finalOffer = 0;
+    // Set initial message to null/undefined so we ONLY use API messages
+    let finalmessage = null; 
 
     try {
         const { email, panNumber, name, dob, income, employmentType } = req.body;
@@ -390,10 +490,9 @@ router.post("/zypewebapi", async (req, res) => {
             },
         );
 
-        // ✅ FIX APPLIED HERE: Set Status and Message from Eligibility Response
-        // Eligibility Status और Message को फाइनल Status/Message के रूप में सेट करें
+        // Set Status and Message from Eligibility Response
         finalStatus = eligibilityResponse.data.status;
-        finalmessage = eligibilityResponse.data.message || finalmessage; // Use API message, otherwise keep default
+        finalmessage = eligibilityResponse.data.message;
 
         // --- 3. Conditional Pre-Approval Logic ---
         if (eligibilityResponse.data.status === "ACCEPT") {
@@ -404,14 +503,14 @@ router.post("/zypewebapi", async (req, res) => {
             });
 
             if (existingRef) {
-                // अगर पहले ही Zype को हिट किया जा चुका है, तो Pre-Approval API को छोड़ दें
+                // If Duplicate, use saved values from DB
                 console.log(
                     `⚠️ User ${phone} already hit Zype. Skipping Pre-Approval API.`,
                 );
                 finalStatus = "DUPLICATE";
-                finalOffer = existingRef.offer || 0;
-                // ✅ FIX APPLIED HERE: Set a custom message for Duplicate
-                finalmessage = existingRef.message || "User already applied to Zype. Skipping Pre-Approval check.";
+                finalOffer = existingRef.offer || 0; 
+                // Use the message saved in the DB. If that's null, use a generic message.
+                finalmessage = existingRef.message || "Duplicate application detected.";
 
             } else {
                 // --- 3b. Call Pre-Approval API (Only if eligible and not duplicate) ---
@@ -435,21 +534,25 @@ router.post("/zypewebapi", async (req, res) => {
                     },
                 );
 
-                // Final Status, Offer और Message को Pre-Approval response से अपडेट करें
+                // Update Status, Offer, and Message from Pre-Approval response
                 finalStatus = preApprovalResponse.data.status;
-                finalOffer = preApprovalResponse.data.offer;
-                finalmessage = preApprovalResponse.data.message || finalmessage;
+                finalOffer = preApprovalResponse.data.offer || preApprovalResponse.data.limit || 0; 
+                // Set message from Pre-Approval API. If API message is empty/null, use a generic ACCEPT/REJECT message.
+                if (preApprovalResponse.data.message) {
+                    finalmessage = preApprovalResponse.data.message;
+                } else {
+                    // Custom message ONLY used as fallback if API returns ACCEPT but no message
+                    finalmessage = (finalStatus === "ACCEPT" ? "Data saved successfully" : "Pre-approval check complete.");
+                }
             }
         } else {
-            // If status is REJECT/REFER from Eligibility, finalStatus/finalmessage are already set in Step 2.
-            // Ensure offer is 0 if not accepted.
+            // If status is REJECT/REFER from Eligibility, message is already set in Step 2.
             finalOffer = 0;
         }
 
         // --- 4. Prepare DB Update Payload (Logs All Attempts) ---
         const zypeApiRespone = {
             eligibility: eligibilityResponse.data,
-            // Pre-Approval response अगर null है तो उसे भी handle करें
             preApproval: preApprovalResponse ? preApprovalResponse.data : null,
         };
 
@@ -464,38 +567,34 @@ router.post("/zypewebapi", async (req, res) => {
         };
 
         const updateDoc = {
-            // Push the new attempt's log
             $push: {
                 apiResponse: apiResponseEntry,
                 RefArr: refArrEntry,
             },
-            // Set/Update basic user details and the latest status/offer
             $set: {
-                phone: phone, // DB field name 'phone'
+                phone: phone,
                 email,
                 panNumber,
                 name,
                 dob,
                 income,
                 employmentType,
-                status: finalStatus, // Always save the final status
-                offer: finalOffer, // Always save the final offer (can be 0)
-                message: finalmessage, // Save the final message
+                status: finalStatus,
+                offer: finalOffer,
+                message: finalmessage,
             },
             $unset: { accounts: "" },
         };
 
         // --- 5. DB Update (User) ---
-        // ✅ GUARANTEED UPDATE/LOG: Har attempt ko User document mein update karein
         await User.updateOne({ phone: phone }, updateDoc, { upsert: true });
         console.log(
             `✅ User document updated/inserted for attempt: ${phone} with status: ${finalStatus}`,
         );
 
         // --- 6. Save Log to WebRamfin ---
-        // ✅ GUARANTEED SAVE: WebRamfin log collection mein complete data save karein
         const saveData = new WebRamfin({
-            phone: phone, // DB field name 'phone'
+            phone: phone,
             email,
             panNumber,
             name,
@@ -504,7 +603,7 @@ router.post("/zypewebapi", async (req, res) => {
             employmentType,
             status: finalStatus,
             offer: finalOffer,
-            message: finalmessage, // Save the message here too
+            message: finalmessage,
             apiResponse: [apiResponseEntry],
             RefArr: [refArrEntry],
         });
@@ -513,11 +612,10 @@ router.post("/zypewebapi", async (req, res) => {
         console.log("✅ Log document saved to WebRamfin.");
 
         // --- 7. Final Success Response ---
-        // ✅ FIX APPLIED HERE: Using finalMessage, finalStatus, and finalOffer
         return res.status(200).json({
-            message: finalmessage, // The correct message
-            status: finalStatus,   // The correct status
-            offer: finalOffer,     // The correct offer
+            message: finalmessage,
+            status: finalStatus,
+            offer: finalOffer,
         });
     } catch (error) {
         // --- Handle Zype API / DB Errors ---
@@ -526,12 +624,79 @@ router.post("/zypewebapi", async (req, res) => {
             error.response?.data || error.message,
         );
         
-        // Log the severe error message
-        const errorMessageForUser = error.response?.data?.message || error.message || "An external API error occurred.";
+        // Use the error message returned by Zype API on failure, or a generic 500 message.
+        const errorMessageForUser = error.response?.data?.message || "An external API error occurred.";
 
         res.status(500).json({
-            message: "Error processing request",
-            status: "EXTERNAL_API_ERROR",
+            error: errorMessageForUser,
+        });
+    }
+});
+
+                } else {
+                    finalmessage = (finalStatus === "ACCEPT" ? "Data saved successfully" : "Pre-approval check complete.");
+                }
+            }
+        } else {
+            // If REJECT/REFER, offer is 0 and message is set from Eligibility check (Step 2)
+            finalOffer = 0;
+        }
+
+        // --- 4. Prepare DB Update Payload (Logs All Attempts) ---
+        const zypeApiRespone = {
+            eligibility: eligibilityResponse.data,
+            preApproval: preApprovalResponse ? preApprovalResponse.data : null,
+        };
+
+        const apiResponseEntry = { Zype: zypeApiRespone, createdAt: new Date().toLocaleString() };
+        const refArrEntry = { name: "Zype", createdAt: new Date().toLocaleString() };
+
+        const updateDoc = {
+            $push: { apiResponse: apiResponseEntry, RefArr: refArrEntry },
+            $set: {
+                phone: phone, email, panNumber, name, dob, income, employmentType,
+                status: finalStatus,
+                offer: finalOffer,
+                message: finalmessage,
+            },
+            $unset: { accounts: "" },
+        };
+
+        // --- 5. DB Update (User) ---
+        await User.updateOne({ phone: phone }, updateDoc, { upsert: true });
+        console.log(`✅ User document updated/inserted for attempt: ${phone} with status: ${finalStatus}`);
+
+        // --- 6. Save Log to WebRamfin ---
+        const saveData = new WebRamfin({
+            phone, email, panNumber, name, dob, income, employmentType,
+            status: finalStatus,
+            offer: finalOffer,
+            message: finalmessage,
+            apiResponse: [apiResponseEntry],
+            RefArr: [refArrEntry],
+        });
+
+        await saveData.save();
+        console.log("✅ Log document saved to WebRamfin.");
+
+        // --- 7. Final Success Response ---
+        return res.status(200).json({
+            message: finalmessage,
+            status: finalStatus,
+            offer: finalOffer,
+        });
+
+    } catch (error) {
+        // --- Handle Zype API / DB Errors ---
+        console.error(
+            `Zype API Error for ${phone}:`,
+            error.response?.data || error.message,
+        );
+        
+        // Use the error message returned by Zype API on failure, or a generic 500 message.
+        const errorMessageForUser = error.response?.data?.message || "An external API error occurred.";
+
+        res.status(500).json({
             error: errorMessageForUser,
         });
     }
