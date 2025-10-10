@@ -5,7 +5,7 @@ require("dotenv").config();
 const MONGODB_URINEW = process.env.MONGODB_URINEW;
 const DEDUPE_API = "https://www.ramfincorp.com/new-api/customers/check_dedupe";
 const LEAD_API = "https://www.ramfincorp.com/new-api/customers/lead_push";
-const BATCH_SIZE = 3;
+const BATCH_SIZE = 5;
 const Partner_id = "Keshvacredit";
 
 const AUTH_HEADER = {
@@ -13,17 +13,20 @@ const AUTH_HEADER = {
   Authorization:
     "Basic cmFtZmluX2U2NmIxNmE5ZjZiNzQ5YTAzOTBmZWRjM2U4ZjNkZjZmOmI3YjJlZDU1MjM5NjA5NzM5NmQwOWE2N2RkZTI4NjUyMDNjZDMxYjA=",
 };
-//Lead Done
+
+// ✅ MongoDB Connection
 mongoose
   .connect(MONGODB_URINEW)
   .then(() => console.log("✅ MongoDB Connected Successfully"))
   .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
 
+// ✅ Define MongoDB Model
 const UserDB = mongoose.model(
-  "ram2",
-  new mongoose.Schema({}, { collection: "ram2", strict: false }),
+  "ram3",
+  new mongoose.Schema({}, { collection: "ram3", strict: false }),
 );
 
+// ✅ Dedupe API
 async function dedupe(user) {
   try {
     const payload = {
@@ -47,6 +50,7 @@ async function dedupe(user) {
   }
 }
 
+// ✅ Lead Create API
 async function leadCreate(user) {
   try {
     const payload = {
@@ -71,6 +75,7 @@ async function leadCreate(user) {
   }
 }
 
+// ✅ Process each batch of users
 async function processBatch(users) {
   let attributedSuccessfullyCount = 0;
 
@@ -87,6 +92,31 @@ async function processBatch(users) {
 
         console.log(`🚀 Processing user: ${user.phone}`);
 
+        const employment = userDoc.employment;
+        const income = Number(userDoc.income); // Ensure number type
+
+        // ✅ Skip if not Salaried or income < 18000
+        if (employment !== "Salaried" || income < 18000) {
+          console.log(
+            `⏩ Skipping user ${user.phone} due to employment (${employment}) or income (${income})`,
+          );
+
+          const updateDoc = {
+            $push: {
+              RefArr: {
+                name: "RamFin",
+                message: "Skipped due to employment or income",
+                createdAt: new Date().toISOString(),
+              },
+            },
+            $unset: { accounts: "" },
+          };
+
+          await UserDB.updateOne({ _id: userDoc._id }, updateDoc);
+          return;
+        }
+
+        // ✅ Hit APIs if user qualifies
         const [dedupeResponse, leadCreateResponse] = await Promise.all([
           dedupe(user),
           leadCreate(user),
@@ -138,10 +168,12 @@ async function processBatch(users) {
   return attributedSuccessfullyCount;
 }
 
+// ✅ Delay function between batches
 function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+// ✅ Main function to handle batch processing
 async function main() {
   let totalAttributedSuccessfully = 0;
   let skip = 0;
@@ -174,8 +206,8 @@ async function main() {
 
       skip += users.length;
 
-      // 🕒 Wait for 3 seconds before hitting the next batch
-      console.log("⏳ Waiting 3 seconds before next batch...");
+      // 🕒 Wait 5 seconds before next batch
+      console.log("⏳ Waiting 5 seconds before next batch...");
       await delay(5000);
     }
 
@@ -193,4 +225,5 @@ async function main() {
   }
 }
 
+// ✅ Start the process
 main();
