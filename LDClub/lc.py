@@ -19,7 +19,7 @@ PARTNER_CODE = "KC"
 KEY = "76f541a77bb26ff4389c47ede508c80f"   # utf-8 string
 IV = "8795d9c2dfda62da"                   # utf-8 string
 AES_BLOCK_SIZE = 32
-BATCH_SIZE = 50
+BATCH_SIZE = 1
 
 # === MongoDB Setup ===
 client = MongoClient(MONGO_URI)

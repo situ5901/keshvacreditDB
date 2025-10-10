@@ -8,8 +8,8 @@ const ENDPOINT = "leads/create-lead-dsa";
 const SOURCE_ID = "77445946";
 const BATCH_SIZE = 1000;
 
-let totalSuccessCount = 0; 
-let totalApiHits = 0; 
+let totalSuccessCount = 0;
+let totalApiHits = 0;
 
 mongoose
   .connect(MONGODB_URINEW)
@@ -31,8 +31,8 @@ function getHeaders() {
 }
 
 async function LeadCreation(user) {
-  totalApiHits++; 
-  
+  totalApiHits++;
+
   try {
     let dobFormatted = "";
     if (user.dob) {
@@ -63,20 +63,20 @@ async function LeadCreation(user) {
     );
 
     console.log(`✅ Lead created for ${user.phone}:`, response.data);
-    return response.data; 
+    return response.data;
   } catch (err) {
-    const errorData = err.response?.data || { error: err.message, status: err.response?.status };
-    console.error(
-      `🚫 Lead creation failed for ${user.phone}:`,
-      errorData,
-    );
-    return errorData; 
+    const errorData = err.response?.data || {
+      error: err.message,
+      status: err.response?.status,
+    };
+    console.error(`🚫 Lead creation failed for ${user.phone}:`, errorData);
+    return errorData;
   }
 }
 
 async function processUser(user) {
   const leadResponse = await LeadCreation(user);
-  
+
   if (leadResponse && leadResponse.message === "Lead generated successfully") {
     totalSuccessCount++;
   }
@@ -95,7 +95,7 @@ async function processUser(user) {
     },
     $unset: { account: "" },
   };
-  
+
   try {
     await UserDB.updateOne({ _id: user._id }, updateDoc);
     console.log(`✅ Database updated for user: ${user.phone}`);
@@ -117,30 +117,31 @@ async function main() {
           { "RefArr.name": { $ne: "creditsea" } },
         ],
       }).limit(BATCH_SIZE);
-    
+
       if (users.length === 0) {
         console.log("🎉 All users processed for CreditSea");
         break;
       }
 
       console.log(`\n--- Starting Batch ${batchNumber} ---`);
-      console.log(`🔍 Data fetched in this batch (potential hits): ${users.length}`); 
+      console.log(
+        `🔍 Data fetched in this batch (potential hits): ${users.length}`,
+      );
 
       for (const user of users) {
         await processUser(user);
       }
 
-	    console.log(`\n--- Batch ${batchNumber} Summary ---`);
+      console.log(`\n--- Batch ${batchNumber} Summary ---`);
       console.log(`🔥 Total API Hits so far: ${totalApiHits}`);
       console.log(`✅ Total Successful Leads so far: ${totalSuccessCount}`);
       console.log(`--- End of Batch ${batchNumber} ---\n`);
-      
+
       batchNumber++;
     }
 
     console.log(`📊 Total API Hits (Data Sent): ${totalApiHits}`);
     console.log(`✅ Total Successful Leads: ${totalSuccessCount}`);
-
   } catch (err) {
     console.error("🚫 Error in main loop:", err);
   } finally {

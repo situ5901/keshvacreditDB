@@ -14,8 +14,8 @@ MONGO_URI = os.getenv("MONGODB_URINEW", "mongodb://localhost:27017/")
 
 BASE_URL = "https://im-lsp.lendenclub.com/"
 PARTNER_CODE = "KC"
-KEY = "3765d4ed4946bf61fc789020a6ed0262"   # utf-8 string
-IV = "d9f5c9dae54fdd5b"                   # utf-8 string
+KEY = "3765d4ed4946bf61fc789020a6ed0262"   
+IV = "d9f5c9dae54fdd5b"                   
 AES_BLOCK_SIZE = 32
 BATCH_SIZE = 5
 
