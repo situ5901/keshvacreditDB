@@ -21,7 +21,7 @@ mongoose
 
 const UserDB = mongoose.model(
   "ram3",
-  new mongoose.Schema({}, { collection: "ram2", strict: false }),
+  new mongoose.Schema({}, { collection: "ram3", strict: false }),
 );
 
 async function dedupe(user) {
