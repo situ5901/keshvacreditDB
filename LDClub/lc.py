@@ -66,9 +66,9 @@ def call_api(api_code: str, data: dict):
     body = {
         "checksum": checksum,
         "payload": encrypted_payload,
-        "tokens": {
-            "STPL": "bec3e2a583c644cb8b9614d4a60a99"
-        }
+        # "tokens": {
+        #     "STPL": "bec3e2a583c644cb8b9614d4a60a99"
+        # }
     }
     url = f"{BASE_URL}/{PARTNER_CODE}/"
 
