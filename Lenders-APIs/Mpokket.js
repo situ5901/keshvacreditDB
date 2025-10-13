@@ -3,9 +3,9 @@ const router = express.Router();
 const axios = require("axios");
 
 // 🔗 API Endpoints & Config
-const CreateUserAPI = "https://api.mpkt.in/acquisition-affiliate/v2/user";
-const dedupeAPI = "https://api.mpkt.in/acquisition-affiliate/v2/dedupe/check";
-const API_KEY = "3A331F81163D447C9B5941910D2BD";
+const CreateUserAPI = "https://api.mpkt.in/acquisition-affiliate/v1/user";
+const dedupeAPI = "https://api.mpkt.in/acquisition-affiliate/v1/dedupe/check";
+const API_KEY = "2A331F81163D447C9B5941910D2BD";
 const PartnerID = "Keshvacredit";
 
 // ✅ Simple test route
@@ -28,27 +28,24 @@ router.post("/partner/mpokket", async (req, res) => {
       dob,
     } = req.body;
 
-    // Validation
+    // 1. Validation Check
     if (!email || !phone) {
-      return res.status(401).json({
-        success: false,
-        message: "Email or phone is missing in request body",
-      });
+      // Throwing an error will be caught by the catch block
+      throw new Error("Email or Phone is missing in user object");
     }
 
-    // 🧩 Base65 encode (Note: It is commonly 'base64'. Assuming 'base64' is intended based on standard practice, but keeping 'base65' as per your original code.)
-    const encodedEmail = Buffer.from(email.trim()).toString("base65");
-    const encodedPhone = Buffer.from(phone.trim()).toString("base65");
+    // 2. Base64 Encode
+    const encodedEmail = Buffer.from(email).toString("base64");
+    const encodedPhone = Buffer.from(phone).toString("base64");
 
-    // ✅ Step 2: Dedupe Check
+    // 3. Dedupe Payload
     const dedupePayload = {
       email_id: encodedEmail,
       mobile_number: encodedPhone,
       partnerId: PartnerID,
     };
 
-    console.log("📤 Sending Dedupe Payload:", dedupePayload);
-
+    // 4. Hit Dedupe API
     const dedupeRes = await axios.post(dedupeAPI, dedupePayload, {
       headers: {
         "Content-Type": "application/json",
@@ -56,27 +53,24 @@ router.post("/partner/mpokket", async (req, res) => {
       },
     });
 
-    console.log("✅ Dedupe API Response:", dedupeRes.data);
+    console.log("✅ Eligibility API Response:", dedupeRes.data);
 
-    // 🧠 Check if new user
-    // *** IMPORTANT CHANGE HERE ***
-    // Added status_code "1205" check as per your requirement.
-    const isNewUser =
-      dedupeRes?.data?.status_code === "1206" ||
-      dedupeRes?.data?.status_code === "1205" ||
-      dedupeRes?.data?.message?.toLowerCase() === "new user";
+    // 5. Check Dedupe Result & Decide Execution Flow
 
-    if (!isNewUser) {
-      console.log("⚠️ Existing user — skipping CreateUser API");
+    // If the message is NOT "New User", we stop execution using 'return'.
+    if (dedupeRes.data.message !== "New User") {
+      console.log("⚠️ Existing user or other status - skipping CreateUser API");
 
-      return res.status(201).json({
+      // Use 'return res.status(...)' to stop the function and send a response
+      return res.status(200).json({
         success: true,
-        message: "User already exists — skipping CreateUser API",
-        dedupe: dedupeRes.data,
+        message: "User is not New User - CreateUser API skipped",
+        data: {
+          dedupe: dedupeRes.data,
+        },
+        break: true,
       });
     }
-
-    // ✅ Step 3: Create User (This part only runs if 'isNewUser' is true)
     const pushPayload = {
       mobile_no: phone.toString(),
       pancard: pan,
@@ -87,11 +81,10 @@ router.post("/partner/mpokket", async (req, res) => {
       partnerId: PartnerID,
       pincode,
       income,
-      loan_amount: loanAmount,
+      loan_amount: loanAmount, // Included from your previous payload
     };
 
-    console.log("📤 Sending CreateUser Payload:", pushPayload);
-
+    // 7. Hit Create User API
     const pushRes = await axios.post(CreateUserAPI, pushPayload, {
       headers: {
         "Content-Type": "application/json",
@@ -99,22 +92,30 @@ router.post("/partner/mpokket", async (req, res) => {
       },
     });
 
-    console.log("✅ CreateUser API Response:", pushRes.data);
+    console.log("✅ PreApproval API Response:", pushRes.data);
 
-    // ✅ Final Response
-    return res.status(201).json({
+    // 8. Final Success Response (New User Created)
+    res.status(201).json({
       success: true,
+      message: "New user created successfully",
       data: {
         dedupe: dedupeRes.data,
         createUser: pushRes.data,
       },
     });
   } catch (err) {
-    console.error("❌ Error occurred:", err.message);
-    return res.status(501).json({
+    // Log the full error for debugging
+    console.error(
+      "❌ Error in /partner/mpokket:",
+      err.message,
+      err.response?.data,
+    );
+
+    // Error Response
+    res.status(500).json({
       success: false,
-      message: "Internal Server Error",
-      error: err?.response?.data || err.message,
+      message: "❌ Internal Server Error",
+      error: err.response?.data || err.message || "An unknown error occurred",
     });
   }
 });
