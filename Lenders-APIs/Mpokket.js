@@ -55,16 +55,10 @@ router.post("/partner/mpokket", async (req, res) => {
 
     console.log("✅ Eligibility API Response:", dedupeRes.data);
 
-    // 5. Check Dedupe Result & Decide Execution Flow
-
-    // If the message is NOT "New User", we stop execution using 'return'.
     if (dedupeRes.data.message !== "New User") {
       console.log("⚠️ Existing user or other status - skipping CreateUser API");
 
-      // Use 'return res.status(...)' to stop the function and send a response
       return res.status(200).json({
-        success: true,
-        message: "User is not New User - CreateUser API skipped",
         data: {
           dedupe: dedupeRes.data,
         },
