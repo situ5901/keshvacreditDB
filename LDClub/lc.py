@@ -75,8 +75,15 @@ def call_api(api_code: str, data: dict):
 
     try:
         res = requests.post(url, json=body, timeout=15)
-        # ✅ Fix UTF-8 BOM issue + readable response
-        res_json = json.loads(res.content.decode("utf-8-sig"))
+
+        # ✅ Fix for UTF-8 BOM / Encoding issues
+        res_text = res.content.decode("utf-8", errors="ignore").lstrip("\ufeff")
+
+        try:
+            res_json = json.loads(res_text)
+        except Exception as e:
+            print(f"⚠️ Failed to parse JSON, raw response: {res_text[:500]}")
+            return {"error": f"JSON parse error: {e}", "raw": res_text}
 
         print(f"🧩 Encrypted Response: {res_json}")
 
@@ -93,8 +100,8 @@ def call_api(api_code: str, data: dict):
                 print(f"🚫 Decrypt failed for {api_code}: {e}")
                 return {"error": f"Decrypt failed: {str(e)}", "encrypted": res_json}
         else:
-            print(f"⚠️ Invalid response format from API: {res.text}")
-            return {"error": "Invalid response", "raw": res.text}
+            print(f"⚠️ Invalid response format from API: {res_text}")
+            return {"error": "Invalid response", "raw": res_text}
     except Exception as e:
         print(f"❌ API Request Failed ({api_code}): {str(e)}")
         return {"error": str(e)}
