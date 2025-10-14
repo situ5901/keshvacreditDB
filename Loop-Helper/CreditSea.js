@@ -10,15 +10,14 @@ const BATCH_SIZE = 1000;
 
 let totalSuccessCount = 0;
 let totalApiHits = 0;
-
 mongoose
   .connect(MONGODB_URINEW)
   .then(() => console.log("✅ MongoDB Connected Successfully"))
   .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
 
 const UserDB = mongoose.model(
-  "smcoll",
-  new mongoose.Schema({}, { collection: "smcoll", strict: false }),
+  "coin",
+  new mongoose.Schema({}, { collection: "coin", strict: false }),
 );
 
 function getHeaders() {
@@ -77,19 +76,14 @@ async function LeadCreation(user) {
 async function processUser(user) {
   const leadResponse = await LeadCreation(user);
 
-  if (leadResponse && leadResponse.message === "Lead generated successfully") {
-    totalSuccessCount++;
-  }
-
   const updateDoc = {
     $push: {
       apiResponse: {
-        CreditSea: leadResponse,
+        CreditSea: leadResponse, // 👈 Jo bhi API ka res aaya (success/error)
         createdAt: new Date().toLocaleString(),
       },
       RefArr: {
         name: "creditsea",
-        response: leadResponse,
         createdAt: new Date().toLocaleString(),
       },
     },
@@ -104,6 +98,10 @@ async function processUser(user) {
       `🚫 Failed to update DB for user ${user.phone}:`,
       err.message,
     );
+  }
+
+  if (leadResponse && leadResponse.message === "Lead generated successfully") {
+    totalSuccessCount++;
   }
 }
 
