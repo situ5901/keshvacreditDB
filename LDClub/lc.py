@@ -11,10 +11,12 @@ import time
 
 # === Load ENV ===
 load_dotenv()
-MONGO_URI = os.getenv("MONGODB_URINEW", "mongodb://localhost:27017/")
+MONGO_URI = os.getenv("MONGODB_URINEW")
 
 # === API Setup ===
-BASE_URL = "http://tsp-los.lendclub.com/v2"
+# *** FIX 1: Correcting the BASE_URL domain name to match your input ***
+# Using 'lendenclub' instead of 'lendclub'
+BASE_URL = "http://tsp-los.lendenclub.com/v2" 
 PARTNER_CODE = "KC"
 KEY = "49dde96a1f057656ede3cf85f1be2b29"    # utf-8 string
 IV = "a4da4265bfa4bac0"                      # utf-8 string
@@ -65,11 +67,24 @@ def call_api(api_code: str, data: dict):
 
     body = {"checksum": checksum, "payload": encrypted_payload}
     url = f"{BASE_URL}/{PARTNER_CODE}/"
+    
+    print(f"DEBUG: Calling URL: {url} with api_code: {api_code}") # DEBUG print
 
     try:
         res = requests.post(url, json=body, timeout=15)
         
-        # --- FIX for potential BOM error in API response ---
+        # --- FIX 2: Detailed Error Checking (Status Code and HTML Content) ---
+        if res.status_code != 200:
+            print(f"❌ API Error: HTTP Status Code {res.status_code}. Raw response text will be returned.")
+            return {"error": f"HTTP Error {res.status_code}", "raw": res.text}
+        
+        # Check if the response is HTML error page instead of JSON (like your 'Page not found')
+        if 'text/html' in res.headers.get('Content-Type', '').lower() or '<!DOCTYPE html>' in res.text.lower():
+            print("❌ API Error: Server returned an HTML page instead of JSON. Check the API URL and Documentation.")
+            return {"error": "Server returned HTML error page", "raw": res.text}
+        # ----------------------------------------------------------------------
+
+        # --- FIX 3: Handling potential BOM error in API response ---
         try:
             res_json = res.json()
         except json.JSONDecodeError:
@@ -79,7 +94,7 @@ def call_api(api_code: str, data: dict):
                 res_json = json.loads(bom_fixed_text)
             except Exception as e:
                 return {"error": f"JSON decode failed (BOM or invalid): {str(e)}", "raw": res.text}
-        # ---------------------------------------------------
+        # -----------------------------------------------------------
 
         if "payload" in res_json:
             try:
@@ -96,7 +111,7 @@ def call_api(api_code: str, data: dict):
     except Exception as e:
         return {"error": str(e)}
 
-# === Payload Builders ===
+# === Payload Builders (Unchanged) ===
 def build_dedupe_payload(user):
     return {
         "params": {
@@ -115,16 +130,11 @@ def build_lead_payload(user):
 
     if dob_str:
         try:
-            # 1. Parse the existing date string (e.g., '1988-10-26')
             date_obj = datetime.strptime(dob_str, "%Y-%m-%d")
-            
-            # 2. Format the date object into the required string (e.g., '26/10/1988')
             formatted_dob = date_obj.strftime("%d/%m/%Y")
-            
         except ValueError:
-            # Handle cases where the DOB might not be in the expected 'YYYY-MM-DD' format
             print(f"⚠️ Warning: Could not parse DOB '{dob_str}'. Using default.")
-            pass # Keep the default '01/01/1990'
+            pass
 
     return {
         "params": {},
@@ -135,7 +145,7 @@ def build_lead_payload(user):
                 "email": user.get("email", "test@gmail.com"),
                 "name": user.get("name", "Demo User"),
                 "pan": user.get("pan", "ABCDE1234F"),
-                "date_of_birth": formatted_dob, # <-- Use the new formatted date here
+                "date_of_birth": formatted_dob, 
                 "pincode": int(user.get("pincode", 400001)),
             },
             "professional_details": {
@@ -148,7 +158,7 @@ def build_lead_payload(user):
         "attributes": {},
     }
 
-# === Batch Processor ===
+# === Batch Processor (Unchanged) ===
 def process_batch(users):
     for user in users:
         phone = user.get("phone")
@@ -157,7 +167,6 @@ def process_batch(users):
         dedupe_resp = call_api("BORROWER_USER_DEDUPE", build_dedupe_payload(user))
         lead_resp = call_api("CREATE_LEAD_API", build_lead_payload(user))
 
-        # IMPORTANT: The key in apiResponse is now 'LendenClub' as you requested.
         lendenclub_data = {"dedupe": dedupe_resp, "lead": lead_resp}
 
         update_doc = {
@@ -166,7 +175,6 @@ def process_batch(users):
                     "LendenClub": lendenclub_data,
                     "createdAt": datetime.utcnow().isoformat(),
                 },
-                # Pushing an object with the required name to RefArr
                 "RefArr": {"name": "LendenClub", "createdAt": datetime.utcnow().isoformat()},
             },
             "$unset": {"accounts": ""},
@@ -175,19 +183,14 @@ def process_batch(users):
         collection.update_one({"_id": user["_id"]}, update_doc)
         print(f"✅ Updated DB for {phone}")
 
-# === Main Loop ===
+# === Main Loop (Unchanged) ===
 def process_data():
     skip = 0
     while True:
-        # --- FIXED QUERY LOGIC ---
         # Find documents where RefArr does NOT contain an element with name: "LendenClub"
         query = {
             "RefArr.name": {"$ne": "LendenClub"}
         }
-        # You can add the original condition if you still need it, but generally 
-        # checking for the specific name is better.
-        # Original logic was confusing and has been replaced by this clear check.
-        # -------------------------
         
         users = list(
             collection.find(query)
@@ -200,11 +203,6 @@ def process_data():
             break
 
         process_batch(users)
-        # Note: If you want to process ALL matching users, don't increment skip. 
-        # The query should naturally return the next batch of users that match.
-        # However, for continuous polling, keeping skip is fine too, but 
-        # a loop without skip and a small sleep is often more robust for queues.
-        # I'll stick to your original skip logic for now.
         skip += len(users) 
         time.sleep(1)
 
