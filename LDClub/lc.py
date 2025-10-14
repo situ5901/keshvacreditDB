@@ -63,48 +63,26 @@ def call_api(api_code: str, data: dict):
     encrypted_payload = encrypt_aes(json_str, KEY, IV)
     checksum = generate_checksum(encrypted_payload)
 
-    body = {
-        "checksum": checksum,
-        "payload": encrypted_payload,
-    }
+    body = {"checksum": checksum, "payload": encrypted_payload}
     url = f"{BASE_URL}/{PARTNER_CODE}/"
-
-    print(f"\n🌐 Sending API: {api_code}")
-    print(f"🔗 URL: {url}")
-    print(f"📦 Payload: {json_str}")
 
     try:
         res = requests.post(url, json=body, timeout=15)
-
-        # ✅ Fix for UTF-8 BOM / Encoding issues
-        res_text = res.content.decode("utf-8", errors="ignore").lstrip("\ufeff")
-
-        try:
-            res_json = json.loads(res_text)
-        except Exception as e:
-            print(f"⚠️ Failed to parse JSON, raw response: {res_text[:500]}")
-            return {"error": f"JSON parse error: {e}", "raw": res_text}
-
-        print(f"🧩 Encrypted Response: {res_json}")
+        res_json = res.json()
 
         if "payload" in res_json:
             try:
                 decrypted = decrypt_aes(res_json["payload"], KEY, IV)
-                decrypted_json = json.loads(decrypted)
-                print(f"✅ Decrypted Response for {api_code}: {json.dumps(decrypted_json, indent=2)}")
                 return {
                     "encrypted": res_json,
-                    "decrypted": decrypted_json,
+                    "decrypted": json.loads(decrypted),
                 }
             except Exception as e:
-                print(f"🚫 Decrypt failed for {api_code}: {e}")
                 return {"error": f"Decrypt failed: {str(e)}", "encrypted": res_json}
-        else:
-            print(f"⚠️ Invalid response format from API: {res_text}")
-            return {"error": "Invalid response", "raw": res_text}
+        return {"error": "Invalid response", "raw": res.text}
     except Exception as e:
-        print(f"❌ API Request Failed ({api_code}): {str(e)}")
         return {"error": str(e)}
+
 # === Payload Builders ===
 def build_dedupe_payload(user):
     return {
