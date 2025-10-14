@@ -14,7 +14,7 @@ load_dotenv()
 MONGO_URI = os.getenv("MONGODB_URINEW", "mongodb://localhost:27017/")
 
 # === API Setup ===
-BASE_URL = "https://tsp-los.lendclub.com/v2"
+BASE_URL = "http://tsp-los.lendclub.com/v2"
 PARTNER_CODE = "KC"
 KEY = "49dde96a1f057656ede3cf85f1be2b29"   # utf-8 string
 IV = "a4da4265bfa4bac0"                   # utf-8 string
