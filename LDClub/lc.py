@@ -66,29 +66,38 @@ def call_api(api_code: str, data: dict):
     body = {
         "checksum": checksum,
         "payload": encrypted_payload,
-        # "tokens": {
-        #     "STPL": "bec3e2a583c644cb8b9614d4a60a99"
-        # }
     }
     url = f"{BASE_URL}/{PARTNER_CODE}/"
 
+    print(f"\n🌐 Sending API: {api_code}")
+    print(f"🔗 URL: {url}")
+    print(f"📦 Payload: {json_str}")
+
     try:
         res = requests.post(url, json=body, timeout=15)
-        res_json = res.json()
+        # ✅ Fix UTF-8 BOM issue + readable response
+        res_json = json.loads(res.content.decode("utf-8-sig"))
+
+        print(f"🧩 Encrypted Response: {res_json}")
 
         if "payload" in res_json:
             try:
                 decrypted = decrypt_aes(res_json["payload"], KEY, IV)
+                decrypted_json = json.loads(decrypted)
+                print(f"✅ Decrypted Response for {api_code}: {json.dumps(decrypted_json, indent=2)}")
                 return {
                     "encrypted": res_json,
-                    "decrypted": json.loads(decrypted),
+                    "decrypted": decrypted_json,
                 }
             except Exception as e:
+                print(f"🚫 Decrypt failed for {api_code}: {e}")
                 return {"error": f"Decrypt failed: {str(e)}", "encrypted": res_json}
-        return {"error": "Invalid response", "raw": res.text}
+        else:
+            print(f"⚠️ Invalid response format from API: {res.text}")
+            return {"error": "Invalid response", "raw": res.text}
     except Exception as e:
+        print(f"❌ API Request Failed ({api_code}): {str(e)}")
         return {"error": str(e)}
-
 # === Payload Builders ===
 def build_dedupe_payload(user):
     return {
