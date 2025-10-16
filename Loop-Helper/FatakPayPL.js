@@ -2,8 +2,8 @@ const mongoose = require("mongoose");
 const axios = require("axios");
 require("dotenv").config();
 
-const MONGODB_URINEW = process.env.MONGODB_URINEW1;
-
+const MONGODB_URINEW = process.env.MONGODB_VISHU;
+//update
 mongoose
   .connect(MONGODB_URINEW)
   .then(() => console.log("✅ MongoDB Connected Successfully"))
