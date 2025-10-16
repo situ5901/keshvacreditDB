@@ -40,7 +40,12 @@ async function dedupe(user) {
 
     return response.data;
   } catch (err) {
-    console.error("❌ Error in Dedupe API for", user.phone, ":", err.response?.data || err.message);
+    console.error(
+      "❌ Error in Dedupe API for",
+      user.phone,
+      ":",
+      err.response?.data || err.message,
+    );
     return null;
   }
 }
@@ -60,7 +65,12 @@ async function leadCreate(user) {
 
     return response.data;
   } catch (err) {
-    console.error("❌ Error in Lead Create API for", user.phone, ":", err.response?.data || err.message);
+    console.error(
+      "❌ Error in Lead Create API for",
+      user.phone,
+      ":",
+      err.response?.data || err.message,
+    );
     return null;
   }
 }
@@ -74,7 +84,9 @@ async function processBatch(users) {
       try {
         const userDoc = await UserDB.findOne({ phone: user.phone });
         if (!userDoc) {
-          console.warn(`User with phone ${user.phone} not found in DB. Skipping.`);
+          console.warn(
+            `User with phone ${user.phone} not found in DB. Skipping.`,
+          );
           return;
         }
 
@@ -85,7 +97,9 @@ async function processBatch(users) {
 
         // ✅ Skip if not Salaried or income < 18000
         if (employment !== "Salaried" || income < 18000) {
-          console.log(`⏩ Skipping user ${user.phone} due to employment (${employment}) or income (${income})`);
+          console.log(
+            `⏩ Skipping user ${user.phone} due to employment (${employment}) or income (${income})`,
+          );
 
           const updateDoc = {
             $push: {
@@ -137,7 +151,10 @@ async function processBatch(users) {
           console.log(`⭐ Lead Attributed Successfully for: ${user.phone}`);
         }
       } catch (error) {
-        console.error(`❌ Failed to process user ${user.phone} in batch:`, error.message);
+        console.error(
+          `❌ Failed to process user ${user.phone} in batch:`,
+          error.message,
+        );
       }
     }),
   );
@@ -182,7 +199,9 @@ async function main() {
       }
 
       const batchAttributedCount = await processBatch(users);
-      console.log(`📊 Batch Completed: ${batchAttributedCount} users attributed successfully.`);
+      console.log(
+        `📊 Batch Completed: ${batchAttributedCount} users attributed successfully.`,
+      );
       totalAttributedSuccessfully += batchAttributedCount;
 
       skip += users.length;
@@ -194,7 +213,9 @@ async function main() {
 
     console.log("--------------------------------------------------");
     console.log("✅ All batches processed.");
-    console.log(`🎯 Total Leads Attributed Successfully: ${totalAttributedSuccessfully}`);
+    console.log(
+      `🎯 Total Leads Attributed Successfully: ${totalAttributedSuccessfully}`,
+    );
     console.log("--------------------------------------------------");
   } catch (error) {
     console.error("❌ Fatal error during main processing:", error);

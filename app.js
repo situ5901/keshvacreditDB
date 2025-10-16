@@ -106,4 +106,6 @@ app.use(`/api${API_VERSION}/BLoan`, require("./routes/BL/BusinessLoan"));
 //..................CSC Working............//
 app.use(`/api${API_VERSION}/csc`, require("./manage_core/CSC/65Routes.js"));
 
+app.use(`/api${API_VERSION}/csc`, require("./manage_core/CSC/65Routes.js"));
+
 module.exports = app;
