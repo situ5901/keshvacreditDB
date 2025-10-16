@@ -3,7 +3,7 @@ const axios = require("axios");
 const qs = require("qs");
 require("dotenv").config();
 
-const MONGODB_URINEW = process.env.MONGODB_URINEW1;
+const MONGODB_URINEW = process.env.MONGODB_VISHU;
 
 mongoose
   .connect(MONGODB_URINEW)
