@@ -11,19 +11,20 @@ import time
 
 # === Load ENV ===
 load_dotenv()
-MONGO_URI = os.getenv("MONGODB_VISHU")
+MONGO_URI = os.getenv("MONGODB_URINEW1")
 
-BASE_URL = "http://tsp-los.lendenclub.com/v2" 
+# === API Setup ===
+BASE_URL = "http://tsp-los.lendenclub.com/v2"
 PARTNER_CODE = "KC"
-KEY = "49dde96a1f057656ede3cf85f1be2b29"    # utf-8 string
-IV = "a4da4265bfa4bac0"                      # utf-8 string
+KEY = "49dde96a1f057656ede3cf85f1be2b29"
+IV = "a4da4265bfa4bac0"
 AES_BLOCK_SIZE = 32
 BATCH_SIZE = 1
 
 # === MongoDB Setup ===
 client = MongoClient(MONGO_URI)
-db = client["KeshvaCredit"]
-collection = db["smcoll"]
+db = client["covermantra"]
+collection = db["LoanTap"]
 print("✅ MongoDB Connected Successfully")
 
 # === Crypto Utils ===
@@ -64,34 +65,28 @@ def call_api(api_code: str, data: dict):
 
     body = {"checksum": checksum, "payload": encrypted_payload}
     url = f"{BASE_URL}/{PARTNER_CODE}/"
-    
-    print(f"DEBUG: Calling URL: {url} with api_code: {api_code}") # DEBUG print
+
+    print(f"DEBUG: Calling URL: {url} with api_code: {api_code}")
 
     try:
         res = requests.post(url, json=body, timeout=15)
-        
-        # --- FIX 2: Detailed Error Checking (Status Code and HTML Content) ---
+
         if res.status_code != 200:
             print(f"❌ API Error: HTTP Status Code {res.status_code}. Raw response text will be returned.")
             return {"error": f"HTTP Error {res.status_code}", "raw": res.text}
-        
-        # Check if the response is HTML error page instead of JSON (like your 'Page not found')
+
         if 'text/html' in res.headers.get('Content-Type', '').lower() or '<!DOCTYPE html>' in res.text.lower():
             print("❌ API Error: Server returned an HTML page instead of JSON. Check the API URL and Documentation.")
             return {"error": "Server returned HTML error page", "raw": res.text}
-        # ----------------------------------------------------------------------
 
-        # --- FIX 3: Handling potential BOM error in API response ---
         try:
             res_json = res.json()
         except json.JSONDecodeError:
             try:
-                # Use utf-8-sig to handle BOM if the server is sending it
                 bom_fixed_text = res.content.decode("utf-8-sig")
                 res_json = json.loads(bom_fixed_text)
             except Exception as e:
                 return {"error": f"JSON decode failed (BOM or invalid): {str(e)}", "raw": res.text}
-        # -----------------------------------------------------------
 
         if "payload" in res_json:
             try:
@@ -102,13 +97,13 @@ def call_api(api_code: str, data: dict):
                 }
             except Exception as e:
                 return {"error": f"Decrypt failed: {str(e)}", "encrypted": res_json}
-        
+
         return {"error": "Invalid response or payload missing", "raw": res.text, "parsed_response": res_json}
-        
+
     except Exception as e:
         return {"error": str(e)}
 
-# === Payload Builders (Unchanged) ===
+# === Payload Builders ===
 def build_dedupe_payload(user):
     return {
         "params": {
@@ -121,9 +116,8 @@ def build_dedupe_payload(user):
     }
 
 def build_lead_payload(user):
-    # Get the DOB from the user dictionary
     dob_str = user.get("dob")
-    formatted_dob = "01/01/1990"  # Default value
+    formatted_dob = "01/01/1990"
 
     if dob_str:
         try:
@@ -131,7 +125,6 @@ def build_lead_payload(user):
             formatted_dob = date_obj.strftime("%d/%m/%Y")
         except ValueError:
             print(f"⚠️ Warning: Could not parse DOB '{dob_str}'. Using default.")
-            pass
 
     return {
         "params": {},
@@ -142,7 +135,7 @@ def build_lead_payload(user):
                 "email": user.get("email", "test@gmail.com"),
                 "name": user.get("name", "Demo User"),
                 "pan": user.get("pan", "ABCDE1234F"),
-                "date_of_birth": formatted_dob, 
+                "date_of_birth": formatted_dob,
                 "pincode": int(user.get("pincode", 400001)),
             },
             "professional_details": {
@@ -155,7 +148,7 @@ def build_lead_payload(user):
         "attributes": {},
     }
 
-# === Batch Processor (Unchanged) ===
+# === Batch Processor ===
 def process_batch(users):
     for user in users:
         phone = user.get("phone")
@@ -180,15 +173,22 @@ def process_batch(users):
         collection.update_one({"_id": user["_id"]}, update_doc)
         print(f"✅ Updated DB for {phone}")
 
-# === Main Loop (Unchanged) ===
+# === Main Process Function ===
 def process_data():
     skip = 0
     while True:
-        # Find documents where RefArr does NOT contain an element with name: "LendenClub"
+        # ✅ Fixed Query: Only those docs jinke RefArr me LendenClub nahi hai
         query = {
-            "RefArr.name": {"$ne": "LendenClub"}
+            "$or": [
+                {"RefArr": {"$exists": False}},      # field nahi hai
+                {"RefArr": {"$size": 0}},            # empty array
+                {"RefArr.name": {"$ne": "LendenClub"}}  # LendenClub nahi hai
+            ]
         }
-        
+
+        total = collection.count_documents(query)
+        print(f"\n🔍 Total documents to process: {total}")
+
         users = list(
             collection.find(query)
             .skip(skip)
@@ -200,10 +200,11 @@ def process_data():
             break
 
         process_batch(users)
-        skip += len(users) 
+        skip += len(users)
         time.sleep(1)
 
     print("🎯 All users processed successfully.")
 
+# === Run Script ===
 if __name__ == "__main__":
     process_data()
