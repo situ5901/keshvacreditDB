@@ -16,7 +16,7 @@ const UserDB = mongoose.model(
 );
 
 // ✅ Constants
-const BATCH_SIZE = 50;
+const BATCH_SIZE = 500;
 const PartnerID = "Keshvacredit";
 const dedupeAPI = "https://api.mpkt.in/acquisition-affiliate/v1/dedupe/check";
 const CreateUserAPI = "https://api.mpkt.in/acquisition-affiliate/v1/user";
@@ -85,7 +85,10 @@ async function getPreApproval(user) {
     console.log("✅ PreApproval API Response:", response.data);
     return response.data;
   } catch (err) {
-    console.error("❌ PreApproval API Error:", err.response?.data || err.message);
+    console.error(
+      "❌ PreApproval API Error:",
+      err.response?.data || err.message,
+    );
     return {
       status: "FAILED",
       message: err.response?.data?.message || err.message || "Unknown Error",
@@ -117,7 +120,9 @@ async function processBatch(users) {
       const preApprovalResponse = await getPreApproval(user);
       mpokketResponse.preApprovalResponse = preApprovalResponse;
     } else {
-      console.log(`⛔ Not eligible for PreApproval — Status: ${dedupeResponse?.status_code}`);
+      console.log(
+        `⛔ Not eligible for PreApproval — Status: ${dedupeResponse?.status_code}`,
+      );
     }
 
     // Step 3️⃣ — Final update object
@@ -137,7 +142,10 @@ async function processBatch(users) {
 
     // Step 4️⃣ — Save to DB
     await UserDB.updateOne({ phone: user.phone }, updateDoc);
-    await UserDB.updateOne({ phone: user.phone }, { $set: { processed: true } });
+    await UserDB.updateOne(
+      { phone: user.phone },
+      { $set: { processed: true } },
+    );
 
     console.log("✅ Lead processed and saved for:", user.phone);
   });
