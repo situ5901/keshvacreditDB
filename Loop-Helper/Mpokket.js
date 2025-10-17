@@ -109,15 +109,13 @@ async function processBatch(users) {
     const response = await sendToNewAPI(user);
 
     const mpokketBase = {
-      ...response,
+      ...response.data,
     };
 
     const updateDoc = {
       $push: {
         apiResponse: {
           MpokketResponse: mpokketBase, // initially without preApproval
-          status_code: response.status_code,
-          message: response.message,
           createdAt: new Date().toISOString(),
         },
         RefArr: {
