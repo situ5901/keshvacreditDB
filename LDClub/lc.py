@@ -65,7 +65,7 @@ def call_api(api_code: str, data: dict):
     body = {"checksum": checksum, "payload": encrypted_payload}
     url = f"{BASE_URL}"
     
-    print(f"DEBUG: Calling URL: {url} with api_code: {api_code}") # DEBUG print
+    print(f"DEBUG: Calling URL: {url}") # DEBUG print
 
     try:
         res = requests.post(url, json=body, timeout=15)
