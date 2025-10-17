@@ -48,14 +48,16 @@ async function sendToNewAPI(user) {
     });
 
     console.log("✅ Eligibility API Response:", response.data);
+    // ⭐ Return the complete response body (which is response.data)
     return response.data;
   } catch (err) {
     console.error(
       "❌ Eligibility API Error:",
       err.response?.data || err.message,
     );
+    // Return a structured error object
     return {
-      status: "FAILED",
+      success: false,
       status_code: err.response?.status || "UNKNOWN",
       message: err.response?.data?.message || err.message || "Unknown Error",
     };
@@ -84,14 +86,16 @@ async function getPreApproval(user) {
     });
 
     console.log("✅ PreApproval API Response:", response.data);
+    // ⭐ Return the complete response body
     return response.data;
   } catch (err) {
     console.error(
       "❌ PreApproval API Error:",
       err.response?.data || err.message,
     );
+    // Return a structured error object
     return {
-      status: "FAILED",
+      success: false,
       message: err.response?.data?.message || err.message || "Unknown Error",
     };
   }
@@ -106,41 +110,55 @@ async function processBatch(users) {
       return;
     }
 
-    const response = await sendToNewAPI(user);
+    // 1. Call Eligibility API
+    const eligibilityResponse = await sendToNewAPI(user);
 
-    const mpokketBase = {
-      ...response.data,
+    // ⭐ SAVE THE COMPLETE ELIGIBILITY RESPONSE
+    let mpokketResponseToSave = { 
+      MpokketResponse: eligibilityResponse,
+      createdAt: new Date().toISOString(),
     };
+    
+    // Check for eligibility status code to proceed to Pre-Approval
+    if (eligibilityResponse.status_code === "1205") {
+      const preApprovalResponse = await getPreApproval(user);
 
+      if (preApprovalResponse && preApprovalResponse.success) {
+        // 2. If Pre-Approval is successful, update the main response structure
+        // We nest the Pre-Approval response inside the main Eligibility response object
+        eligibilityResponse.preApproval = preApprovalResponse; 
+
+        // Update the object to be pushed, so the final saved record contains both responses
+        mpokketResponseToSave = {
+          MpokketResponse: eligibilityResponse,
+          createdAt: new Date().toISOString(),
+        };
+        
+        console.log(`✅ Successfully received PreApproval for: ${user.phone}`);
+      } else {
+        console.log(`⛔ PreApproval Failed or Unsuccessful for: ${user.phone}`);
+      }
+    } else {
+      console.log(`⛔ No PreApproval initiated — Eligibility Status Code: ${eligibilityResponse.status_code}`);
+    }
+
+    // --- Database Update ---
+
+    // Update the document to push the API response (either Eligibility only or Eligibility + PreApproval)
     const updateDoc = {
       $push: {
-        apiResponse: {
-          MpokketResponse: mpokketBase, // initially without preApproval
-          createdAt: new Date().toISOString(),
-        },
+        apiResponse: mpokketResponseToSave, // Pushes the complete object
         RefArr: {
           name: "Mpokket",
           createdAt: new Date().toISOString(),
         },
       },
-      $unset: { accounts: "" },
+      // $unset: { accounts: "" }, // Keep this line if you want to remove the 'accounts' field
     };
-
-    if (response.status_code === "1205") {
-      const preApproval = await getPreApproval(user);
-
-      if (preApproval && preApproval.success) {
-        mpokketBase.preApproval = preApproval; // dynamically add preApproval
-
-        updateDoc.$push.apiResponse = {
-          MpokketResponse: mpokketBase, // now with preApproval
-        };
-      }
-    } else {
-      console.log(`⛔ No PreApproval — Status Code: ${response.status_code}`);
-    }
-
+    
     await UserDB.updateOne({ phone: user.phone }, updateDoc);
+    
+    // Set processed flag
     await UserDB.updateOne(
       { phone: user.phone },
       { $set: { processed: true } },
