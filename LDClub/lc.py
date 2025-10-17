@@ -11,7 +11,7 @@ import time
 
 # === Load ENV ===
 load_dotenv()
-MONGO_URI = os.getenv("MONGODB_URINEW")
+MONGO_URI = os.getenv("MONGODB_VISHU")
 
 BASE_URL = "http://tsp-los.lendenclub.com/v2" 
 PARTNER_CODE = "KC"
