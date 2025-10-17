@@ -100,7 +100,7 @@ const eligibleLenders = [
     lenderId: 9,
     minIncome: 20000,
     url: "https://s3.ap-south-1.amazonaws.com/cdn-kamakshimoney.com/public/front/images/logo.png",
-    utm: "no data",
+    utm: "https://applyonline.kamakshimoney.com/",
   },
   {
     name: "LoanTap",
@@ -109,7 +109,7 @@ const eligibleLenders = [
     lenderId: 10,
     minIncome: 15000,
     url: "https://i.postimg.cc/sgkVCJpQ/download.png",
-    utm: "no data",
+    utm: "https://loantap.in/",
   },
   {
     name: "MoneyView",
@@ -224,17 +224,6 @@ const eligibleLenders = [
     utm: "https://www.creditsea.com/onboarding/sign-up/enter-mobile?source=31048692",
   },
   {
-    name: "Faircent",
-    minAge: 21,
-    maxAge: 58,
-    lenderId: 22,
-    minIncome: 25000,
-    interestRate: "starting from 1.16% per Month",
-    loanAmount: "upto 3 Lakh",
-    url: "https://i.postimg.cc/pXYb8kmC/imgi-1-logo-new.png",
-    utm: "no data",
-  },
-  {
     name: "CapitalNow",
     minAge: 21,
     maxAge: 58,
@@ -243,7 +232,7 @@ const eligibleLenders = [
     MOS: "bank-Transfer",
     employment: "Salaried",
     url: "https://www.capitalnow.in/images/logo.png",
-    utm: "no data",
+    utm: "http://bit.ly/opencnapp",
   },
 ];
 
