@@ -2,7 +2,7 @@ const axios = require("axios");
 const mongoose = require("mongoose");
 require("dotenv").config();
 
-const MONGODB_URINEW = process.env.MONGODB_URINEW;
+const MONGODB_URINEW = process.env.MONGODB_VISHU;
 const BASE_URL = "https://backend.creditsea.com/api/v1";
 const ENDPOINT = "leads/create-lead-dsa";
 const SOURCE_ID = "77445946";
