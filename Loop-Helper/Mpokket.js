@@ -116,6 +116,7 @@ async function processBatch(users) {
     // ⭐ SAVE THE COMPLETE ELIGIBILITY RESPONSE
     let mpokketResponseToSave = { 
       MpokketResponse: eligibilityResponse,
+      PerApproval:getPreApproval,
       createdAt: new Date().toISOString(),
     };
     
