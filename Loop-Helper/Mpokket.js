@@ -114,12 +114,11 @@ async function processBatch(users) {
     const eligibilityResponse = await sendToNewAPI(user);
 
     // ⭐ SAVE THE COMPLETE ELIGIBILITY RESPONSE
-    let mpokketResponseToSave = { 
-      MpokketResponse: eligibilityResponse,
-      PerApproval:getPreApproval,
+    let mpokketResponseToSave = {
+      PerApproval: getPreApproval,
       createdAt: new Date().toISOString(),
     };
-    
+
     // Check for eligibility status code to proceed to Pre-Approval
     if (eligibilityResponse.status_code === "1205") {
       const preApprovalResponse = await getPreApproval(user);
@@ -127,20 +126,22 @@ async function processBatch(users) {
       if (preApprovalResponse && preApprovalResponse.success) {
         // 2. If Pre-Approval is successful, update the main response structure
         // We nest the Pre-Approval response inside the main Eligibility response object
-        eligibilityResponse.preApproval = preApprovalResponse; 
+        eligibilityResponse.preApproval = preApprovalResponse;
 
         // Update the object to be pushed, so the final saved record contains both responses
         mpokketResponseToSave = {
           MpokketResponse: eligibilityResponse,
           createdAt: new Date().toISOString(),
         };
-        
+
         console.log(`✅ Successfully received PreApproval for: ${user.phone}`);
       } else {
         console.log(`⛔ PreApproval Failed or Unsuccessful for: ${user.phone}`);
       }
     } else {
-      console.log(`⛔ No PreApproval initiated — Eligibility Status Code: ${eligibilityResponse.status_code}`);
+      console.log(
+        `⛔ No PreApproval initiated — Eligibility Status Code: ${eligibilityResponse.status_code}`,
+      );
     }
 
     // --- Database Update ---
@@ -156,9 +157,9 @@ async function processBatch(users) {
       },
       // $unset: { accounts: "" }, // Keep this line if you want to remove the 'accounts' field
     };
-    
+
     await UserDB.updateOne({ phone: user.phone }, updateDoc);
-    
+
     // Set processed flag
     await UserDB.updateOne(
       { phone: user.phone },
