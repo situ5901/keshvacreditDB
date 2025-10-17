@@ -13,9 +13,6 @@ import time
 load_dotenv()
 MONGO_URI = os.getenv("MONGODB_URINEW")
 
-# === API Setup ===
-# *** FIX 1: Correcting the BASE_URL domain name to match your input ***
-# Using 'lendenclub' instead of 'lendclub'
 BASE_URL = "http://tsp-los.lendenclub.com/v2" 
 PARTNER_CODE = "KC"
 KEY = "49dde96a1f057656ede3cf85f1be2b29"    # utf-8 string
