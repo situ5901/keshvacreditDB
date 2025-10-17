@@ -63,7 +63,7 @@ def call_api(api_code: str, data: dict):
     checksum = generate_checksum(encrypted_payload)
 
     body = {"checksum": checksum, "payload": encrypted_payload}
-    url = f"{BASE_URL}/{PARTNER_CODE}/"
+    url = f"{BASE_URL}"
     
     print(f"DEBUG: Calling URL: {url} with api_code: {api_code}") # DEBUG print
 
