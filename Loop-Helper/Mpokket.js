@@ -108,22 +108,24 @@ async function processBatch(users) {
 
     // Step 1️⃣ — Call dedupe API
     const dedupeResponse = await sendToNewAPI(user);
+    cons preApprovalResponse = await getPreApproval(user);
 
     // Prepare object for saving
     const mpokketResponse = {
       dedupeResponse, // save full dedupe response
+    preApprovalResponse,
       createdAt: new Date().toISOString(),
     };
 
     // Step 2️⃣ — If eligible, call preApproval API
-    if (dedupeResponse?.status_code === "1205") {
-      const preApprovalResponse = await getPreApproval(user);
-      mpokketResponse.preApprovalResponse = preApprovalResponse;
-    } else {
-      console.log(
-        `⛔ Not eligible for PreApproval — Status: ${dedupeResponse?.status_code}`,
-      );
-    }
+    // if (dedupeResponse?.status_code === "1205") {
+    //   const preApprovalResponse = await getPreApproval(user);
+    //   mpokketResponse.preApprovalResponse = preApprovalResponse;
+    // } else {
+    //   console.log(
+    //     `⛔ Not eligible for PreApproval — Status: ${dedupeResponse?.status_code}`,
+    //   );
+    // }
 
     // Step 3️⃣ — Final update object
     const updateDoc = {
