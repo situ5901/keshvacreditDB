@@ -100,7 +100,6 @@ async function getPreApproval(user) {
 async function processBatch(users) {
   const promises = users.map(async (user) => {
     const userDoc = await UserDB.findOne({ phone: user.phone });
-
     if (!userDoc) {
       console.log("❌ No matching user found for:", user.phone);
       return;
@@ -112,8 +111,8 @@ async function processBatch(users) {
 
     // Prepare object for saving
     const mpokketResponse = {
-      dedupeResponse, // save full dedupe response
-    preApprovalResponse,
+      dedupeResponse,
+      preApprovalResponse,
       createdAt: new Date().toISOString(),
     };
 
