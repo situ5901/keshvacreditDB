@@ -11,13 +11,13 @@ import time
 
 # === Load ENV ===
 load_dotenv()
-MONGO_URI = os.getenv("MONGODB_VISHU")
+MONGO_URI = os.getenv("MONGODB_URINEW1")
 
 # === API Setup ===
-BASE_URL = "https://dev-rspl-imlsp.lendenclub.com/v1"
+BASE_URL = "https://tsp-los.lendenclub.com/v2"
 PARTNER_CODE = "KC"
-KEY = "76f541a77bb26ff4389c47ede508c80f"
-IV = "8795d9c2dfda62da"
+KEY = "49dde96a1f057656ede3cf85f1be2b29"
+IV = "a4da4265bfa4bac0"
 AES_BLOCK_SIZE = 32
 BATCH_SIZE = 1
 
@@ -64,7 +64,7 @@ def call_api(api_code: str, data: dict):
     checksum = generate_checksum(encrypted_payload)
 
     body = {"checksum": checksum, "payload": encrypted_payload}
-    url = f"{BASE_URL}/{PARTNER_CODE}/"
+    url = f"{BASE_URL}"
 
     print(f"DEBUG: Calling URL: {url} with api_code: {api_code}")
 
