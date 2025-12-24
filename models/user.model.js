@@ -33,7 +33,6 @@ const userSchema = new Schema(
       type: String,
     },
     Application: { Type: String },
-    utm_source: { type: String },
     platform: { type: String },
     salaryMode: { type: String },
     bankName: { type: String },
@@ -53,14 +52,8 @@ const userSchema = new Schema(
     state: { type: String },
     gender: { type: String },
     employment: { type: String },
+    utm_source: { type: String },
     company_name: { type: String },
-    TrackUtm: [
-    {
-        utm_source: { type: String },
-        utm_medium: { type: String },
-        utmReferral: { type: String }, // '-' ki jagah Capital 'R'
-    }
-    ],
     income: { type: String },
     partner: { type: String, default: "None" },
     partnerHistory: [
