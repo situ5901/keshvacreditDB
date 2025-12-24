@@ -57,6 +57,7 @@ app.use(cookieParser());
 app.use(`/`, require("./routes/auth"));
 app.use(`/api${API_VERSION}/leads`, require("./routes/leads"));
 app.use(`/api${API_VERSION}/generateUTM`, UTMROUTE);
+app.use(`/api${API_VERSION}/camping`, UTMROUTE);
 app.use(
   `/api${API_VERSION}/eligibility`,
   require("./Show_Lenders/Lender_List"),
