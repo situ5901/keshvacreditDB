@@ -186,6 +186,8 @@ router.post("/userinfo", async (req, res) => {
       doesFileGST,
       agentphone,
       utm_source,
+      utm_campaign,
+      utm_medium,
       partner: "Keshvacredit",
       createdAt: new Date(),
     });
