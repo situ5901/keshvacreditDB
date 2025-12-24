@@ -52,8 +52,10 @@ const userSchema = new Schema(
     state: { type: String },
     gender: { type: String },
     employment: { type: String },
-    utm_source: { type: String },
     company_name: { type: String },
+    utm_source: { type: String },
+    utm_campaign: { type: String },
+    utm_medium: { type: String },
     income: { type: String },
     partner: { type: String, default: "None" },
     partnerHistory: [
