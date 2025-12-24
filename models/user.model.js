@@ -33,6 +33,7 @@ const userSchema = new Schema(
       type: String,
     },
     Application: { Type: String },
+    utm_source: { type: String },
     platform: { type: String },
     salaryMode: { type: String },
     bankName: { type: String },
