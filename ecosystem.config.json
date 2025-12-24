@@ -1,0 +1,76 @@
+{
+  "apps": [
+    {
+      "name": "Mpokket1",
+      "script": "./Loop-Helper/Mpokket1.js",
+      "exec_mode": "fork",
+      "instances": 1
+    },
+    {
+      "name": "RamFi",
+      "script": "./Loop-Helper/RamFin-Loop.js",
+      "exec_mode": "fork",
+      "instances": 1
+    },
+    {
+      "name": "MpokketVish",
+      "script": "./Loop-Helper/Mpokket2.js",
+      "exec_mode": "fork",
+      "instances": 1
+    },
+    {
+      "name": "PI",
+      "script": "./Loop-Helper/PI.js",
+      "exec_mode": "fork",
+      "instances": 1
+    },
+    {
+      "name": "CapitalNow1",
+      "script": "./Loop-Helper/CapitalNow.js",
+      "exec_mode": "fork",
+      "instances": 1
+    },
+    {
+      "name": "Zype",
+      "script": "./Loop-Helper/Zype.js",
+      "exec_mode": "fork",
+      "instances": 1
+    },
+    {
+      "name": "PayMe2",
+      "script": "./Loop-Helper/PayMe2.js",
+      "exec_mode": "fork",
+      "instances": 1
+    },
+    {
+      "name": "PayMe1",
+      "script": "./Loop-Helper/payme.js",
+      "exec_mode": "fork",
+      "instances": 1
+    },
+    {
+      "name": "CreditSea",
+      "script": "./Loop-Helper/CreditSea.js",
+      "exec_mode": "fork",
+      "instances": 1
+    },
+    {
+      "name": "LoanTap",
+      "script": "./Loop-Helper/LoanTap.js",
+      "exec_mode": "fork",
+      "instances": 1
+    },
+    {
+      "name": "PIMoney2",
+      "script": "./Loop-Helper/PIMoney.js",
+      "exec_mode": "fork",
+      "instances": 1
+    },
+    {
+      "name": "ZyepDell",
+      "script": "./Loop-Helper/ZypeDell.js",
+      "exec_mode": "fork",
+      "instances": 1
+    }
+  ]
+}
