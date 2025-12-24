@@ -176,7 +176,6 @@ async function processBatch(leads) {
       }
 
       if (!isValidPAN(lead.pan)) {
-        // FIX 7: Added backticks around the entire string
         console.error(
           `❌ Invalid PAN format for lead: ${lead.phone} with PAN: ${lead.pan}`,
         );

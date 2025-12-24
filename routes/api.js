@@ -13,6 +13,8 @@ const fs = require("fs");
 const HomeLoan = require("../routes/HL/HLSchema.js");
 const otpStorage = new Map();
 
+const ConsentSchema = require("../models/CampConsentSchema.js")
+
 router.post("/send-otp", async (req, res) => {
   try {
     const { phone } = req.body;

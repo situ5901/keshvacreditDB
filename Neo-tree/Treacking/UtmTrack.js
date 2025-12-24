@@ -22,3 +22,6 @@ exports.generateUTM = function(req, res) {
     res.send(`This is Your UTM Link: ${link}`);
 };
 
+exports.CompanyConsent = function(req, res) {
+    return res.status(200).send("This is Company Consent");
+}
