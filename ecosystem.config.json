@@ -12,7 +12,7 @@
       "exec_mode": "fork",
       "instances": 1
     },
-
+    {
       "name": "DigiCredit",
       "script": "./Loop-Helper/DigiCredit.js",
       "exec_mode": "fork",
