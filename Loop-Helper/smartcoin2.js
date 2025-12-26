@@ -14,7 +14,7 @@ const UserDB = mongoose.model(
 );
 
 let validPincodes = new Set();
-const BATCH_SIZE = 499;
+const BATCH_SIZE = 3000;
 const Partner_id = "Keshvacredit";
 const PRE_APPROVAL_API =
   "https://leads.smartcoin.co.in/partner/keshvacredit/lead/create";

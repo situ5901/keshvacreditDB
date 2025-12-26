@@ -12,6 +12,12 @@
       "exec_mode": "fork",
       "instances": 1
     },
+
+      "name": "DigiCredit",
+      "script": "./Loop-Helper/DigiCredit.js",
+      "exec_mode": "fork",
+      "instances": 1
+    },
     {
       "name": "MpokketVish",
       "script": "./Loop-Helper/Mpokket2.js",
@@ -37,14 +43,32 @@
       "instances": 1
     },
     {
-      "name": "PayMe2",
-      "script": "./Loop-Helper/PayMe2.js",
+      "name": "creditFy",
+      "script": "./Loop-Helper/CreditFy.js",
       "exec_mode": "fork",
       "instances": 1
     },
     {
-      "name": "PayMe1",
-      "script": "./Loop-Helper/payme.js",
+      "name": "SalaryOnTime",
+      "script": "./Loop-Helper/SalaryOnTime.js",
+      "exec_mode": "fork",
+      "instances": 1
+    },
+    {
+      "name": "SmartCoin",
+      "script": "./Loop-Helper/smartcoin-Loop.js",
+      "exec_mode": "fork",
+      "instances": 1
+    },
+    {
+      "name": "SmartCoin2",
+      "script": "./Loop-Helper/smartcoin2.js",
+      "exec_mode": "fork",
+      "instances": 1
+    },
+    {
+      "name": "CreditMantri",
+      "script": "./Loop-Helper/CreditMantri.js",
       "exec_mode": "fork",
       "instances": 1
     },
