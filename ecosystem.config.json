@@ -101,6 +101,18 @@
       "script": "./Loop-Helper/ZypeDell.js",
       "exec_mode": "fork",
       "instances": 1
+    },
+    {
+       "name": "PayMe1",
+       "script": "./Loop-Helper/PayMe.js",
+       "exec_mode": "fork",
+       "instances": 1
+    },
+    {
+	"name": "PayMe2",
+	"script": "./Loop-Helper/PayMe2.js",
+	"exec_mode": "fork",
+	"instances": 1	
     }
   ]
 }
