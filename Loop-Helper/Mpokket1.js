@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 const axios = require("axios");
 require("dotenv").config();
 
-const MONGODB_URINEW = process.env.COVER_VISHU;
+const MONGODB_URINEW = process.env.MONGODB_VISHU;
 
 mongoose
   .connect(MONGODB_URINEW)
