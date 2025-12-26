@@ -104,7 +104,7 @@
     },
     {
        "name": "PayMe1",
-       "script": "./Loop-Helper/PayMe.js",
+       "script": "./Loop-Helper/payme.js",
        "exec_mode": "fork",
        "instances": 1
     },

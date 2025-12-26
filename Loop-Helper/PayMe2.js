@@ -10,16 +10,23 @@ const REGISTER_USER_API =
 const MERCHANT_ID = "5089aad2-e6ad-46f3-aef5-9a7f421f59de";
 const REF_ARR_NAME = "payme";
 
-const MONGODB_URINEW = process.env.MONGODB_URINEW;
+
+
+
+const MONGODB_URINEW = process.env.ASIJAVISHAL3;
+
+const UserDB = mongoose.model(
+  "payme",
+  new mongoose.Schema({}, { collection: "payme", strict: false }),
+);
+
+
+
 mongoose
   .connect(MONGODB_URINEW)
   .then(() => console.log("✅ MongoDB Connected Successfully"))
   .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
 
-const UserDB = mongoose.model(
-  "PayMe",
-  new mongoose.Schema({}, { collection: "PayMe", strict: false }),
-);
 
 async function checkUser(user) {
   try {
