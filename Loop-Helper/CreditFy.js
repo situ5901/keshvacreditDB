@@ -13,8 +13,8 @@ mongoose
   .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
 
 const UserDB = mongoose.model(
-  "smcoll",
-  new mongoose.Schema({}, { collection: "smcoll", strict: false }),
+  "creditfy",
+  new mongoose.Schema({}, { collection: "creditfy", strict: false }),
 );
 
 async function CallApiForLead(user) {
