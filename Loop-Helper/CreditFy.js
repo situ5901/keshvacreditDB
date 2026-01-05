@@ -2,7 +2,7 @@ const axios = require("axios");
 const mongoose = require("mongoose");
 require("dotenv").config();
 
-const MONGODB_URINEW = process.env.MONGODB_RSUnity;
+const MONGODB_URINEW = process.env.MONGODB_CML;
 const BATCH_SIZE = 10;
 
 const API_URL = "https://agency.ctpl.live/lead/ingest/keshva_credit";
@@ -13,8 +13,8 @@ mongoose
   .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
 
 const UserDB = mongoose.model(
-  "creditfy",
-  new mongoose.Schema({}, { collection: "creditfy", strict: false }),
+  "payme",
+  new mongoose.Schema({}, { collection: "payme", strict: false }),
 );
 
 async function CallApiForLead(user) {
