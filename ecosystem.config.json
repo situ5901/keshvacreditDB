@@ -19,6 +19,18 @@
       "instances": 1
     },
     {
+      "name": "FatakPayPL",
+      "script": "./Loop-Helper/FatakPayPL2.js",
+      "exec_mode": "fork",
+      "instances": 1
+    },
+    {
+       "name": "DCL",
+       "script": "./Loop-Helper/FatakPayDCL.js",
+       "exec_mode": "fork",
+       "instances": 1	
+    },
+    {
       "name": "DigiCredit",
       "script": "./Loop-Helper/DigiCredit.js",
       "exec_mode": "fork",

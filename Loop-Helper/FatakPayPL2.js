@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 const axios = require("axios");
 require("dotenv").config();
 
-const MONGODB_URINEW = process.env.MONGODB_VISHAL;
+const MONGODB_URINEW = process.env.MONGODB_BLACKCOVER;
 
 mongoose
   .connect(MONGODB_URINEW)
@@ -10,8 +10,8 @@ mongoose
   .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
 
 const UserDB = mongoose.model(
-  "zype",
-  new mongoose.Schema({}, { collection: "zype", strict: false }),
+  "fatakpay",
+  new mongoose.Schema({}, { collection: "fatakpay", strict: false }),
 );
 
 
