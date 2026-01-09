@@ -2,7 +2,7 @@ const axios = require("axios");
 const mongoose = require("mongoose");
 require("dotenv").config();
 
-const MONGODB_URINEW = process.env.MONGODB_RSUnity;
+const MONGODB_URINEW = process.env.MONGODB_BLACKCOVER;
 
 mongoose
   .connect(MONGODB_URINEW)
@@ -10,8 +10,8 @@ mongoose
   .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
 
 const UserDB = mongoose.model(
-  "smcoll",
-  new mongoose.Schema({}, { collection: "smcoll", strict: false }),
+  "fatakpay",
+  new mongoose.Schema({}, { collection: "fatakpay", strict: false }),
 );
 
 const DEDUPE_API = "https://www.ramfincorp.com/new-api/customers/check_dedupe";

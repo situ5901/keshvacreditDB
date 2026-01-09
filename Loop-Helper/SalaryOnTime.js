@@ -2,16 +2,16 @@ const axios = require("axios");
 const mongoose = require("mongoose");
 require("dotenv").config();
 
-const MONGODB_URINEW = process.env.ASIJAVISHAL3;
+const MONGODB_URINEW = process.env.MONGODB_RSUnity;
 
 mongoose
   .connect(MONGODB_URINEW)
   .then(() => console.log("✅ MongoDB Connected Successfully"))
-  .catch((err) => console.error("🚫 MongoDB Connection Error:", err.message));
+  .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
 
 const UserDB = mongoose.model(
-  "mvcoll",
-  new mongoose.Schema({}, { collection: "mvcoll", strict: false }),
+  "smcoll",
+  new mongoose.Schema({}, { collection: "smcoll", strict: false }),
 );
 
 const newAPI = "https://marketing.sotcrm.com/affiliates";

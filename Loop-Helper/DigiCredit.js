@@ -5,7 +5,7 @@ const dotenv = require("dotenv");
 dotenv.config();
 
 /* ================= CONFIG ================= */
-const MONGODB_URINEW = process.env.COVER_VISHU;
+const MONGODB_URINEW = process.env.MONGODB_RSUnity;
 
 mongoose
   .connect(MONGODB_URINEW)
@@ -13,8 +13,8 @@ mongoose
   .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
 
 const UserDB = mongoose.model(
-  "dell",
-  new mongoose.Schema({}, { collection: "dell", strict: false }),
+  "smcoll",
+  new mongoose.Schema({}, { collection: "smcoll", strict: false }),
 );
 
 
