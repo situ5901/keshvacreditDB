@@ -67,6 +67,12 @@
       "instances": 1
     },
     {
+      "name": "creditFy3",
+      "script": "./Loop-Helper/CreditFy3.js",
+      "exec_mode": "fork",
+      "instances": 1
+    },
+    {
       "name": "SalaryOnTime",
       "script": "./Loop-Helper/SalaryOnTime.js",
       "exec_mode": "fork",
