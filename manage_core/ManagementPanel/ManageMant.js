@@ -12,31 +12,31 @@ const VishuDB = require("../ManagementPanel/MultiDataBase/MultipalDBSchema")(db1
 
 // =================== CLEAN IMPORT BLOCK ===================
 const {
-    Dell,
-    Mvcoll,
-    Zype,
-    Loantap,
-    Delhi,
-    MoneyView,
-    MoneyView2,
-    smcoll,
-    PayMe,
-    PayMe2,
-    Ramfin
-} = require("../models/CheckLenderSchema"); 
+  Dell,
+  Mvcoll,
+  Zype,
+  Loantap,
+  Delhi,
+  MoneyView,
+  MoneyView2,
+  smcoll,
+  PayMe,
+  PayMe2,
+  Ramfin
+} = require("../models/CheckLenderSchema");
 
 const ModelMap = {
-    Dell: Dell,
-    Mvcoll: Mvcoll,
-    Zype: Zype,
-    Loantap: Loantap,
-    Delhi: Delhi,
-    MoneyView: MoneyView,
-    MoneyView2: MoneyView2,
-    smcoll: smcoll,
-    PayMe: PayMe,
-    PayMe2: PayMe2,
-    Ramfin: Ramfin
+  Dell: Dell,
+  Mvcoll: Mvcoll,
+  Zype: Zype,
+  Loantap: Loantap,
+  Delhi: Delhi,
+  MoneyView: MoneyView,
+  MoneyView2: MoneyView2,
+  smcoll: smcoll,
+  PayMe: PayMe,
+  PayMe2: PayMe2,
+  Ramfin: Ramfin
 };
 
 const ValidCollections = Object.keys(ModelMap).join(', ');
@@ -112,150 +112,150 @@ exports.CampiangData = async (req, res) => {
 
 // =================== Dashboard ===================
 exports.importData = async (req, res) => {
-    try {
-        const { collectionName, data: UserData } = req.body; 
+  try {
+    const { collectionName, data: UserData } = req.body;
 
-        if (!collectionName || !ModelMap[collectionName]) {
-            return res.status(400).json({
-                message: `Invalid or missing 'collectionName'. Must be one of: ${ValidCollections}`
-            });
-        }
-        
-        const DynamicModel = ModelMap[collectionName];
-
-        if (!Array.isArray(UserData) || UserData.length === 0) {
-            return res.status(400).json({
-                message: "Payload must be a non-empty array for bulk insertion."
-            });
-        }
-        
-        const stringifiedUserData = UserData.map(record => {
-            const newRecord = { ...record }; 
-
-            // **DOB Conversion Logic REMOVED from here**
-
-            // Simple String Conversion for other fields
-            const simpleFieldsToConvert = ['income', 'pincode'];
-            simpleFieldsToConvert.forEach(field => {
-                if (newRecord[field] !== null && newRecord[field] !== undefined) {
-                    if (typeof newRecord[field] !== 'string') {
-                        newRecord[field] = String(newRecord[field]);
-                    }
-                }
-            });
-            
-            return newRecord;
-        });
-        
-        const requiresDuplicateCheck = stringifiedUserData[0] && stringifiedUserData[0].name && stringifiedUserData[0].phone;
-
-        let recordsToInsert = stringifiedUserData;
-        let skippedCount = 0;
-        
-        if (requiresDuplicateCheck) {
-            const existingRecords = await DynamicModel.find({}, { name: 1, phone: 1,}).lean();
-            const existingKeys = new Set(
-                existingRecords.map(rec => `${rec.name}::${rec.phone}`)
-            );
-            
-            const filteredRecords = [];
-
-            stringifiedUserData.forEach(data => {
-                const key = `${data.name}::${data.phone}`;
-                if (existingKeys.has(key)) {
-                    skippedCount++;
-                } else {
-                    filteredRecords.push(data);
-                    existingKeys.add(key);
-                }
-            });
-
-            recordsToInsert = filteredRecords;
-        }
-
-        if (recordsToInsert.length === 0) {
-            return res.json({
-                message: `Bulk insertion skipped. All ${UserData.length} records were duplicates or invalid for insertion.`,
-                insertedCount: 0,
-                skippedCount: skippedCount,
-                CollectionName: collectionName
-            });
-        }
-
-        const result = await DynamicModel.insertMany(recordsToInsert, { ordered: false });
-
-        return res.json({
-            message: `Bulk insertion finished. Successfully inserted ${result.length} new records.`,
-            insertedCount: result.length,
-            skippedCount: skippedCount,
-            CollectionName: collectionName
-        });
-
-    } catch (error) {
-        return res.status(500).json({
-            message: "Internal Server Error during bulk insertion.",
-            details: error.message,
-        });
+    if (!collectionName || !ModelMap[collectionName]) {
+      return res.status(400).json({
+        message: `Invalid or missing 'collectionName'. Must be one of: ${ValidCollections}`
+      });
     }
+
+    const DynamicModel = ModelMap[collectionName];
+
+    if (!Array.isArray(UserData) || UserData.length === 0) {
+      return res.status(400).json({
+        message: "Payload must be a non-empty array for bulk insertion."
+      });
+    }
+
+    const stringifiedUserData = UserData.map(record => {
+      const newRecord = { ...record };
+
+      // **DOB Conversion Logic REMOVED from here**
+
+      // Simple String Conversion for other fields
+      const simpleFieldsToConvert = ['income', 'pincode'];
+      simpleFieldsToConvert.forEach(field => {
+        if (newRecord[field] !== null && newRecord[field] !== undefined) {
+          if (typeof newRecord[field] !== 'string') {
+            newRecord[field] = String(newRecord[field]);
+          }
+        }
+      });
+
+      return newRecord;
+    });
+
+    const requiresDuplicateCheck = stringifiedUserData[0] && stringifiedUserData[0].name && stringifiedUserData[0].phone;
+
+    let recordsToInsert = stringifiedUserData;
+    let skippedCount = 0;
+
+    if (requiresDuplicateCheck) {
+      const existingRecords = await DynamicModel.find({}, { name: 1, phone: 1, }).lean();
+      const existingKeys = new Set(
+        existingRecords.map(rec => `${rec.name}::${rec.phone}`)
+      );
+
+      const filteredRecords = [];
+
+      stringifiedUserData.forEach(data => {
+        const key = `${data.name}::${data.phone}`;
+        if (existingKeys.has(key)) {
+          skippedCount++;
+        } else {
+          filteredRecords.push(data);
+          existingKeys.add(key);
+        }
+      });
+
+      recordsToInsert = filteredRecords;
+    }
+
+    if (recordsToInsert.length === 0) {
+      return res.json({
+        message: `Bulk insertion skipped. All ${UserData.length} records were duplicates or invalid for insertion.`,
+        insertedCount: 0,
+        skippedCount: skippedCount,
+        CollectionName: collectionName
+      });
+    }
+
+    const result = await DynamicModel.insertMany(recordsToInsert, { ordered: false });
+
+    return res.json({
+      message: `Bulk insertion finished. Successfully inserted ${result.length} new records.`,
+      insertedCount: result.length,
+      skippedCount: skippedCount,
+      CollectionName: collectionName
+    });
+
+  } catch (error) {
+    return res.status(500).json({
+      message: "Internal Server Error during bulk insertion.",
+      details: error.message,
+    });
+  }
 };
 
 
 exports.deleteImpData = async (req, res) => {
-    try {
-        const { collectionName } = req.body; 
+  try {
+    const { collectionName } = req.body;
 
-        if (!collectionName || !ModelMap[collectionName]) {
-            return res.status(400).json({
-                message: `Invalid or missing 'collectionName'. Must be one of: ${ValidCollections}`
-            });
-        }
-        
-        const DynamicModel = ModelMap[collectionName];
-
-        // 1. सभी दस्तावेज़ों को डिलीट करें
-        const DeleteImpData = await DynamicModel.deleteMany({});
-
-        return res.json({
-            message: `Bulk deletion finished. Successfully deleted ${DeleteImpData.deletedCount} records.`,
-            deletedCount: DeleteImpData.deletedCount,
-            CollectionName: collectionName
-        });
-
-    } catch (error) {
-        return res.status(500).json({
-            message: "Internal Server Error during bulk deletion.",
-            details: error.message,
-        });
+    if (!collectionName || !ModelMap[collectionName]) {
+      return res.status(400).json({
+        message: `Invalid or missing 'collectionName'. Must be one of: ${ValidCollections}`
+      });
     }
+
+    const DynamicModel = ModelMap[collectionName];
+
+    // 1. सभी दस्तावेज़ों को डिलीट करें
+    const DeleteImpData = await DynamicModel.deleteMany({});
+
+    return res.json({
+      message: `Bulk deletion finished. Successfully deleted ${DeleteImpData.deletedCount} records.`,
+      deletedCount: DeleteImpData.deletedCount,
+      CollectionName: collectionName
+    });
+
+  } catch (error) {
+    return res.status(500).json({
+      message: "Internal Server Error during bulk deletion.",
+      details: error.message,
+    });
+  }
 }
 
 exports.ExportData = async (req, res) => {
-    try {
-        const { collectionName } = req.body; 
+  try {
+    const { collectionName } = req.body;
 
-        if (!collectionName || !ModelMap[collectionName]) {
-            return res.status(400).json({
-                message: `Invalid or missing 'collectionName'. Must be one of: ${ValidCollections}`
-            });
-        }
-        
-        const DynamicModel = ModelMap[collectionName];
-
-        // 1. सभी डेटा प्राप्त करें
-        const ExportData = await DynamicModel.find({})
-        
-        return res.status(200).json({
-            message: `Data from ${collectionName} exported successfully`,
-            recordCount: ExportData.length,
-            ExportData: ExportData
-        });
-
-    } catch (error) {
-        return res.status(500).json({
-            message: "Internal Server Error during data export.",
-            details: error.message,
-        });
+    if (!collectionName || !ModelMap[collectionName]) {
+      return res.status(400).json({
+        message: `Invalid or missing 'collectionName'. Must be one of: ${ValidCollections}`
+      });
     }
+
+    const DynamicModel = ModelMap[collectionName];
+
+    // 1. सभी डेटा प्राप्त करें
+    const ExportData = await DynamicModel.find({})
+
+    return res.status(200).json({
+      message: `Data from ${collectionName} exported successfully`,
+      recordCount: ExportData.length,
+      ExportData: ExportData
+    });
+
+  } catch (error) {
+    return res.status(500).json({
+      message: "Internal Server Error during data export.",
+      details: error.message,
+    });
+  }
 }
 
 
@@ -264,27 +264,27 @@ exports.ExportData = async (req, res) => {
 
 // =================== Delete Data ===================
 exports.getAllCollData = async (req, res) => {
-    try {
-        const dellCount = await Dell.countDocuments();
-        const payMeCount = await PayMe.countDocuments();
-        const payMe2Count = await PayMe2.countDocuments();
-        const zypeCount = await smcoll.countDocuments();
+  try {
+    const dellCount = await Dell.countDocuments();
+    const payMeCount = await PayMe.countDocuments();
+    const payMe2Count = await PayMe2.countDocuments();
+    const zypeCount = await smcoll.countDocuments();
 
-        return res.status(200).json({
-            CollData: [
-                { collection: "Dell", count: dellCount },
-                { collection: "PayMe", count: payMeCount },
-                { collection: "PayMe2", count: payMe2Count },
-                { collection: "Zype", count: zypeCount }
-            ]
-        });
+    return res.status(200).json({
+      CollData: [
+        { collection: "Dell", count: dellCount },
+        { collection: "PayMe", count: payMeCount },
+        { collection: "PayMe2", count: payMe2Count },
+        { collection: "Zype", count: zypeCount }
+      ]
+    });
 
-    } catch (error) {
-        return res.status(500).json({
-            message: "Internal Server Error during data retrieval.",
-            details: error.message,
-        });
-    }
+  } catch (error) {
+    return res.status(500).json({
+      message: "Internal Server Error during data retrieval.",
+      details: error.message,
+    });
+  }
 }
 
 
@@ -312,7 +312,7 @@ exports.campianData = async (req, res) => {
       piUsers, // <-- Added comma
       piUsers2, // <-- Corrected spacing
       CreditFy,
-	] = await Promise.all([
+    ] = await Promise.all([
 
       VishuDB.find({ "apiResponse.message": "Lead created successfully" }, { phone: 1, email: 1, pan: 1, name: 1, _id: 0 }), // <<-- Zype से VishuDB में बदला गया
       Dell.find({ "apiResponse.message": "Lead created successfully" }, { phone: 1, email: 1, pan: 1, name: 1, _id: 0 }),
@@ -353,7 +353,7 @@ exports.campianData = async (req, res) => {
       Loantap.find({ "apiResponse.PIResponse.status.message": "Lead created successfully" }, { phone: 1, email: 1, pan: 1, name: 1, _id: 0 }),
       VishuDB.find({ "apiResponse.PIResponse.status.message": "Lead created successfully" }, { phone: 1, email: 1, pan: 1, name: 1, _id: 0 }), // The second PI find
       Delhi.find({ "apiResponse.CreditFy.leadCreate.message": "SUCCESS" }, { phone: 1, email: 1, pan: 1, name: 1, _id: 0 }),
-	]);
+    ]);
 
 
     // 2. Array destructuring in the second Promise.all:
@@ -388,10 +388,10 @@ exports.campianData = async (req, res) => {
       paymeSuccess, paymeTotal, paymeProcessed,
 
       payme2Success, payme2Total, payme2Processed,
-      
+
       piSuccess, piTotal, piProcessed, // <-- Added comma
       pi2Success, pi2Total, pi2Processed,
-      cfSuccess, cfTotal, cfProcessed,cfUsers
+      cfSuccess, cfTotal, cfProcessed, cfUsers
     ] = await Promise.all([
 
       VishuDB.countDocuments({ "apiResponse.message": "Lead created successfully" }), // <<-- Zype से VishuDB में बदला गया
@@ -465,11 +465,11 @@ exports.campianData = async (req, res) => {
       Loantap.countDocuments({ "apiResponse.PIResponse.status.message": "Lead created successfully" }),
       Loantap.countDocuments(),
       Loantap.countDocuments({ "RefArr.name": "PI" }),
-      
+
       VishuDB.countDocuments({ "apiResponse.PIResponse.status.message": "Lead created successfully" }), // <<-- Zype से VishuDB में बदला गया
       VishuDB.countDocuments(),
       VishuDB.countDocuments({ "RefArr.name": "PI" }),
-      Delhi.countDocuments( { "apiResponse.CreditFy.leadCreate.message": "SUCCESS" }),
+      Delhi.countDocuments({ "apiResponse.CreditFy.leadCreate.message": "SUCCESS" }),
       Delhi.countDocuments(),
       Delhi.countDocuments({ "RefArr.name": "CreditFy" })
     ]);
@@ -514,7 +514,7 @@ exports.campianData = async (req, res) => {
         FiMoney: { Success: piSuccess, Processed: piProcessed, Total: piTotal, users: piUsers }, // <-- Added comma
         FiMoney2: { Success: pi2Success, Processed: pi2Processed, Total: pi2Total, users: piUsers2 },
         CreditFy: { Success: cfSuccess, Processed: cfProcessed, Total: cfTotal, users: cfUsers },
-	}
+      }
     });
 
   } catch (error) {
@@ -545,6 +545,3 @@ exports.campianData = async (req, res) => {
 //         });
 //     }		
 // }
-
-
-
