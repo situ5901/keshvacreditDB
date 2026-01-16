@@ -484,12 +484,6 @@ exports.campianData = async (req, res) => {
           users: mv2Users,
         },
         LoanTaps: { Success: ltS, Processed: ltP, Total: ltT, users: ltUsers },
-        CapitalNow: {
-          Success: cnS,
-          Processed: cnP,
-          Total: cnT,
-          users: cnUsers,
-        },
         Branch: { Success: brS, Processed: brP, Total: brT, users: brUsers },
         Chintamani: {
           Success: chS,
@@ -505,7 +499,7 @@ exports.campianData = async (req, res) => {
           Total: sotT,
           users: sotUsers,
         },
-        CapitalNowUnity: {
+        CapitalNow: {
           Success: cnUS,
           Processed: cnUP,
           Total: cnUT,
@@ -517,7 +511,7 @@ exports.campianData = async (req, res) => {
           Total: dcT,
           users: dcUsers,
         },
-        CreditSeaUnity: {
+        CreditSea: {
           Success: csUS,
           Processed: csUP,
           Total: csUT,
