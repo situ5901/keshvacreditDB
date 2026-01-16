@@ -530,3 +530,244 @@ exports.campianData = async (req, res) => {
     return res.status(500).json({ success: false, error: error.message });
   }
 };
+
+// =================== Management Login ===================
+exports.Managementlogin = (req, res) => {
+  const { ManagementName, ManagementMail, ManagementPassword } = req.body;
+
+  if (!ManagementMail || !ManagementPassword || !ManagementName) {
+    return res.status(400).json({
+      message: "❌ Management name, email, and password are required",
+    });
+  }
+
+  const MamagementDataPath = path.join(
+    __dirname,
+    "../admin_panel/data/Managemantes.json",
+  );
+
+  if (!fs.existsSync(MamagementDataPath)) {
+    return res.status(500).json({ message: "❌ Admin data file not found" });
+  }
+
+  let MamagementData;
+  try {
+    const fileContent = fs.readFileSync(MamagementDataPath, "utf-8");
+    MamagementData = JSON.parse(fileContent);
+  } catch (err) {
+    return res.status(500).json({ message: "❌ Failed to read admin data" });
+  }
+
+  if (
+    ManagementName === MamagementData.ManagementName &&
+    ManagementMail === MamagementData.ManagementMail &&
+    ManagementPassword === MamagementData.ManagementPassword
+  ) {
+    const token = jwt.sign(
+      { role: "harry", username: ManagementName },
+      process.env.JWT_SECRET || "defaultsecret",
+      { expiresIn: "24h" },
+    );
+
+    return res.json({
+      role: "harry",
+      message: "✅ Mamagement logged in",
+      token,
+    });
+  } else {
+    return res
+      .status(401)
+      .json({ message: "❌ Invalid Management credentials" });
+  }
+};
+
+// =================== Campaign Summary ===================
+exports.CampiangData = async (req, res) => {
+  try {
+    const smartCoin = await Apismcoll.countDocuments();
+
+    return res.json({
+      message: "Campiang data fetched successfully",
+      smartCoin,
+    });
+  } catch (error) {
+    console.error("❌ Error fetching Campiang data:", error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// =================== Dashboard ===================
+exports.importData = async (req, res) => {
+  try {
+    const { collectionName, data: UserData } = req.body;
+
+    if (!collectionName || !ModelMap[collectionName]) {
+      return res.status(400).json({
+        message: `Invalid or missing 'collectionName'. Must be one of: ${ValidCollections}`,
+      });
+    }
+
+    const DynamicModel = ModelMap[collectionName];
+
+    if (!Array.isArray(UserData) || UserData.length === 0) {
+      return res.status(400).json({
+        message: "Payload must be a non-empty array for bulk insertion.",
+      });
+    }
+
+    const stringifiedUserData = UserData.map((record) => {
+      const newRecord = { ...record };
+
+      // **DOB Conversion Logic REMOVED from here**
+
+      // Simple String Conversion for other fields
+      const simpleFieldsToConvert = ["income", "pincode"];
+      simpleFieldsToConvert.forEach((field) => {
+        if (newRecord[field] !== null && newRecord[field] !== undefined) {
+          if (typeof newRecord[field] !== "string") {
+            newRecord[field] = String(newRecord[field]);
+          }
+        }
+      });
+
+      return newRecord;
+    });
+
+    const requiresDuplicateCheck =
+      stringifiedUserData[0] &&
+      stringifiedUserData[0].name &&
+      stringifiedUserData[0].phone;
+
+    let recordsToInsert = stringifiedUserData;
+    let skippedCount = 0;
+
+    if (requiresDuplicateCheck) {
+      const existingRecords = await DynamicModel.find(
+        {},
+        { name: 1, phone: 1 },
+      ).lean();
+      const existingKeys = new Set(
+        existingRecords.map((rec) => `${rec.name}::${rec.phone}`),
+      );
+
+      const filteredRecords = [];
+
+      stringifiedUserData.forEach((data) => {
+        const key = `${data.name}::${data.phone}`;
+        if (existingKeys.has(key)) {
+          skippedCount++;
+        } else {
+          filteredRecords.push(data);
+          existingKeys.add(key);
+        }
+      });
+
+      recordsToInsert = filteredRecords;
+    }
+
+    if (recordsToInsert.length === 0) {
+      return res.json({
+        message: `Bulk insertion skipped. All ${UserData.length} records were duplicates or invalid for insertion.`,
+        insertedCount: 0,
+        skippedCount: skippedCount,
+        CollectionName: collectionName,
+      });
+    }
+
+    const result = await DynamicModel.insertMany(recordsToInsert, {
+      ordered: false,
+    });
+
+    return res.json({
+      message: `Bulk insertion finished. Successfully inserted ${result.length} new records.`,
+      insertedCount: result.length,
+      skippedCount: skippedCount,
+      CollectionName: collectionName,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: "Internal Server Error during bulk insertion.",
+      details: error.message,
+    });
+  }
+};
+
+exports.deleteImpData = async (req, res) => {
+  try {
+    const { collectionName } = req.body;
+
+    if (!collectionName || !ModelMap[collectionName]) {
+      return res.status(400).json({
+        message: `Invalid or missing 'collectionName'. Must be one of: ${ValidCollections}`,
+      });
+    }
+
+    const DynamicModel = ModelMap[collectionName];
+
+    // 1. सभी दस्तावेज़ों को डिलीट करें
+    const DeleteImpData = await DynamicModel.deleteMany({});
+
+    return res.json({
+      message: `Bulk deletion finished. Successfully deleted ${DeleteImpData.deletedCount} records.`,
+      deletedCount: DeleteImpData.deletedCount,
+      CollectionName: collectionName,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: "Internal Server Error during bulk deletion.",
+      details: error.message,
+    });
+  }
+};
+
+exports.ExportData = async (req, res) => {
+  try {
+    const { collectionName } = req.body;
+
+    if (!collectionName || !ModelMap[collectionName]) {
+      return res.status(400).json({
+        message: `Invalid or missing 'collectionName'. Must be one of: ${ValidCollections}`,
+      });
+    }
+
+    const DynamicModel = ModelMap[collectionName];
+
+    // 1. सभी डेटा प्राप्त करें
+    const ExportData = await DynamicModel.find({});
+
+    return res.status(200).json({
+      message: `Data from ${collectionName} exported successfully`,
+      recordCount: ExportData.length,
+      ExportData: ExportData,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: "Internal Server Error during data export.",
+      details: error.message,
+    });
+  }
+};
+
+// =================== Delete Data ===================
+exports.getAllCollData = async (req, res) => {
+  try {
+    const dellCount = await Dell.countDocuments();
+    const payMeCount = await PayMe.countDocuments();
+    const payMe2Count = await PayMe2.countDocuments();
+    const zypeCount = await smcoll.countDocuments();
+
+    return res.status(200).json({
+      CollData: [
+        { collection: "Dell", count: dellCount },
+        { collection: "PayMe", count: payMeCount },
+        { collection: "PayMe2", count: payMe2Count },
+        { collection: "Zype", count: zypeCount },
+      ],
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: "Internal Server Error during data retrieval.",
+      details: error.message,
+    });
+  }
+};
