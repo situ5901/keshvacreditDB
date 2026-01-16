@@ -5,24 +5,33 @@ const { MongoClient } = require("mongodb");
 const Apismcoll = require("../../models/apismcoll");
 const router = require("express").Router();
 
+// ---------------- DATABASE CONNECTIONS ----------------
 const db1 = require("../ManagementPanel/MultiDataBase/GuniConDB");
+const CVDB = require("../ManagementPanel/MultiDataBase/Cover_Vishu");
+const ASHIJA_Vishu3 = require("../ManagementPanel/MultiDataBase/ASIJAVISHAL3");
+const MONGODB_CML = require("../ManagementPanel/MultiDataBase/MONGODB_CML");
+const MONGODB_RSUnity = require("../ManagementPanel/MultiDataBase/RSUnity");
+
+// ---------------- MODELS & SCHEMAS ----------------
 const VishuDB =
   require("../ManagementPanel/MultiDataBase/MultiSchema/MultipalDBSchema")(db1);
-
-const CVDB = require("../ManagementPanel/MultiDataBase/Cover_Vishu");
 const Dell =
   require("../ManagementPanel/MultiDataBase/MultiSchema/Cover_VishuDB")(CVDB);
-
-const ASHIJA_Vishu3 = require("../ManagementPanel/MultiDataBase/ASIJAVISHAL3");
 const { MvcollCV, PaymeCV } =
   require("../ManagementPanel/MultiDataBase/MultiSchema/ASIJAVISHAL3Sch")(
     ASHIJA_Vishu3,
   );
 
-// FIX: Destructuring is required here because the schema returns an object
-const MONGODB_CML = require("../ManagementPanel/MultiDataBase/MONGODB_CML");
-const { PersonalPayMe } =
+// Safe Import for CML & RSUnity
+const CML_Models =
   require("../ManagementPanel/MultiDataBase/MultiSchema/CMLSch")(MONGODB_CML);
+const PersonalPayMe = CML_Models.PersonalPayMe;
+
+const RS_Models =
+  require("../ManagementPanel/MultiDataBase/MultiSchema/RSUnitySch")(
+    MONGODB_RSUnity,
+  );
+const RSUnity = RS_Models.RSUnity;
 
 const {
   Mvcoll,
@@ -37,6 +46,9 @@ const {
 
 exports.campianData = async (req, res) => {
   try {
+    // Check if models loaded correctly
+    if (!RSUnity) throw new Error("RSUnity Model not found in schema export.");
+
     // =================== 1. DATA FETCH (Find) ===================
     const [
       scUsers,
@@ -60,6 +72,10 @@ exports.campianData = async (req, res) => {
       piUsers2,
       cfUsers,
       cfUsers2,
+      sotUsers,
+      cnUnityUsers,
+      dcUsers,
+      csUnityUsers,
     ] = await Promise.all([
       Dell.find(
         { "apiResponse.message": "Lead created successfully" },
@@ -162,10 +178,35 @@ exports.campianData = async (req, res) => {
         { "apiResponse.CreditFy.leadCreate.message": "SUCCESS" },
         { phone: 1, email: 1, pan: 1, name: 1, _id: 0 },
       ),
-
-      // CreditFy2 from PersonalPayMe (CML DB)
       PersonalPayMe.find(
         { "apiResponse.CreditFy.leadCreate.message": "SUCCESS" },
+        { phone: 1, email: 1, pan: 1, name: 1, _id: 0 },
+      ),
+
+      // RSUnity New Finds
+      RSUnity.find(
+        {
+          "RefArr.name": "SOT",
+          "apiResponse.SOT.Message": "Lead generated successfully.",
+        },
+        { phone: 1, email: 1, pan: 1, name: 1, _id: 0 },
+      ),
+      RSUnity.find(
+        { "RefArr.name": "CapitalNow", "apiResponse.CapitalNow.code": 2005 },
+        { phone: 1, email: 1, pan: 1, name: 1, _id: 0 },
+      ),
+      RSUnity.find(
+        {
+          "RefArr.name": "DigiCredit",
+          "apiResponse.DigiCredit.leadCreate.message": "success",
+        },
+        { phone: 1, email: 1, pan: 1, name: 1, _id: 0 },
+      ),
+      RSUnity.find(
+        {
+          "RefArr.name": "creditsea",
+          "apiResponse.CreditSea.message": "Lead generated successfully",
+        },
         { phone: 1, email: 1, pan: 1, name: 1, _id: 0 },
       ),
     ]);
@@ -235,8 +276,20 @@ exports.campianData = async (req, res) => {
       cfS2,
       cfT2,
       cfP2,
+      sotS,
+      sotT,
+      sotP,
+      cnUS,
+      cnUT,
+      cnUP,
+      dcS,
+      dcT,
+      dcP,
+      csUS,
+      csUT,
+      csUP,
     ] = await Promise.all([
-      // ... (All existing counts)
+      // Existing Counts (Smartcoin to CreditFy)
       Dell.countDocuments({
         "apiResponse.message": "Lead created successfully",
       }),
@@ -340,13 +393,37 @@ exports.campianData = async (req, res) => {
       }),
       MvcollCV.countDocuments(),
       MvcollCV.countDocuments({ "RefArr.name": "CreditFy" }),
-
-      // CreditFy2 Counts from PersonalPayMe (CML DB)
       PersonalPayMe.countDocuments({
         "apiResponse.CreditFy.leadCreate.message": "SUCCESS",
       }),
       PersonalPayMe.countDocuments(),
       PersonalPayMe.countDocuments({ "RefArr.name": "CreditFy" }),
+
+      // RSUnity New Counts
+      RSUnity.countDocuments({
+        "RefArr.name": "SOT",
+        "apiResponse.SOT.Message": "Lead generated successfully.",
+      }),
+      RSUnity.countDocuments(),
+      RSUnity.countDocuments({ "RefArr.name": "SOT" }),
+      RSUnity.countDocuments({
+        "RefArr.name": "CapitalNow",
+        "apiResponse.CapitalNow.code": 2005,
+      }),
+      RSUnity.countDocuments(),
+      RSUnity.countDocuments({ "RefArr.name": "CapitalNow" }),
+      RSUnity.countDocuments({
+        "RefArr.name": "DigiCredit",
+        "apiResponse.DigiCredit.leadCreate.message": "success",
+      }),
+      RSUnity.countDocuments(),
+      RSUnity.countDocuments({ "RefArr.name": "DigiCredit" }),
+      RSUnity.countDocuments({
+        "RefArr.name": "creditsea",
+        "apiResponse.CreditSea.message": "Lead generated successfully",
+      }),
+      RSUnity.countDocuments(),
+      RSUnity.countDocuments({ "RefArr.name": "creditsea" }),
     ]);
 
     // =================== 3. JSON RESPONSE ===================
@@ -381,15 +458,12 @@ exports.campianData = async (req, res) => {
           users: payme2Users,
         },
         CreditFy: { Success: cfS, Processed: cfP, Total: cfT, users: cfUsers },
-
-        // CreditFy2 Added to Response
         CreditFy2: {
           Success: cfS2,
           Processed: cfP2,
           Total: cfT2,
           users: cfUsers2,
         },
-
         FiMoney: { Success: piS, Processed: piP, Total: piT, users: piUsers },
         FiMoney2: {
           Success: piS2,
@@ -410,7 +484,6 @@ exports.campianData = async (req, res) => {
           users: mv2Users,
         },
         LoanTaps: { Success: ltS, Processed: ltP, Total: ltT, users: ltUsers },
-        CreditSea: { Success: csS, Processed: csP, Total: csT, users: csUsers },
         CapitalNow: {
           Success: cnS,
           Processed: cnP,
@@ -424,9 +497,36 @@ exports.campianData = async (req, res) => {
           Total: chT,
           users: chUsers,
         },
+
+        // RSUnity Added Lenders
+        SalaryOnTime: {
+          Success: sotS,
+          Processed: sotP,
+          Total: sotT,
+          users: sotUsers,
+        },
+        CapitalNowUnity: {
+          Success: cnUS,
+          Processed: cnUP,
+          Total: cnUT,
+          users: cnUnityUsers,
+        },
+        DigiCredit: {
+          Success: dcS,
+          Processed: dcP,
+          Total: dcT,
+          users: dcUsers,
+        },
+        CreditSeaUnity: {
+          Success: csUS,
+          Processed: csUP,
+          Total: csUT,
+          users: csUnityUsers,
+        },
       },
     });
   } catch (error) {
+    console.error("Campian Error:", error);
     return res.status(500).json({ success: false, error: error.message });
   }
 };
