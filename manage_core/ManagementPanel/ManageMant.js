@@ -19,6 +19,11 @@ const { MvcollCV, PaymeCV } =
     ASHIJA_Vishu3,
   );
 
+// FIX: Destructuring is required here because the schema returns an object
+const MONGODB_CML = require("../ManagementPanel/MultiDataBase/MONGODB_CML");
+const { PersonalPayMe } =
+  require("../ManagementPanel/MultiDataBase/MultiSchema/CMLSch")(MONGODB_CML);
+
 const {
   Mvcoll,
   Loantap,
@@ -54,6 +59,7 @@ exports.campianData = async (req, res) => {
       piUsers,
       piUsers2,
       cfUsers,
+      cfUsers2,
     ] = await Promise.all([
       Dell.find(
         { "apiResponse.message": "Lead created successfully" },
@@ -66,8 +72,6 @@ exports.campianData = async (req, res) => {
         },
         { phone: 1, email: 1, pan: 1, name: 1, _id: 0 },
       ),
-
-      // FATAKPAY USERS FIX: Using Mvcoll for both
       Mvcoll.find(
         { "apiResponse.FatakPayDCL.data.product_type": "CARD" },
         { phone: 1, email: 1, pan: 1, name: 1, _id: 0 },
@@ -76,7 +80,6 @@ exports.campianData = async (req, res) => {
         { "apiResponse.FatakPayPL.data.product_type": "EMI" },
         { phone: 1, email: 1, pan: 1, name: 1, _id: 0 },
       ),
-
       Dell.find(
         {
           "apiResponse.MpokketResponse.preApproval.message":
@@ -159,6 +162,12 @@ exports.campianData = async (req, res) => {
         { "apiResponse.CreditFy.leadCreate.message": "SUCCESS" },
         { phone: 1, email: 1, pan: 1, name: 1, _id: 0 },
       ),
+
+      // CreditFy2 from PersonalPayMe (CML DB)
+      PersonalPayMe.find(
+        { "apiResponse.CreditFy.leadCreate.message": "SUCCESS" },
+        { phone: 1, email: 1, pan: 1, name: 1, _id: 0 },
+      ),
     ]);
 
     // =================== 2. COUNTS FETCH ===================
@@ -223,8 +232,11 @@ exports.campianData = async (req, res) => {
       cfS,
       cfT,
       cfP,
+      cfS2,
+      cfT2,
+      cfP2,
     ] = await Promise.all([
-      // SmartCoin
+      // ... (All existing counts)
       Dell.countDocuments({
         "apiResponse.message": "Lead created successfully",
       }),
@@ -236,7 +248,6 @@ exports.campianData = async (req, res) => {
       }),
       VishuDB.countDocuments({ "RefArr.name": "Smartcoin" }),
       VishuDB.countDocuments({ "RefArr.name": "Smartcoin" }),
-
       Mvcoll.countDocuments({
         "apiResponse.FatakPayDCL.data.product_type": "CARD",
       }),
@@ -247,8 +258,6 @@ exports.campianData = async (req, res) => {
       }),
       VishuDB.countDocuments(),
       VishuDB.countDocuments({ "RefArr.name": "FatakPay" }),
-
-      // Mpokket
       Dell.countDocuments({
         "apiResponse.MpokketResponse.preApproval.message":
           "Data Accepted Successfully",
@@ -262,7 +271,6 @@ exports.campianData = async (req, res) => {
       }),
       VishuDB.countDocuments({ "RefArr.name": "Mpokket" }),
       VishuDB.countDocuments({ "RefArr.name": "Mpokket" }),
-      // Zype
       Dell.countDocuments({ "apiResponse.ZypeResponse.status": "ACCEPT" }),
       Dell.countDocuments(),
       Dell.countDocuments({ "RefArr.name": "Zype" }),
@@ -272,7 +280,6 @@ exports.campianData = async (req, res) => {
       }),
       VishuDB.countDocuments({ "RefArr.name": "Zype" }),
       VishuDB.countDocuments({ "RefArr.name": "Zype" }),
-      // RamFinance, MoneyView, LoanTap, etc.
       Ramfin.countDocuments({
         "apiResponse.Ramfin.leadCreate.message": "Attributed Successfully",
       }),
@@ -307,7 +314,6 @@ exports.campianData = async (req, res) => {
       }),
       Delhi.countDocuments(),
       Delhi.countDocuments({ "RefArr.name": "Chintamani" }),
-      // PayMe & CreditFy
       PaymeCV.countDocuments({
         "apiResponse.payme.register_user.message": "Signed-in Successfully",
       }),
@@ -318,7 +324,6 @@ exports.campianData = async (req, res) => {
       }),
       PayMe2.countDocuments(),
       PayMe2.countDocuments({ "RefArr.name": "payme" }),
-      // FiMoney (PI) Fix
       Loantap.countDocuments({
         "apiResponse.PIResponse.status.message": "Lead created successfully",
       }),
@@ -335,6 +340,13 @@ exports.campianData = async (req, res) => {
       }),
       MvcollCV.countDocuments(),
       MvcollCV.countDocuments({ "RefArr.name": "CreditFy" }),
+
+      // CreditFy2 Counts from PersonalPayMe (CML DB)
+      PersonalPayMe.countDocuments({
+        "apiResponse.CreditFy.leadCreate.message": "SUCCESS",
+      }),
+      PersonalPayMe.countDocuments(),
+      PersonalPayMe.countDocuments({ "RefArr.name": "CreditFy" }),
     ]);
 
     // =================== 3. JSON RESPONSE ===================
@@ -369,6 +381,15 @@ exports.campianData = async (req, res) => {
           users: payme2Users,
         },
         CreditFy: { Success: cfS, Processed: cfP, Total: cfT, users: cfUsers },
+
+        // CreditFy2 Added to Response
+        CreditFy2: {
+          Success: cfS2,
+          Processed: cfP2,
+          Total: cfT2,
+          users: cfUsers2,
+        },
+
         FiMoney: { Success: piS, Processed: piP, Total: piT, users: piUsers },
         FiMoney2: {
           Success: piS2,
