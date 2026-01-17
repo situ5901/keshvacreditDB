@@ -450,7 +450,7 @@ exports.campianData = async (req, res) => {
       success: true,
       lender: {
         SmartCoin: { Success: scS, Processed: scP, Total: scT, users: scUsers },
-        "SmartCoin2❌": {
+        "SmartCoin2 ⛔": {
           Success: scS2,
           Processed: scP2,
           Total: scT2,
@@ -477,13 +477,13 @@ exports.campianData = async (req, res) => {
           Total: plT,
           users: plUsers,
         },
-        "PayMe❌": {
+        "PayMe ⛔": {
           Success: pmS,
           Processed: pmP,
           Total: pmT,
           users: paymeUsers,
         },
-        "PayMe❌": {
+        "PayMe ⛔": {
           Success: pmS2,
           Processed: pmP2,
           Total: pmT2,
@@ -509,20 +509,20 @@ exports.campianData = async (req, res) => {
           Total: rfT,
           users: rfUsers,
         },
-        "MoneyView2❌": {
+        "MoneyView2 ⛔": {
           Success: mvS,
           Processed: mvP,
           Total: mvT,
           users: mv2Users,
         },
         LoanTaps: { Success: ltS, Processed: ltP, Total: ltT, users: ltUsers },
-        "Branch❌": {
+        "Branch ⛔": {
           Success: brS,
           Processed: brP,
           Total: brT,
           users: brUsers,
         },
-        "Chintamani❌": {
+        "Chintamani ⛔": {
           Success: chS,
           Processed: chP,
           Total: chT,
@@ -546,7 +546,7 @@ exports.campianData = async (req, res) => {
           Total: dcT,
           users: dcUsers,
         },
-        "CreditSea❌": {
+        "CreditSea ⛔": {
           Success: csUS,
           Processed: csUP,
           Total: csUT,
