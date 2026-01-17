@@ -11,6 +11,7 @@ const CVDB = require("../ManagementPanel/MultiDataBase/Cover_Vishu");
 const ASHIJA_Vishu3 = require("../ManagementPanel/MultiDataBase/ASIJAVISHAL3");
 const MONGODB_CML = require("../ManagementPanel/MultiDataBase/MONGODB_CML");
 const MONGODB_RSUnity = require("../ManagementPanel/MultiDataBase/RSUnity");
+const BlackCover = require("../ManagementPanel/MultiDataBase/BlackCover");
 
 // ---------------- MODELS & SCHEMAS ----------------
 const VishuDB =
@@ -22,7 +23,6 @@ const { MvcollCV, PaymeCV } =
     ASHIJA_Vishu3,
   );
 
-// Safe Import for CML & RSUnity
 const CML_Models =
   require("../ManagementPanel/MultiDataBase/MultiSchema/CMLSch")(MONGODB_CML);
 const PersonalPayMe = CML_Models.PersonalPayMe;
@@ -32,6 +32,13 @@ const RS_Models =
     MONGODB_RSUnity,
   );
 const RSUnity = RS_Models.RSUnity;
+
+// FIX: Yahan model ko sahi se extract karein
+const BlackCoverModels =
+  require("../ManagementPanel/MultiDataBase/MultiSchema/BlackCoverSch")(
+    BlackCover,
+  );
+const fatakPayModel = BlackCoverModels.fatakPayCOll;
 
 const {
   Mvcoll,
@@ -46,8 +53,8 @@ const {
 
 exports.campianData = async (req, res) => {
   try {
-    // Check if models loaded correctly
-    if (!RSUnity) throw new Error("RSUnity Model not found in schema export.");
+    if (!RSUnity) throw new Error("RSUnity Model not found.");
+    if (!fatakPayModel) throw new Error("FatakPay Model not found in schema.");
 
     // =================== 1. DATA FETCH (Find) ===================
     const [
@@ -88,14 +95,19 @@ exports.campianData = async (req, res) => {
         },
         { phone: 1, email: 1, pan: 1, name: 1, _id: 0 },
       ),
-      Mvcoll.find(
+
+      // BlackCover FatakPay DCL
+      fatakPayModel.find(
         { "apiResponse.FatakPayDCL.data.product_type": "CARD" },
         { phone: 1, email: 1, pan: 1, name: 1, _id: 0 },
       ),
-      VishuDB.find(
+
+      // BlackCover FatakPay PL
+      fatakPayModel.find(
         { "apiResponse.FatakPayPL.data.product_type": "EMI" },
         { phone: 1, email: 1, pan: 1, name: 1, _id: 0 },
       ),
+
       Dell.find(
         {
           "apiResponse.MpokketResponse.preApproval.message":
@@ -119,10 +131,13 @@ exports.campianData = async (req, res) => {
         { "RefArr.name": "Zype", "apiResponse.ZypeResponse.status": "ACCEPT" },
         { phone: 1, email: 1, pan: 1, name: 1, _id: 0 },
       ),
-      Ramfin.find(
+
+      // BlackCover Ramfin (Same Collection)
+      fatakPayModel.find(
         { "apiResponse.Ramfin.leadCreate.message": "Attributed Successfully" },
         { phone: 1, email: 1, pan: 1, name: 1, _id: 0 },
       ),
+
       MoneyView2.find(
         { "apiResponse.moneyViewLeadSubmission.message": "success" },
         { phone: 1, email: 1, pan: 1, name: 1, _id: 0 },
@@ -182,8 +197,6 @@ exports.campianData = async (req, res) => {
         { "apiResponse.CreditFy.leadCreate.message": "SUCCESS" },
         { phone: 1, email: 1, pan: 1, name: 1, _id: 0 },
       ),
-
-      // RSUnity New Finds
       RSUnity.find(
         {
           "RefArr.name": "SOT",
@@ -289,7 +302,6 @@ exports.campianData = async (req, res) => {
       csUT,
       csUP,
     ] = await Promise.all([
-      // Existing Counts (Smartcoin to CreditFy)
       Dell.countDocuments({
         "apiResponse.message": "Lead created successfully",
       }),
@@ -301,16 +313,21 @@ exports.campianData = async (req, res) => {
       }),
       VishuDB.countDocuments({ "RefArr.name": "Smartcoin" }),
       VishuDB.countDocuments({ "RefArr.name": "Smartcoin" }),
-      Mvcoll.countDocuments({
+
+      // FatakPay DCL Counts
+      fatakPayModel.countDocuments({
         "apiResponse.FatakPayDCL.data.product_type": "CARD",
       }),
-      Mvcoll.countDocuments(),
-      Mvcoll.countDocuments({ "RefArr.name": "FatakPayDCL" }),
-      VishuDB.countDocuments({
+      fatakPayModel.countDocuments(),
+      fatakPayModel.countDocuments({ "RefArr.name": "FatakPayDCL" }),
+
+      // FatakPay PL Counts
+      fatakPayModel.countDocuments({
         "apiResponse.FatakPayPL.data.product_type": "EMI",
       }),
-      VishuDB.countDocuments(),
-      VishuDB.countDocuments({ "RefArr.name": "FatakPay" }),
+      fatakPayModel.countDocuments(), // Total FatakPay
+      fatakPayModel.countDocuments({ "RefArr.name": "FatakPay" }),
+
       Dell.countDocuments({
         "apiResponse.MpokketResponse.preApproval.message":
           "Data Accepted Successfully",
@@ -324,6 +341,7 @@ exports.campianData = async (req, res) => {
       }),
       VishuDB.countDocuments({ "RefArr.name": "Mpokket" }),
       VishuDB.countDocuments({ "RefArr.name": "Mpokket" }),
+
       Dell.countDocuments({ "apiResponse.ZypeResponse.status": "ACCEPT" }),
       Dell.countDocuments(),
       Dell.countDocuments({ "RefArr.name": "Zype" }),
@@ -333,11 +351,14 @@ exports.campianData = async (req, res) => {
       }),
       VishuDB.countDocuments({ "RefArr.name": "Zype" }),
       VishuDB.countDocuments({ "RefArr.name": "Zype" }),
-      Ramfin.countDocuments({
+
+      // RamFin Counts (Same Collection)
+      fatakPayModel.countDocuments({
         "apiResponse.Ramfin.leadCreate.message": "Attributed Successfully",
       }),
-      Ramfin.countDocuments(),
-      Ramfin.countDocuments({ "RefArr.name": "RamFin" }),
+      fatakPayModel.countDocuments(),
+      fatakPayModel.countDocuments({ "RefArr.name": "RamFin" }),
+
       MoneyView2.countDocuments({
         "apiResponse.moneyViewLeadSubmission.message": "success",
       }),
@@ -398,8 +419,6 @@ exports.campianData = async (req, res) => {
       }),
       PersonalPayMe.countDocuments(),
       PersonalPayMe.countDocuments({ "RefArr.name": "CreditFy" }),
-
-      // RSUnity New Counts
       RSUnity.countDocuments({
         "RefArr.name": "SOT",
         "apiResponse.SOT.Message": "Lead generated successfully.",
@@ -491,8 +510,6 @@ exports.campianData = async (req, res) => {
           Total: chT,
           users: chUsers,
         },
-
-        // RSUnity Added Lenders
         SalaryOnTime: {
           Success: sotS,
           Processed: sotP,
