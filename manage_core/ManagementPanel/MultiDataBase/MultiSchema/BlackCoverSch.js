@@ -15,14 +15,15 @@ module.exports = (connection) => {
       income: String,
       pincode: String,
       consent: String,
-      RefArr: Object,
-      apiResponse: Object,
+      RefArr: [Object], // Object ko array mein rakhna behtar hai agar multiple entries hain
+      apiResponse: [Object],
     },
-    { versionKey: false },
+    { versionKey: false, strict: false }, // strict: false zaroori hai agar data dynamic hai
   );
 
-  // Sirf mvcoll aur payme models return kar rahe hain
   return {
     fatakPayCOll: connection.model("fatakpay_CV", leaderSchema, "fatakpay"),
+    // Yahan naam "LoanTapCOll" rakhein taaki ManageMant.js se match kare
+    LoanTapCOll: connection.model("loantap_CV", leaderSchema, "loantap"),
   };
 };
