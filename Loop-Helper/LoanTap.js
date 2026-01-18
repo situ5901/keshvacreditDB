@@ -3,7 +3,7 @@ const mongoose = require("mongoose");
 const crypto = require("crypto");
 require("dotenv").config();
 
-const MONGODB_URINEW = process.env.MONGODB_URINEW;
+const MONGODB_URINEW = process.env.MONGODB_BLACKCOVER;
 
 // Connect Mongo
 mongoose
@@ -12,17 +12,8 @@ mongoose
   .catch((err) => console.error("🚫 MongoDB Connection Error:", err));
 
 const UserDB = mongoose.model(
-  "LoanTap",
-  new mongoose.Schema({}, { collection: "LoanTap", strict: false }),
-);
-
-// Meta Model (Not used now but kept)
-const MetaDB = mongoose.model(
-  "Meta",
-  new mongoose.Schema({
-    key: String,
-    value: mongoose.Schema.Types.Mixed,
-  }),
+  "loantap",
+  new mongoose.Schema({}, { collection: "loantap", strict: false }),
 );
 
 // LoanTap Auth
@@ -103,6 +94,7 @@ async function sendToNewAPI(lead) {
     const message =
       response.data?.add_application?.answer?.message || "No message";
 
+    console.log("ApiRespone", response.data);
     return {
       status,
       message,
@@ -111,52 +103,53 @@ async function sendToNewAPI(lead) {
   } catch (error) {
     return {
       status: "failed",
-      message: error.response?.data?.message || "API error",
-      rawResponse: error.response?.data || null,
+      message:
+        error.response?.data?.add_application?.answer?.message || "API error",
+      rawResponse: error.response?.data || { message: "Network Error" },
     };
   }
 }
 
 async function processBatch(users) {
-  const results = await Promise.allSettled(
-    users.map(async (user) => {
-      const result = await sendToNewAPI(user);
+  for (const user of users) {
+    const result = await sendToNewAPI(user);
+    const apiAnswer = result.rawResponse?.add_application?.answer;
 
-      if (result.message === "Application created successfully") {
-        successCount++;
-        console.log(`🎉 Success Count: ${successCount}`);
+    console.log(
+      `📡 Resp for ${user.phone}:`,
+      JSON.stringify(apiAnswer || result.rawResponse, null, 2),
+    );
 
-        if (successCount >= SUCCESS_LIMIT) {
-          console.log("🚨 5000 Successful Hits Complete. Stopping Process...");
-          throw new Error("STOP_PROCESS");
-        }
+    if (
+      apiAnswer?.message === "Application created successfully" ||
+      apiAnswer?.status === "success"
+    ) {
+      successCount++;
+      console.log(`\n🎉 SUCCESS COUNT: ${successCount} / ${SUCCESS_LIMIT}`);
+
+      if (successCount >= SUCCESS_LIMIT) {
+        console.log("🚨 TARGET REACHED! 5000 Success Hits Complete.");
+        throw new Error("STOP_PROCESS"); // Ye error ab main loop ko rok dega
       }
+    }
 
-      await UserDB.updateOne(
-        { phone: user.phone },
-        {
-          $push: {
-            apiResponse: {
-              LoanTap: {
-                fullResponse: result.rawResponse?.add_application?.answer,
-                createdAt: new Date().toISOString(),
-              },
-            },
-            RefArr: {
-              name: "LoanTap",
+    await UserDB.updateOne(
+      { phone: user.phone },
+      {
+        $push: {
+          apiResponse: {
+            LoanTap: {
+              fullResponse: apiAnswer || result.rawResponse,
               createdAt: new Date().toISOString(),
             },
           },
-          $unset: { accounts: "" },
+          RefArr: { name: "LoanTap", createdAt: new Date().toISOString() },
         },
-      );
-
-      console.log(`✅ Mongo Updated: ${user.phone}`);
-      return result;
-    }),
-  );
-
-  return results;
+        $unset: { accounts: "" },
+      },
+    );
+    console.log(`✅ Mongo Updated: ${user.phone}`);
+  }
 }
 
 async function runAllLeads() {
