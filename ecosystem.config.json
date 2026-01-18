@@ -25,10 +25,10 @@
       "instances": 1
     },
     {
-       "name": "DCL",
-       "script": "./Loop-Helper/FatakPayDCL.js",
-       "exec_mode": "fork",
-       "instances": 1	
+      "name": "DCL",
+      "script": "./Loop-Helper/FatakPayDCL.js",
+      "exec_mode": "fork",
+      "instances": 1
     },
     {
       "name": "DigiCredit",
@@ -87,6 +87,12 @@
     {
       "name": "SmartCoin2",
       "script": "./Loop-Helper/smartcoin2.js",
+      "exec_mode": "fork",
+      "instances": 1
+    },
+    {
+      "name": "LoanTap",
+      "script": "./Loop-Helper/LoanTap.js",
       "exec_mode": "fork",
       "instances": 1
     },
