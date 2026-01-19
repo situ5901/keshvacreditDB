@@ -14,23 +14,21 @@ const { CSCmodel } = require("../../CSC/CSCschema.js");
 const { Token, Notification } = require("./notigySchema.js");
 const serviceAccount = require("./serviceaccountkey.json");
 
-const {
-  MoneyView,
-  MoneyView2,
-  smcoll,
-  dailyworks,
-  LoanTaps,
-  Dell,
-  Mvcoll,
-  Zype,
-  Loantap,
-  Delhi,
-  Ramfin,
-  PayMe,
-  PayMe2,
-  Pi,
-} = require("../../models/CheckLenderSchema");
+const CVDB = require("../../ManagementPanel/MultiDataBase/Cover_Vishu");
 
+const Dell =
+  require("../../ManagementPanel/MultiDataBase/MultiSchema/Cover_VishuDB")(
+    CVDB,
+  );
+
+const BlackCover = require("../../ManagementPanel/MultiDataBase/BlackCover");
+const BlackCoverModels =
+  require("../../ManagementPanel/MultiDataBase/MultiSchema/BlackCoverSch")(
+    BlackCover,
+  );
+const fatakPayModel = BlackCoverModels.fatakPayCOll;
+
+const LoanTapModel = BlackCoverModels.LoanTapCOll;
 const { partnerdb, customer } = require("../../../PartnersAPIs/PartnerSchema");
 exports.login = (req, res) => {
   const { adminName, adminMail, password } = req.body;
@@ -235,7 +233,7 @@ exports.deleteAgents = async (req, res) => {
 exports.getAllUsers = async (req, res) => {
   try {
     const users = await User.countDocuments();
-    const AppUsers = await User.countDocuments({ "platform": "application" });
+    const AppUsers = await User.countDocuments({ platform: "application" });
     if (users === 0) {
       return res
         .status(404)
@@ -247,8 +245,8 @@ exports.getAllUsers = async (req, res) => {
     return res.status(200).json({
       message: "✅ User counts retrieved successfully",
       Total: users,
-      webUser:totalUsers,
-      AppUser:AppUsers,
+      webUser: totalUsers,
+      AppUser: AppUsers,
     });
   } catch (error) {
     console.error("❌ Error getting users:", error);
@@ -289,223 +287,282 @@ exports.analysis = async (req, res) => {
   }
 };
 
-
-
 exports.getLendersData = async (req, res) => {
-  try {
-    const [
-      scSuccess,
-      scTotal,
-      scProcessed,
+  try {
+    const [
+      scSuccess,
+      scTotal,
+      scProcessed,
 
-      scSuccess2,
-      scTotal2,
-      scProcessed2,
+      scSuccess2,
+      scTotal2,
+      scProcessed2,
 
-      dclSuccess,
-      dclTotal,
-      dclProcessed,
+      dclSuccess,
+      dclTotal,
+      dclProcessed,
 
-      plSuccess,
-      plTotal,
-      plProcessed,
+      plSuccess,
+      plTotal,
+      plProcessed,
 
-      mpSuccess,
-      mpTotal,
-      mpProcessed,
+      mpSuccess,
+      mpTotal,
+      mpProcessed,
 
-      mpSuccess2,
-      mpTotal2,
-      mpProcessed2,
+      mpSuccess2,
+      mpTotal2,
+      mpProcessed2,
 
-      zSuccess,
-      zTotal,
-      zProcessed,
+      zSuccess,
+      zTotal,
+      zProcessed,
 
-      zSuccess2,
-      zTotal2,
-      zProcessed2,
+      zSuccess2,
+      zTotal2,
+      zProcessed2,
 
-      rfSuccess,
-      rfProcessed,
-      rfTotal,
+      rfSuccess,
+      rfProcessed,
+      rfTotal,
 
-      mv2Success,
-      mv2Total,
-      mv2Processed,
+      mv2Success,
+      mv2Total,
+      mv2Processed,
 
-      ltSuccess,
-      ltProcessed,
-      ltTotal,
+      ltSuccess,
+      ltProcessed,
+      ltTotal,
 
-      csSuccess,
-      csTotal,
-      csProcessed,
+      csSuccess,
+      csTotal,
+      csProcessed,
 
-      cnSuccess,
-      cnTotal,
-      cnProcessed,
+      cnSuccess,
+      cnTotal,
+      cnProcessed,
 
-      brSuccess,
-      brTotal,
-      brProcessed,
+      brSuccess,
+      brTotal,
+      brProcessed,
 
-      chSuccess,
-      chTotal,
-      chProcessed,
+      chSuccess,
+      chTotal,
+      chProcessed,
 
-        // New Lenders added
-        paymeSuccess,
-        paymeTotal,
-        paymeProcessed,
+      // New Lenders added
+      paymeSuccess,
+      paymeTotal,
+      paymeProcessed,
 
-        payme2Success,
-        payme2Total,
-        payme2Processed,
-        
-        piSuccess,
-        piTotal,
-        piProcessed
-    ] = await Promise.all([
-      // Smartcoin
-      Zype.countDocuments({ "apiResponse.message": "Lead created successfully" }),
-      Zype.countDocuments(),
-      Zype.countDocuments({ "RefArr.name": "Smartcoin" }),
+      payme2Success,
+      payme2Total,
+      payme2Processed,
 
-      // Smartcoin2
-      Dell.countDocuments({ "apiResponse.message": "Lead created successfully" }),
-      Dell.countDocuments(),
-      Dell.countDocuments({ "RefArr.name": "Smartcoin" }),
+      piSuccess,
+      piTotal,
+      piProcessed,
+    ] = await Promise.all([
+      // Smartcoin
+      Dell.countDocuments({
+        "apiResponse.message": "Lead created successfully",
+      }),
+      Dell.countDocuments(),
+      Dell.countDocuments({ "RefArr.name": "Smartcoin" }), // Smartcoin2
 
-      // DCL
-      Mvcoll.countDocuments({   "apiResponse.FatakPayDCL.data.product_type": "CARD" }),
-      Mvcoll.countDocuments(),
-      Mvcoll.countDocuments({ "RefArr.name": "FatakPayDCL" }),
+      // Dell.countDocuments({
+      //   "apiResponse.message": "Lead created successfully",
+      // }),
+      // Dell.countDocuments(),
+      // Dell.countDocuments({ "RefArr.name": "Smartcoin" }), // DCL
 
-      // PL EMI
-      Mvcoll.countDocuments({ "apiResponse.FatakPayPL.data.product_type": "EMI" }),
-      Mvcoll.countDocuments(),
-      Mvcoll.countDocuments({ "RefArr.name": "FatakPay" }),
+      fatakPayModel.countDocuments({
+        "apiResponse.FatakPayDCL.data.product_type": "CARD",
+      }),
+      fatakPayModel.countDocuments(),
+      fatakPayModel.countDocuments({ "RefArr.name": "FatakPayDCL" }), // PL EMI
 
-      // Mpokket
-      Dell.countDocuments({ "apiResponse.MpokketResponse.preApproval.message": "Data Accepted Successfully" }),
-      Dell.countDocuments(),
-      Dell.countDocuments({ "RefArr.name": "Mpokket" }),
+      fatakPayModel.countDocuments({
+        "apiResponse.FatakPayPL.data.product_type": "EMI",
+      }),
+      fatakPayModel.countDocuments(),
+      fatakPayModel.countDocuments({ "RefArr.name": "FatakPay" }), // Mpokket
 
-      // Mpokket2
-      Zype.countDocuments({ "apiResponse.MpokketResponse.preApproval.message": "Data Accepted Successfully" }),
-      Zype.countDocuments(),
-      Zype.countDocuments({ "RefArr.name": "Mpokket" }),
+      Dell.countDocuments({
+        "apiResponse.MpokketResponse.preApproval.message":
+          "Data Accepted Successfully",
+      }),
+      Dell.countDocuments(),
+      Dell.countDocuments({ "RefArr.name": "Mpokket" }), // Mpokket2
 
-      // Zype
-      Zype.countDocuments({ "apiResponse.ZypeResponse.status": "ACCEPT" }),
-      Zype.countDocuments(),
-      Zype.countDocuments({ "RefArr.name": "Zype" }),
+      Dell.countDocuments({
+        "apiResponse.MpokketResponse.preApproval.message":
+          "Data Accepted Successfully",
+      }),
+      Dell.countDocuments(),
+      Dell.countDocuments({ "RefArr.name": "Mpokket" }), // Zype
 
-      // Zype2
-      Dell.countDocuments({ "apiResponse.ZypeResponse.status": "ACCEPT" }),
-      Dell.countDocuments(),
-      Dell.countDocuments({ "RefArr.name": "Zype" }),
+      Dell.countDocuments({ "apiResponse.ZypeResponse.status": "ACCEPT" }),
+      Dell.countDocuments(),
+      Dell.countDocuments({ "RefArr.name": "Zype" }), // Zype2
 
-      // RamFinance (Using correct Ramfin Model)
-      Ramfin.countDocuments({ "apiResponse.Ramfin.leadCreate.message": "Attributed Successfully" }),
-      Ramfin.countDocuments({ "RefArr.name": "RamFin" }),
-      Ramfin.countDocuments(),
+      Dell.countDocuments({ "apiResponse.ZypeResponse.status": "ACCEPT" }),
+      Dell.countDocuments(),
+      Dell.countDocuments({ "RefArr.name": "Zype" }), // RamFinance (Using correct Ramfin Model)
 
-      // MoneyView2
-      MoneyView2.countDocuments({ "apiResponse.moneyViewLeadSubmission.message": "success" }),
-      MoneyView2.countDocuments(),
-      MoneyView2.countDocuments({ "RefArr.name": "MoneyView" }),
+      fatakPayModel.countDocuments({
+        "apiResponse.Ramfin.leadCreate.message": "Attributed Successfully",
+      }),
+      fatakPayModel.countDocuments({ "RefArr.name": "RamFin" }),
+      fatakPayModel.countDocuments(), // MoneyView2
 
-      // LoanTaps
-      Loantap.countDocuments({ "apiResponse.LoanTap.fullResponse.message":"Application created successfully" }),
-      Loantap.countDocuments({ "RefArr.name": "LoanTap" }),
-      Loantap.countDocuments(),
+      // MoneyView2.countDocuments({
+      //   "apiResponse.moneyViewLeadSubmission.message": "success",
+      // }),
+      // MoneyView2.countDocuments(),
+      // MoneyView2.countDocuments({ "RefArr.name": "MoneyView" }), // LoanTaps
 
-      // CreditSea
-      Loantap.countDocuments({ "apiResponse.CreditSea.message": "Lead generated successfully" }),
-      Loantap.countDocuments(),
-      Loantap.countDocuments({ "RefArr.name": "CreditSea" }),
+      LoanTapModel.countDocuments({
+        "apiResponse.LoanTap.fullResponse.message":
+          "Application created successfully",
+      }),
+      LoanTapModel.countDocuments({ "RefArr.name": "LoanTap" }),
+      LoanTapModel.countDocuments(), // CreditSea
 
-      // CapitalNow
-      Dell.countDocuments({ "apiResponse.CapitalNow.message": "Fresh Lead Registered Successfully!" }),
-      Dell.countDocuments(),
-      Dell.countDocuments({ "RefArr.name": "CapitalNow" }),
+      LoanTapModel.countDocuments({
+        "apiResponse.CreditSea.message": "Lead generated successfully",
+      }),
+      LoanTapModel.countDocuments(),
+      LoanTapModel.countDocuments({ "RefArr.name": "CreditSea" }), // CapitalNow
 
-      // Branch
-      smcoll.countDocuments({ "apiResponse.Branch.data.decision.code": 1 }),
-      smcoll.countDocuments(),
-      smcoll.countDocuments({ "RefArr.name": "Branch" }),
+      Dell.countDocuments({
+        "apiResponse.CapitalNow.message": "Fresh Lead Registered Successfully!",
+      }),
+      Dell.countDocuments(),
+      Dell.countDocuments({ "RefArr.name": "CapitalNow" }), // Branch
 
-      // Chintamani
-      Delhi.countDocuments({ "apiResponse.chintamani.message": "Profile created successfully" }),
-      Delhi.countDocuments(),
-      Delhi.countDocuments({ "RefArr.name": "Chintamani" }),
+      // smcoll.countDocuments({ "apiResponse.Branch.data.decision.code": 1 }),
+      // smcoll.countDocuments(),
+      // smcoll.countDocuments({ "RefArr.name": "Branch" }), // Chintamani
 
-        // PayMe
-        PayMe.countDocuments({ "apiResponse.payme.register_user.message": "Signed-in Successfully" }),
-        PayMe.countDocuments(),
-        PayMe.countDocuments({ "RefArr.name": "payme" }),
+      // Delhi.countDocuments({
+      //   "apiResponse.chintamani.message": "Profile created successfully",
+      // }),
+      // Delhi.countDocuments(),
+      // Delhi.countDocuments({ "RefArr.name": "Chintamani" }),
 
-        // PayMe2
-        PayMe2.countDocuments({ "apiResponse.payme.register_user.message": "Signed-in Successfully" }),
-        PayMe2.countDocuments(),
-        PayMe2.countDocuments({ "RefArr.name": "payme" }),
+      // PayMe
+      // PayMe.countDocuments({
+      //   "apiResponse.payme.register_user.message": "Signed-in Successfully",
+      // }),
+      // PayMe.countDocuments(),
+      // PayMe.countDocuments({ "RefArr.name": "payme" }),
 
-        // PI / FiMoney
-        Loantap.countDocuments({ "apiResponse.PIResponse.status.message": "Lead created successfully" }),
-        Loantap.countDocuments(),
-        Loantap.countDocuments({ "RefArr.name": "PI" }),
-    ]);
+      // PayMe2
+      // PayMe2.countDocuments({
+      //   "apiResponse.payme.register_user.message": "Signed-in Successfully",
+      // }),
+      // PayMe2.countDocuments(),
+      // PayMe2.countDocuments({ "RefArr.name": "payme" }),
 
-    return res.status(200).json({
-      success: true,
-      message: "Counts retrieved successfully",
-      lender: {
-        SmartCoin: { Success: scSuccess, Processed: scProcessed, Total: scTotal },
-        SmartCoin2: { Success: scSuccess2, Processed: scProcessed2, Total: scTotal2 },
+      // PI / FiMoney
+      Dell.countDocuments({
+        "apiResponse.PIResponse.status.message": "Lead created successfully",
+      }),
+      Dell.countDocuments(),
+      Dell.countDocuments({ "RefArr.name": "PI" }),
+    ]);
 
-        DCL: { Success: dclSuccess, Processed: dclProcessed, Total: dclTotal },
-        DPL: { Success: plSuccess, Processed: plProcessed, Total: plTotal },
+    return res.status(200).json({
+      success: true,
+      message: "Counts retrieved successfully",
+      lender: {
+        SmartCoin: {
+          Success: scSuccess,
+          Processed: scProcessed,
+          Total: scTotal,
+        },
+        SmartCoin2: {
+          Success: scSuccess2,
+          Processed: scProcessed2,
+          Total: scTotal2,
+        },
 
-        Mpokket: { Success: mpSuccess, Processed: mpProcessed, Total: mpTotal },
-        Mpokket2: { Success: mpSuccess2, Processed: mpProcessed2, Total: mpTotal2 },
+        DCL: { Success: dclSuccess, Processed: dclProcessed, Total: dclTotal },
+        DPL: { Success: plSuccess, Processed: plProcessed, Total: plTotal },
 
-        Zype: { Success: zSuccess, Processed: zProcessed, Total: zTotal },
-        Zype2: { Success: zSuccess2, Processed: zProcessed2, Total: zTotal2 },
+        Mpokket: { Success: mpSuccess, Processed: mpProcessed, Total: mpTotal },
+        Mpokket2: {
+          Success: mpSuccess2,
+          Processed: mpProcessed2,
+          Total: mpTotal2,
+        },
 
-        RamFinance: { Success: rfSuccess, Processed: rfProcessed, Total: rfTotal },
+        Zype: { Success: zSuccess, Processed: zProcessed, Total: zTotal },
+        Zype2: { Success: zSuccess2, Processed: zProcessed2, Total: zTotal2 },
 
-        MoneyView2: { Success: mv2Success, Processed: mv2Processed, Total: mv2Total },
+        RamFinance: {
+          Success: rfSuccess,
+          Processed: rfProcessed,
+          Total: rfTotal,
+        },
 
-        LoanTaps: { Success: ltSuccess, Processed: ltProcessed, Total: ltTotal },
+        MoneyView2: {
+          Success: mv2Success,
+          Processed: mv2Processed,
+          Total: mv2Total,
+        },
 
-        creditsea: { Success: csSuccess, Processed: csProcessed, Total: csTotal },
+        LoanTaps: {
+          Success: ltSuccess,
+          Processed: ltProcessed,
+          Total: ltTotal,
+        },
 
-        CapitalNow: { Success: cnSuccess, Processed: cnProcessed, Total: cnTotal },
+        creditsea: {
+          Success: csSuccess,
+          Processed: csProcessed,
+          Total: csTotal,
+        },
 
-        Branch: { Success: brSuccess, Processed: brProcessed, Total: brTotal },
+        CapitalNow: {
+          Success: cnSuccess,
+          Processed: cnProcessed,
+          Total: cnTotal,
+        },
 
-        chintamani: { Success: chSuccess, Processed: chProcessed, Total: chTotal },
-        
-        PayMe: { Success: paymeSuccess, Processed: paymeProcessed, Total: paymeTotal },
-        
-        PayMe2: { Success: payme2Success, Processed: payme2Processed, Total: payme2Total },
-        
-        FiMoney: { Success: piSuccess, Processed: piProcessed, Total: piTotal }
-      },
-    });
+        Branch: { Success: brSuccess, Processed: brProcessed, Total: brTotal },
 
-  } catch (error) {
-    console.error("Error in getLendersData:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Server Error",
-      error: error.message,
-    });
-  }
+        chintamani: {
+          Success: chSuccess,
+          Processed: chProcessed,
+          Total: chTotal,
+        },
+
+        PayMe: {
+          Success: paymeSuccess,
+          Processed: paymeProcessed,
+          Total: paymeTotal,
+        },
+
+        PayMe2: {
+          Success: payme2Success,
+          Processed: payme2Processed,
+          Total: payme2Total,
+        },
+
+        FiMoney: { Success: piSuccess, Processed: piProcessed, Total: piTotal },
+      },
+    });
+  } catch (error) {
+    console.error("Error in getLendersData:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server Error",
+      error: error.message,
+    });
+  }
 };
-
 
 exports.getPartnerData = async (req, res) => {
   try {
