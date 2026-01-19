@@ -5,6 +5,8 @@ const logger = require("morgan");
 const corsMiddleware = require("./middlewares/cors");
 const errorHandler = require("./middlewares/errorHandler");
 const { API_VERSION } = require("./config/config");
+require("dotenv").config();
+
 const UTMROUTE = require("./Neo-tree/UTMRoute");
 
 const app = express();
@@ -30,7 +32,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(corsMiddleware);
 
-app.use(express.urlencoded({ extended: true })); 
+app.use(express.urlencoded({ extended: true }));
 app.use(
   `/api${API_VERSION}/LenderAPIs`,
   require("./Lenders-APIs/FaircentUpload.js"),

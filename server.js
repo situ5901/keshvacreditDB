@@ -6,8 +6,6 @@ const fs = require("fs");
 const path = require("path");
 require("dotenv").config();
 const { PORT, MONGODB_URI } = require("./config/config");
-const { VishuDataBase } = require("./manage_core/ManagementPanel/MultiDataBase/GuniConDB");
-
 const sessionPath = path.join(__dirname, ".session-auth");
 const SESSION_EXPIRY_HOURS = 0.5;
 
@@ -19,12 +17,12 @@ rl.stdoutMuted = true;
 
 function askPassword() {
   return new Promise((resolve) => {
-    rl.question("Enter password to start server: ", function (password) {
+    rl.question("Enter password to start server: ", function(password) {
       rl.close();
       resolve(password);
     });
 
-    rl._writeToOutput = function (stringToWrite) {
+    rl._writeToOutput = function(stringToWrite) {
       if (rl.stdoutMuted) rl.output.write("*");
       else rl.output.write(stringToWrite);
     };
@@ -66,9 +64,8 @@ async function main() {
     }
 
     await mongoose.connect(MONGODB_URI);
-    console.log("Main Database Connected Successfully");
+    console.log("7: ❤️ Main Database Connected Successfully");
 
-    console.log("🎉 Vishal Database Connected Successfully");
 
     app.listen(PORT, () =>
       console.log(`Server running at http://localhost:${PORT}`)

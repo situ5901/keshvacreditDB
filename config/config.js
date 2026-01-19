@@ -3,8 +3,6 @@ require("dotenv").config();
 module.exports = {
   PORT: process.env.PORT || 5000,
   MONGODB_URI: process.env.MONGODB_URINEW,
-
-  MONGODB_VISHAL: process.env.MONGODB_VISHU,
   API_VERSION: process.env.API_VERSION || "/v1",
   ALLOWLIST: [
     "https://keshvacredit.com",
