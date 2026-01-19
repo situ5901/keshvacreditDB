@@ -549,7 +549,6 @@ exports.campianData = async (req, res) => {
   }
 };
 
-//FIX: =================== Management Login ===================
 exports.Managementlogin = (req, res) => {
   const { ManagementName, ManagementMail, ManagementPassword } = req.body;
 
@@ -599,7 +598,7 @@ exports.Managementlogin = (req, res) => {
   }
 };
 
-//FIX: =================== Campaign Summary ===================
+// =================== Campaign Summary ===================
 exports.CampiangData = async (req, res) => {
   try {
     const smartCoin = await Apismcoll.countDocuments();
@@ -614,7 +613,7 @@ exports.CampiangData = async (req, res) => {
   }
 };
 
-//FIX: =================== Dashboard ===================
+// =================== Dashboard ===================
 exports.importData = async (req, res) => {
   try {
     const { collectionName, data: UserData } = req.body;
@@ -766,7 +765,7 @@ exports.ExportData = async (req, res) => {
   }
 };
 
-//FIX: =================== Delete Data ===================
+// =================== Delete Data ===================
 exports.getAllCollData = async (req, res) => {
   try {
     const dellCount = await Dell.countDocuments();
