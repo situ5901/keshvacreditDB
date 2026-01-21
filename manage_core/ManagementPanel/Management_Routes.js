@@ -12,5 +12,5 @@ router.post("/exportdata", ManagementController.ExportData);
 
 router.get("/allCollData", ManagementController.getAllCollData);
 // router.get("/allData",  ManagementController.situ);
-router.post("/webhook", HFCLWebHook.webhookhfcl);
+router.post("/leadStatus", HFCLWebHook.webhookhfcl);
 module.exports = router;
