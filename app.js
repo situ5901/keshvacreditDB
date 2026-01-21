@@ -10,21 +10,23 @@ require("dotenv").config();
 const UTMROUTE = require("./Neo-tree/UTMRoute");
 
 const app = express();
-app.set('trust proxy', 1);
+app.set("trust proxy", 1);
 
-app.use(session({
-  name: 'keshva_session',
-  secret: 'DevOps',
-  resave: false,
-  saveUninitialized: false,
-  proxy: true,
-  cookie: {
-    secure: true,
-    sameSite: 'none',
-    httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000
-  }
-}));
+app.use(
+  session({
+    name: "keshva_session",
+    secret: "DevOps",
+    resave: false,
+    saveUninitialized: false,
+    proxy: true,
+    cookie: {
+      secure: true,
+      sameSite: "none",
+      httpOnly: true,
+      maxAge: 24 * 60 * 60 * 1000,
+    },
+  }),
+);
 
 app.use(logger("dev"));
 app.use(express.json());
@@ -80,7 +82,10 @@ app.use(`/api${API_VERSION}/LenderAPIs`, require("./Lenders-APIs/Faircent.js"));
 app.use(`/api${API_VERSION}/LenderAPIs`, require("./Lenders-APIs/Branch.js"));
 app.use(`/api${API_VERSION}/LenderAPIs`, require("./Lenders-APIs/Ramfin.js"));
 
-app.use(`/api${API_VERSION}/KCPartners`, require("./PartnersAPIs/Creditsea.js"));
+app.use(
+  `/api${API_VERSION}/KCPartners`,
+  require("./PartnersAPIs/Creditsea.js"),
+);
 app.use(
   `/api${API_VERSION}/LenderAPIs`,
   require("./Lenders-APIs/CreditSea.js"),
@@ -144,8 +149,10 @@ app.use(`/api${API_VERSION}/csc`, require("./manage_core/CSC/65Routes.js"));
 
 app.use(`/api${API_VERSION}/csc`, require("./manage_core/CSC/65Routes.js"));
 
-
-
-
+//FIX: HFCL webhook ----------
+app.use(
+  `/api${API_VERSION}/hfcl-65`,
+  require("./manage_core/ManagementPanel/Management_Routes.js"),
+);
 
 module.exports = app;

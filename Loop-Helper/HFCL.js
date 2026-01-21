@@ -47,11 +47,7 @@ async function getHFCL(user) {
     netAnnualIncome: 220000, // Number format as per curl
     employmentType: user.employment || "Salaried",
     partnerReferenceId: "TEST_REF_" + Date.now(),
-
-    // Dono consent fields add kar diye hain
     bureauPrivacyPolicyConsent: "Y",
-    consent: user.consent,
-
     addresses: [
       {
         addressType: "MAILING",

@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const adminAuth = require("../admin_panel/middlewares/adminAuth");
 const ManagementController = require("./ManageMant");
-
+const HFCLWebHook = require("./HFCL/HFCLWebhook");
 router.post("/impdata", ManagementController.importData);
 router.get("/campin", ManagementController.campianData);
 router.post("/Memberlogin", ManagementController.Managementlogin);
@@ -12,4 +12,5 @@ router.post("/exportdata", ManagementController.ExportData);
 
 router.get("/allCollData", ManagementController.getAllCollData);
 // router.get("/allData",  ManagementController.situ);
+router.post("/webhook", HFCLWebHook.webhookhfcl);
 module.exports = router;
