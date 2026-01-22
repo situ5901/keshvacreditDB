@@ -4,8 +4,7 @@ const axios = require("axios");
 
 const BATCH_SIZE = 10;
 const MONGODB_URI = process.env.MONGODB_RSUnity;
-const PREPROD_URL =
-  "https://preprod-api.blsfintech.com/marketing-push-lead-data";
+const PREPROD_URL = "https://preprod-api.blsfintech.com/marketing-push-lead-data";
 
 // Database Connection
 mongoose
@@ -17,27 +16,32 @@ const UserDB = mongoose.model(
   "smcoll",
   new mongoose.Schema({}, { collection: "smcoll", strict: false }),
 );
+
+// Headers matching your cURL exactly
 function getHeader() {
   return {
-    "AUTH": "KeshsfsdervfsdsfdsfdKJDKJWksj43mds34567nnmxmdkjsadsfdsfd",
-    "Content-Type": "application/json",
+    "Auth": "KeshsfsdervfsdsfdsfdKJDKJWksj43mds34567nnmxmdkjsadsfdsfd",
     "Username": "keshvacredit",
     "Accept": "application/json",
+    "Content-Type": "application/json",
   };
 }
 
 async function sendToApi(user) {
   try {
+    // Data mapping to match API requirements (Types: Number vs String)
     const payload = {
-      full_name: user.name,
-      mobile: user.phone,
-      email: user.email,
-      pancard: user.pan,
-      pincode: user.pincode,
-      monthly_salary: user.income,
-      income_type: user.employment,
-      dob: user.dob,
-      gender: user.gender,
+      full_name: user.name || "",
+      mobile: String(user.phone), 
+      email: user.email || "",
+      pancard: user.pan || "",
+      pincode: Number(user.pincode),
+      monthly_salary: Number(user.income),
+      // Mapping: Salaried = 1 (as seen in your curl)
+      income_type: (user.employment === "Salaried" || user.employment === "Salarid") ? 1 : 2,
+      dob: user.dob || "", // Ensure format is YYYY-MM-DD
+      // Mapping: Male = 1, Female = 2
+      gender: (user.gender && user.gender.toLowerCase() === "male") ? 1 : 2,
     };
 
     const apiResponse = await axios.post(PREPROD_URL, payload, {
@@ -57,12 +61,11 @@ async function processBatch(users) {
   await Promise.allSettled(
     users.map(async (user) => {
       try {
-        console.log(`🚀 Checking user: ${user.phone}`);
+        console.log(`🚀 Processing: ${user.phone}`);
 
+        // Filtering Logic
         if (user.employment !== "Salaried" && user.employment !== "Salarid") {
-          console.log(
-            `⚠️ Skipping ${user.phone}: Employment is ${user.employment}`,
-          );
+          console.log(`⚠️ Skipping ${user.phone}: Not Salaried`);
           await UserDB.updateOne(
             { _id: user._id },
             {
@@ -73,8 +76,7 @@ async function processBatch(users) {
                   createdAt: new Date().toLocaleString(),
                 },
               },
-              $unset: { account: "" },
-            },
+            }
           );
           return;
         }
@@ -92,7 +94,6 @@ async function processBatch(users) {
               createdAt: new Date().toLocaleString(),
             },
           },
-          $unset: { account: "" },
         };
 
         await UserDB.updateOne({ _id: user._id }, updateDoc);
@@ -127,7 +128,6 @@ async function main() {
 
       await processBatch(users);
 
-      // --- Inline Delay Logic ---
       console.log(`📊 Batch Finished. Waiting 5 seconds...`);
       await new Promise((resolve) => setTimeout(resolve, 5000));
     }
