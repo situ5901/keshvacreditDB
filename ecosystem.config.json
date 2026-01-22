@@ -54,6 +54,12 @@
       "exec_mode": "fork",
       "instances": 1
     },
+     {
+      "name": "BrightLoan",
+      "script": "./Loop-Helper/BrightLoan.js",
+      "exec_mode": "fork",
+      "instances": 1
+    },
     {
       "name": "Zype",
       "script": "./Loop-Helper/Zype.js",
