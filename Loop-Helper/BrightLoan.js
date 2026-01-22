@@ -19,10 +19,10 @@ const UserDB = mongoose.model(
 );
 function getHeader() {
   return {
-    AUTH: "KeshsfsdervfsdsfdsfdKJDKJWksj43mds34567nnmxmdkjsadsfdsfd",
+    "AUTH": "KeshsfsdervfsdsfdsfdKJDKJWksj43mds34567nnmxmdkjsadsfdsfd",
     "Content-Type": "application/json",
-    Username: "keshvacredit_20250320",
-    Accept: "application/json",
+    "Username": "keshvacredit_20250320",
+    "Accept": "application/json",
   };
 }
 
