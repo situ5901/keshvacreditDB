@@ -133,7 +133,7 @@ async function main() {
       await processBatch(users);
 
       console.log(`📊 Batch Finished. Waiting 5 seconds...`);
-      await new Promise((resolve) => setTimeout(resolve, 5000));
+      await new Promise((resolve) => setTimeout(resolve, 1000));
     }
   } catch (error) {
     console.error("❌ Fatal Error:", error);
