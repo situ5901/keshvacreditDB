@@ -4,26 +4,28 @@ module.exports = (connection) => {
   const leaderSchema = new Schema(
     {
       appId: { type: Number, required: true, unique: true },
-
-      currentStage: { type: String, required: true }, // Doc: currentStage
-      previousStage: { type: String }, // Doc: previousStage
-      nextStage: { type: String }, // Doc: nextStage
-
-      roi: { type: String }, // Doc: roi
-      sanctionLoanAmount: { type: String }, // Doc: sanctionLoanAmount
-      rejectReason: { type: String }, // Doc: rejectReason
-
-      utmSource: { type: String }, // Doc: utmSource
-      utmCampaign: { type: String }, // Doc: utmCampaign
-      utmMedium: { type: String }, // Doc: utmMedium
-      utmContent: { type: String }, // Doc: utmContent
-      utmCampaignId: { type: String }, // Doc: utmCampaignId
-
-      createdDate: { type: Date }, // Doc: createdDate
-      receivedAt: { type: Date, default: Date.now }, // Internal timestamp
+      currentStage: { type: String },
+      previousStage: { type: String },
+      nextStage: { type: String },
+      roi: { type: String },
+      sanctionLoanAmount: { type: String },
+      rejectReason: { type: String },
+      partnerReferenceId: { type: String },
+      status: { type: String },
+      utmSource: { type: String },
+      utmCampaign: { type: String },
+      utmMedium: { type: String },
+      utmContent: { type: String },
+      utmCampaignId: { type: String },
+      createdDate: { type: Date },
+      receivedAt: { type: String, default: () => new Date().toLocaleString() },
     },
-    { versionKey: false },
+    { versionKey: false, strict: false },
   );
 
-  return connection.model("hfclLeader", leaderSchema, "hfcl");
+  // Dono models ko alag alag define karke ek object mein bhejna hoga
+  const HCFL1 = connection.model("HCFL1", leaderSchema, "hfclCase");
+  const HCFL2 = connection.model("HCFL2", leaderSchema, "hfclStatus");
+
+  return { HCFL1, HCFL2 };
 };

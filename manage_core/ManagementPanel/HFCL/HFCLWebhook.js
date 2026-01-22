@@ -1,9 +1,62 @@
 const crypto = require("crypto");
 const BlackCover = require("../MultiDataBase/BlackCover.js");
-const HFCLSCH = require("../MultiDataBase/MultiSchema/HFCL.js")(BlackCover);
+const { HCFL1, HCFL2 } = require("../MultiDataBase/MultiSchema/HFCL.js")(
+  BlackCover,
+);
 
 const AUTH_TOKEN = "herofincop-64%situ$5901keshvaNeoVim";
-const SHARED_SECRET = "your_shared_secret_key_here"; // Provided by HIPL for HMAC
+const SHARED_SECRET = "your_shared_secret_key_here";
+
+exports.webhookOne = async (req, res) => {
+  try {
+    const authHeader = req.headers["authorization"];
+    if (!authHeader || authHeader !== AUTH_TOKEN) {
+      return res.status(401).json({
+        status: "error",
+        message: "Invalid API token",
+        partnerReferenceId: req.body.partnerReferenceId || "N/A",
+      });
+    }
+
+    const { partnerReferenceId, status } = req.body;
+
+    if (!partnerReferenceId || !status) {
+      return res.status(400).json({
+        status: "error",
+        message: "partnerReferenceId and status are mandatory",
+        partnerReferenceId: partnerReferenceId || "N/A",
+      });
+    }
+
+    const existingRecord = await HCFL2.findOne({ appId: partnerReferenceId });
+
+    if (existingRecord) {
+      return res.status(200).json({
+        status: "success",
+        message: "Partner already exists",
+        partnerReferenceId: partnerReferenceId,
+      });
+    }
+
+    await HCFL2.create({
+      appId: partnerReferenceId,
+      hiplStatus: status,
+      lastUpdated: new Date().toLocaleString(),
+    });
+
+    return res.status(200).json({
+      status: "success",
+      message: "status received",
+      partnerReferenceId: partnerReferenceId,
+    });
+  } catch (err) {
+    return res.status(500).json({
+      status: "error",
+      message: err.message,
+      partnerReferenceId: req.body.partnerReferenceId || "N/A",
+    });
+  }
+};
 
 exports.webhookhfcl = async (req, res) => {
   try {
@@ -70,7 +123,7 @@ exports.webhookhfcl = async (req, res) => {
       lastUpdated: new Date(),
     };
 
-    const result = await HFCLSCH.findOneAndUpdate(
+    const result = await HCFL1.findOneAndUpdate(
       { appId: appId },
       { $set: updateData },
       { upsert: true, new: true },
@@ -93,6 +146,22 @@ exports.webhookhfcl = async (req, res) => {
       message: "Unhandled exception at backend",
       timestamp: new Date().toISOString(),
       traceId: crypto.randomBytes(16).toString("hex"),
+    });
+  }
+};
+
+exports.WebhookGet = async (req, res) => {
+  try {
+    const data = await HCFL1.find({});
+    return res.status(200).json({
+      status: true,
+      totalRecords: data.length,
+      data: data,
+    });
+  } catch (err) {
+    return res.status(500).json({
+      status: false,
+      message: err.message,
     });
   }
 };

@@ -4,7 +4,7 @@ const axios = require("axios");
 
 const BATCH_SIZE = 10;
 const MONGODB_URI = process.env.MONGODB_RSUnity;
-const PREPROD_URL = "https://preprod-api.blsfintech.com/marketing-push-lead-data";
+const PREPROD_URL = "https://api.blsfintech.com/marketing-push-lead-data";
 
 // Database Connection
 mongoose
@@ -20,9 +20,9 @@ const UserDB = mongoose.model(
 // Headers matching your cURL exactly
 function getHeader() {
   return {
-    "Auth": "KeshsfsdervfsdsfdsfdKJDKJWksj43mds34567nnmxmdkjsadsfdsfd",
-    "Username": "keshvacredit",
-    "Accept": "application/json",
+    Auth: "KeshsfsdervfsdsfdsfdKJDKJWksj43mds34567nnmxmdkjsadsfdsfd",
+    Username: "keshvacredit",
+    Accept: "application/json",
     "Content-Type": "application/json",
   };
 }
@@ -31,14 +31,15 @@ async function sendToApi(user) {
   try {
     const payload = {
       full_name: user.name || "",
-      mobile: String(user.phone), 
+      mobile: String(user.phone),
       email: user.email || "",
       pancard: user.pan || "",
       pincode: Number(user.pincode),
       monthly_salary: Number(user.income),
-      income_type: (user.employment === "Salaried" || user.employment === "Salarid") ? 1 : 2,
-      dob: user.dob || "", 
-      gender: (user.gender && user.gender.toLowerCase() === "male") ? 1 : 2,
+      income_type:
+        user.employment === "Salaried" || user.employment === "Salarid" ? 1 : 2,
+      dob: user.dob || "",
+      gender: user.gender && user.gender.toLowerCase() === "male" ? 1 : 2,
     };
 
     const apiResponse = await axios.post(PREPROD_URL, payload, {
@@ -73,7 +74,7 @@ async function processBatch(users) {
                   createdAt: new Date().toLocaleString(),
                 },
               },
-            }
+            },
           );
           return;
         }
@@ -144,3 +145,4 @@ async function main() {
 }
 
 main();
+
