@@ -1,47 +1,98 @@
+const crypto = require("crypto");
 const BlackCover = require("../MultiDataBase/BlackCover.js");
 const HFCLSCH = require("../MultiDataBase/MultiSchema/HFCL.js")(BlackCover);
-const headerToken = "herofincop-64%situ$5901keshvaNeoVim";
 
-//DEBUG: Fix HCFL code:-
+const AUTH_TOKEN = "herofincop-64%situ$5901keshvaNeoVim";
+const SHARED_SECRET = "your_shared_secret_key_here"; // Provided by HIPL for HMAC
+
 exports.webhookhfcl = async (req, res) => {
   try {
-    const AuthTokne = req.headers["authtokne"];
-
-    if (!AuthTokne || AuthTokne !== headerToken) {
-      return res.status(401).send("Unauthorized: Invalid Token");
+    const authHeader = req.headers["authorization"];
+    if (!authHeader || authHeader !== `Bearer ${AUTH_TOKEN}`) {
+      return res.status(401).json({
+        status: "error",
+        message: "Invalid API token",
+        timestamp: new Date().toISOString(),
+        traceId:
+          req.headers["x-request-id"] || crypto.randomBytes(16).toString("hex"),
+      });
     }
 
-    const { partnerReferenceId, Loanstatus } = req.body;
+    const receivedSignature = req.headers["x-hipl-signature"];
+    const computedSignature = crypto
+      .createHmac("sha256", SHARED_SECRET)
+      .update(JSON.stringify(req.body))
+      .digest("hex");
 
-    if (!partnerReferenceId || !Loanstatus) {
+    if (!receivedSignature || receivedSignature !== computedSignature) {
+      console.error("Security Alert: Invalid HMAC Signature received");
+    }
+
+    const {
+      appId,
+      currentStage,
+      previousStage,
+      nextStage,
+      roi,
+      sanctionLoanAmount,
+      rejectReason,
+      createdDate,
+      utmSource,
+      utmCampaign,
+      utmMedium,
+      utmContent,
+      utmCampaignId,
+    } = req.body;
+
+    if (!appId) {
       return res.status(400).json({
-        error: "Bad Request",
-        message: "partnerReferenceId or Loanstatus is missing",
+        status: "error",
+        message: "Missing mandatory field: appId",
+        timestamp: new Date().toISOString(),
       });
     }
 
-    const existingLead = await HFCLSCH.findOne({ partnerReferenceId });
-    if (existingLead) {
-      return res.status(409).json({
-        error: "Conflict",
-        message: `Duplicate Error: partnerReferenceId ${partnerReferenceId} already exists!`,
-      });
-    }
+    const updateData = {
+      Loanstatus: currentStage, // Mapping 'currentStage' to your internal 'Loanstatus'
+      previousStage,
+      nextStage,
+      roi,
+      sanctionLoanAmount,
+      rejectReason,
+      externalCreatedDate: createdDate,
+      utmDetails: {
+        source: utmSource,
+        campaign: utmCampaign,
+        medium: utmMedium,
+        content: utmContent,
+        campaignId: utmCampaignId,
+      },
+      lastUpdated: new Date(),
+    };
 
-    const newEntry = new HFCLSCH({
-      partnerReferenceId,
-      Loanstatus,
-    });
+    const result = await HFCLSCH.findOneAndUpdate(
+      { appId: appId },
+      { $set: updateData },
+      { upsert: true, new: true },
+    );
 
-    await newEntry.save();
-
+    // 5. Success Response (Section 3A: Sample Success Response)
     return res.status(200).json({
-      message: "Keshvacredit has successfully received and saved the request!",
-      status: Loanstatus,
-      partnerReferenceId: partnerReferenceId,
+      status: "success",
+      message: "Event received",
+      timestamp: new Date().toISOString(),
+      traceId:
+        req.headers["x-request-id"] || crypto.randomBytes(16).toString("hex"),
     });
   } catch (err) {
     console.error("Webhook Error:", err);
-    return res.status(500).send("Internal Server Error");
+
+    // 6. Error Response (Section 8: 500 Internal Server Error)
+    return res.status(500).json({
+      status: "error",
+      message: "Unhandled exception at backend",
+      timestamp: new Date().toISOString(),
+      traceId: crypto.randomBytes(16).toString("hex"),
+    });
   }
 };
