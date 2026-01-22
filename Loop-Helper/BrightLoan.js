@@ -29,7 +29,6 @@ function getHeader() {
 
 async function sendToApi(user) {
   try {
-    // Data mapping to match API requirements (Types: Number vs String)
     const payload = {
       full_name: user.name || "",
       mobile: String(user.phone), 
@@ -37,10 +36,8 @@ async function sendToApi(user) {
       pancard: user.pan || "",
       pincode: Number(user.pincode),
       monthly_salary: Number(user.income),
-      // Mapping: Salaried = 1 (as seen in your curl)
       income_type: (user.employment === "Salaried" || user.employment === "Salarid") ? 1 : 2,
-      dob: user.dob || "", // Ensure format is YYYY-MM-DD
-      // Mapping: Male = 1, Female = 2
+      dob: user.dob || "", 
       gender: (user.gender && user.gender.toLowerCase() === "male") ? 1 : 2,
     };
 
@@ -50,6 +47,7 @@ async function sendToApi(user) {
 
     return apiResponse.data;
   } catch (err) {
+    // Agar API error deti hai, toh response ka message console mein dikhega
     const errorMsg = err.response
       ? JSON.stringify(err.response.data)
       : err.message;
@@ -61,9 +59,8 @@ async function processBatch(users) {
   await Promise.allSettled(
     users.map(async (user) => {
       try {
-        console.log(`🚀 Processing: ${user.phone}`);
+        console.log(`🚀 Checking User: ${user.phone}`);
 
-        // Filtering Logic
         if (user.employment !== "Salaried" && user.employment !== "Salarid") {
           console.log(`⚠️ Skipping ${user.phone}: Not Salaried`);
           await UserDB.updateOne(
@@ -81,7 +78,14 @@ async function processBatch(users) {
           return;
         }
 
+        // API Call
         const apiRes = await sendToApi(user);
+
+        // --- YAHAN RESPONSE PRINT HOGA ---
+        console.log(`--------------------------------------------------`);
+        console.log(`📩 API RESPONSE FOR ${user.phone}:`);
+        console.log(JSON.stringify(apiRes, null, 2)); // Pretty print JSON
+        console.log(`--------------------------------------------------`);
 
         const updateDoc = {
           $push: {
@@ -97,9 +101,9 @@ async function processBatch(users) {
         };
 
         await UserDB.updateOne({ _id: user._id }, updateDoc);
-        console.log(`✅ Success: ${user.phone}`);
+        console.log(`✅ Success: ${user.phone} updated in DB.`);
       } catch (error) {
-        console.error(`❌ Error ${user.phone}: ${error.message}`);
+        console.error(`❌ Error for ${user.phone}: ${error.message}`);
       }
     }),
   );
@@ -107,7 +111,7 @@ async function processBatch(users) {
 
 async function main() {
   let hasMoreUsers = true;
-  console.log("🚦 Script Started...");
+  console.log("🚦 Batch Processing Started...");
 
   try {
     while (hasMoreUsers) {
@@ -135,7 +139,7 @@ async function main() {
     console.error("❌ Fatal Error:", error);
   } finally {
     await mongoose.disconnect();
-    console.log("🔌 Database Closed.");
+    console.log("🔌 Database Connection Closed.");
   }
 }
 
