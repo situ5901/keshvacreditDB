@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 require("dotenv").config();
 const axios = require("axios");
 
-const BATCH_SIZE = 10;
+const BATCH_SIZE = 100;
 const MONGODB_URI = process.env.MONGODB_RSUnity;
 const PREPROD_URL = "https://api.blsfintech.com/marketing-push-lead-data";
 
