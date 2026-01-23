@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 const axios = require("axios");
 require("dotenv").config();
 
-const apiDocs = "https://los-test.api.sb.herofincorp.com/v1/partner-offer";
+const apiDocs = "https://los.api.herofincorp.com/v1/partner-offer";
 const partnerCode = "partnership_keshvacredit";
 
 const MONGODB_URINEW = process.env.MONGODB_RSUnity;
