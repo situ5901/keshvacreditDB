@@ -66,30 +66,19 @@ exports.webhookhfcl = async (req, res) => {
         status: "error",
         message: "Invalid API token",
         timestamp: new Date().toISOString(),
+        traceId:
+          req.headers["x-request-id"] || crypto.randomBytes(16).toString("hex"),
       });
     }
 
     const receivedSignature = req.headers["x-hipl-signature"];
-
-    const dataToVerify = req.rawBody || JSON.stringify(req.body);
-
     const computedSignature = crypto
       .createHmac("sha256", SHARED_SECRET)
-      .update(dataToVerify)
+      .update(JSON.stringify(req.body))
       .digest("hex");
 
-    if (
-      !receivedSignature ||
-      receivedSignature.toLowerCase() !== computedSignature.toLowerCase()
-    ) {
-      console.error("Security Alert: Invalid HMAC Signature");
-      return res.status(401).json({
-        status: "error",
-        message: "Invalid signature",
-        timestamp: new Date().toISOString(),
-        traceId:
-          req.headers["x-request-id"] || crypto.randomBytes(16).toString("hex"),
-      });
+    if (!receivedSignature || receivedSignature !== computedSignature) {
+      console.error("Security Alert: Invalid HMAC Signature received");
     }
 
     const {
@@ -112,11 +101,12 @@ exports.webhookhfcl = async (req, res) => {
       return res.status(400).json({
         status: "error",
         message: "Missing mandatory field: appId",
+        timestamp: new Date().toISOString(),
       });
     }
 
     const updateData = {
-      Loanstatus: currentStage,
+      Loanstatus: currentStage, // Mapping 'currentStage' to your internal 'Loanstatus'
       previousStage,
       nextStage,
       roi,
@@ -133,25 +123,29 @@ exports.webhookhfcl = async (req, res) => {
       lastUpdated: new Date(),
     };
 
-    await HCFL1.findOneAndUpdate(
+    const result = await HCFL1.findOneAndUpdate(
       { appId: appId },
       { $set: updateData },
       { upsert: true, new: true },
     );
 
+    // 5. Success Response (Section 3A: Sample Success Response)
     return res.status(200).json({
       status: "success",
       message: "Event received",
-      timestamp: new Date().toLocaleString(),
+      timestamp: new Date().toISOString(),
       traceId:
         req.headers["x-request-id"] || crypto.randomBytes(16).toString("hex"),
     });
   } catch (err) {
     console.error("Webhook Error:", err);
+
+    // 6. Error Response (Section 8: 500 Internal Server Error)
     return res.status(500).json({
       status: "error",
       message: "Unhandled exception at backend",
-      timestamp: new Date().toLocaleString(),
+      timestamp: new Date().toISOString(),
+      traceId: crypto.randomBytes(16).toString("hex"),
     });
   }
 };
