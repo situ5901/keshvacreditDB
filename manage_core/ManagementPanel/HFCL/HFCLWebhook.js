@@ -79,6 +79,13 @@ exports.webhookhfcl = async (req, res) => {
 
     if (!receivedSignature || receivedSignature !== computedSignature) {
       console.error("Security Alert: Invalid HMAC Signature received");
+      return res.status(401).json({
+        status: "error",
+        message: "Invalid signature", // "innvalue signature" logic
+        timestamp: new Date().toISOString(),
+        traceId:
+          req.headers["x-request-id"] || crypto.randomBytes(16).toString("hex"),
+      });
     }
 
     const {
