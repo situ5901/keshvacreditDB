@@ -58,6 +58,7 @@ exports.campianData = async (req, res) => {
       throw new Error("LoanTapModel not found in BlackCover Schema.");
 
     // =================== 1. DATA FETCH (Find) ===================
+    // Order matters: Destructuring must match the Promise.all array order
     const [
       scUsers,
       scUsers2,
@@ -82,6 +83,7 @@ exports.campianData = async (req, res) => {
       cnUnityUsers,
       dcUsers,
       csUnityUsers,
+      blUsers, // <--- Added BrightLoan Find
     ] = await Promise.all([
       Dell.find(
         { "apiResponse.message": "Lead created successfully" },
@@ -133,7 +135,6 @@ exports.campianData = async (req, res) => {
         { "apiResponse.moneyViewLeadSubmission.message": "success" },
         { phone: 1, email: 1, pan: 1, name: 1, _id: 0 },
       ),
-
       LoanTapModel.find(
         {
           "apiResponse.LoanTap.fullResponse.message":
@@ -141,7 +142,6 @@ exports.campianData = async (req, res) => {
         },
         { phone: 1, email: 1, pan: 1, name: 1, _id: 0 },
       ),
-
       Loantap.find(
         { "apiResponse.CreditSea.message": "Lead generated successfully" },
         { phone: 1, email: 1, pan: 1, name: 1, _id: 0 },
@@ -213,6 +213,11 @@ exports.campianData = async (req, res) => {
           "RefArr.name": "creditsea",
           "apiResponse.CreditSea.message": "Lead generated successfully",
         },
+        { phone: 1, email: 1, pan: 1, name: 1, _id: 0 },
+      ),
+      // BrightLoan Find Query
+      RSUnity.find(
+        { "RefArr.name": "BrightLoan", "apiResponse.BrightLoan.Status": 1 },
         { phone: 1, email: 1, pan: 1, name: 1, _id: 0 },
       ),
     ]);
@@ -294,6 +299,9 @@ exports.campianData = async (req, res) => {
       csUS,
       csUT,
       csUP,
+      blS,
+      blT,
+      blP,
     ] = await Promise.all([
       Dell.countDocuments({
         "apiResponse.message": "Lead created successfully",
@@ -348,22 +356,17 @@ exports.campianData = async (req, res) => {
       }),
       MoneyView2.countDocuments(),
       MoneyView2.countDocuments({ "RefArr.name": "MoneyView" }),
-
-      // --- FIX: LoanTap Counts from BlackCover ---
       LoanTapModel.countDocuments({
         "apiResponse.LoanTap.fullResponse.message":
           "Application created successfully",
       }),
       LoanTapModel.countDocuments(),
       LoanTapModel.countDocuments({ "RefArr.name": "LoanTap" }),
-
-      // CreditSea (Using purana Loantap model)
       Loantap.countDocuments({
         "apiResponse.CreditSea.message": "Lead generated successfully",
       }),
       Loantap.countDocuments(),
       Loantap.countDocuments({ "RefArr.name": "creditsea" }),
-
       Dell.countDocuments({
         "apiResponse.CapitalNow.message": "Fresh Lead Registered Successfully!",
       }),
@@ -432,6 +435,13 @@ exports.campianData = async (req, res) => {
       }),
       RSUnity.countDocuments(),
       RSUnity.countDocuments({ "RefArr.name": "creditsea" }),
+      // BrightLoan Counts (Success, Total, Processed)
+      RSUnity.countDocuments({
+        "RefArr.name": "BrightLoan",
+        "apiResponse.BrightLoan.Status": 1,
+      }),
+      RSUnity.countDocuments(),
+      RSUnity.countDocuments({ "RefArr.name": "BrightLoan" }),
     ]);
 
     // =================== 3. JSON RESPONSE ===================
@@ -444,6 +454,12 @@ exports.campianData = async (req, res) => {
           Processed: scP2,
           Total: scT2,
           users: scUsers2,
+        },
+        BrightLoan: {
+          Success: blS,
+          Processed: blP,
+          Total: blT,
+          users: blUsers,
         },
         Mpokket: { Success: mpS, Processed: mpP, Total: mpT, users: mpUsers },
         Mpokket2: {
