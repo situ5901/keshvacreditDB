@@ -152,16 +152,34 @@ exports.webhookhfcl = async (req, res) => {
 
 exports.WebhookGet = async (req, res) => {
   try {
-    const data = await HCFL1.find({});
+    const [allLeads, allStatusEntries] = await Promise.all([
+      HCFL1.find({}),
+      HCFL2.find({}),
+    ]);
+
+    const acceptData = allStatusEntries.filter(
+      (item) => item.hiplStatus === "ACCEPT",
+    );
+    const rejectCaseData = allStatusEntries.filter(
+      (item) => item.hiplStatus === "REJECT",
+    );
+
     return res.status(200).json({
-      status: true,
-      totalRecords: data.length,
-      data: data,
+      Countdata: {
+        countLeadStatus: allLeads.length,
+        countAcceptData: acceptData.length,
+        countRejectData: rejectCaseData.length,
+      },
+      compData: {
+        leadStatusData: allLeads,
+        acceptData: acceptData,
+        rejectCase: rejectCaseData,
+      },
     });
   } catch (err) {
     return res.status(500).json({
       status: false,
-      message: err.message,
+      message: "Database Error: " + err.message,
     });
   }
 };
