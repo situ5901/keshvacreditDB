@@ -140,7 +140,6 @@ exports.webhookhfcl = async (req, res) => {
   } catch (err) {
     console.error("Webhook Error:", err);
 
-    // 6. Error Response (Section 8: 500 Internal Server Error)
     return res.status(500).json({
       status: "error",
       message: "Unhandled exception at backend",
