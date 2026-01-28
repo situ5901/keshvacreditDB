@@ -316,6 +316,7 @@ exports.analysis = async (req, res) => {
 exports.getLendersData = async (req, res) => {
   try {
     const [
+      // SmartCoin
       scSuccess,
       scTotal,
       scProcessed,
@@ -324,6 +325,7 @@ exports.getLendersData = async (req, res) => {
       scTotal2,
       scProcessed2,
 
+      // FatakPay
       dclSuccess,
       dclTotal,
       dclProcessed,
@@ -332,6 +334,7 @@ exports.getLendersData = async (req, res) => {
       plTotal,
       plProcessed,
 
+      // Mpokket
       mpSuccess,
       mpTotal,
       mpProcessed,
@@ -340,6 +343,7 @@ exports.getLendersData = async (req, res) => {
       mpTotal2,
       mpProcessed2,
 
+      // Zype
       zSuccess,
       zTotal,
       zProcessed,
@@ -348,75 +352,77 @@ exports.getLendersData = async (req, res) => {
       zTotal2,
       zProcessed2,
 
+      // RamFin
       rfSuccess,
-      rfProcessed,
       rfTotal,
+      rfProcessed,
 
-      mv2Success,
-      mv2Total,
-      mv2Processed,
-
+      // LoanTap
       ltSuccess,
-      ltProcessed,
       ltTotal,
+      ltProcessed,
 
+      // CreditSea
       csSuccess,
       csTotal,
       csProcessed,
 
-      cnSuccess,
-      cnTotal,
-      cnProcessed,
-
-      brSuccess,
-      brTotal,
-      brProcessed,
-
-      chSuccess,
-      chTotal,
-      chProcessed,
-
-      // New Lenders added
+      // PayMe
       paymeSuccess,
       paymeTotal,
       paymeProcessed,
 
-      payme2Success,
-      payme2Total,
-      payme2Processed,
-
+      // FiMoney / PI
       piSuccess,
       piTotal,
       piProcessed,
+
+      // CreditFy
+      cfSuccess,
+      cfTotal,
+      cfProcessed,
+
+      // BrightLoan
+      blSuccess,
+      blTotal,
+      blProcessed,
     ] = await Promise.all([
-      // Smartcoin
+      // -------- SmartCoin --------
       Dell.countDocuments({
         "apiResponse.message": "Lead created successfully",
       }),
       Dell.countDocuments(),
       Dell.countDocuments({ "RefArr.name": "Smartcoin" }),
+
       VishuDB.countDocuments({
         "apiResponse.message": "Lead created successfully",
         "RefArr.name": "Smartcoin",
       }),
       VishuDB.countDocuments({ "RefArr.name": "Smartcoin" }),
       VishuDB.countDocuments({ "RefArr.name": "Smartcoin" }),
+
+      // -------- FatakPay DCL --------
       fatakPayModel.countDocuments({
         "apiResponse.FatakPayDCL.data.product_type": "CARD",
       }),
       fatakPayModel.countDocuments(),
       fatakPayModel.countDocuments({ "RefArr.name": "FatakPayDCL" }),
+
+      // -------- FatakPay PL --------
       fatakPayModel.countDocuments({
         "apiResponse.FatakPayPL.data.product_type": "EMI",
       }),
       fatakPayModel.countDocuments(),
       fatakPayModel.countDocuments({ "RefArr.name": "FatakPay" }),
+
+      // -------- Mpokket --------
       Dell.countDocuments({
         "apiResponse.MpokketResponse.preApproval.message":
           "Data Accepted Successfully",
       }),
       Dell.countDocuments(),
       Dell.countDocuments({ "RefArr.name": "Mpokket" }),
+
       VishuDB.countDocuments({
         "RefArr.name": "Mpokket",
         "apiResponse.MpokketResponse.preApproval.message":
@@ -424,105 +430,64 @@ exports.getLendersData = async (req, res) => {
       }),
       VishuDB.countDocuments({ "RefArr.name": "Mpokket" }),
       VishuDB.countDocuments({ "RefArr.name": "Mpokket" }),
+
+      // -------- Zype --------
       Dell.countDocuments({ "apiResponse.ZypeResponse.status": "ACCEPT" }),
       Dell.countDocuments(),
       Dell.countDocuments({ "RefArr.name": "Zype" }),
+
       VishuDB.countDocuments({
         "RefArr.name": "Zype",
         "apiResponse.ZypeResponse.status": "ACCEPT",
       }),
       VishuDB.countDocuments({ "RefArr.name": "Zype" }),
       VishuDB.countDocuments({ "RefArr.name": "Zype" }),
+
+      // -------- RamFin --------
       fatakPayModel.countDocuments({
         "apiResponse.Ramfin.leadCreate.message": "Attributed Successfully",
       }),
       fatakPayModel.countDocuments(),
       fatakPayModel.countDocuments({ "RefArr.name": "RamFin" }),
-      MoneyView2.countDocuments({
-        "apiResponse.moneyViewLeadSubmission.message": "success",
-      }),
-      MoneyView2.countDocuments(),
-      MoneyView2.countDocuments({ "RefArr.name": "MoneyView" }),
+
+      // -------- LoanTap --------
       LoanTapModel.countDocuments({
         "apiResponse.LoanTap.fullResponse.message":
           "Application created successfully",
       }),
       LoanTapModel.countDocuments(),
       LoanTapModel.countDocuments({ "RefArr.name": "LoanTap" }),
-      Loantap.countDocuments({
-        "apiResponse.CreditSea.message": "Lead generated successfully",
-      }),
-      Loantap.countDocuments(),
-      Loantap.countDocuments({ "RefArr.name": "creditsea" }),
-      Dell.countDocuments({
-        "apiResponse.CapitalNow.message": "Fresh Lead Registered Successfully!",
-      }),
-      Dell.countDocuments(),
-      Dell.countDocuments({ "RefArr.name": "CapitalNow" }),
-      smcoll.countDocuments({ "apiResponse.Branch.data.decision.code": 1 }),
-      smcoll.countDocuments(),
-      smcoll.countDocuments({ "RefArr.name": "Branch" }),
-      Delhi.countDocuments({
-        "apiResponse.chintamani.message": "Profile created successfully",
-      }),
-      Delhi.countDocuments(),
-      Delhi.countDocuments({ "RefArr.name": "Chintamani" }),
-      PaymeCV.countDocuments({
-        "apiResponse.payme.register_user.message": "Signed-in Successfully",
-      }),
-      PaymeCV.countDocuments(),
-      PaymeCV.countDocuments({ "RefArr.name": "payme" }),
-      PayMe2.countDocuments({
-        "apiResponse.payme.register_user.message": "Signed-in Successfully",
-      }),
-      PayMe2.countDocuments(),
-      PayMe2.countDocuments({ "RefArr.name": "payme" }),
-      Loantap.countDocuments({
-        "apiResponse.PIResponse.status.message": "Lead created successfully",
-      }),
-      Loantap.countDocuments(),
-      Loantap.countDocuments({ "RefArr.name": "PI" }),
-      VishuDB.countDocuments({
-        "RefArr.name": "PI",
-        "apiResponse.PIResponse.status.message": "Lead created successfully",
-      }),
-      VishuDB.countDocuments({ "RefArr.name": "PI" }),
-      VishuDB.countDocuments({ "RefArr.name": "PI" }),
-      MvcollCV.countDocuments({
-        "apiResponse.CreditFy.leadCreate.message": "SUCCESS",
-      }),
-      MvcollCV.countDocuments(),
-      MvcollCV.countDocuments({ "RefArr.name": "CreditFy" }),
-      PersonalPayMe.countDocuments({
-        "apiResponse.CreditFy.leadCreate.message": "SUCCESS",
-      }),
-      PersonalPayMe.countDocuments(),
-      PersonalPayMe.countDocuments({ "RefArr.name": "CreditFy" }),
-      RSUnity.countDocuments({
-        "RefArr.name": "SOT",
-        "apiResponse.SOT.Message": "Lead generated successfully.",
-      }),
-      RSUnity.countDocuments(),
-      RSUnity.countDocuments({ "RefArr.name": "SOT" }),
-      RSUnity.countDocuments({
-        "RefArr.name": "CapitalNow",
-        "apiResponse.CapitalNow.code": 2005,
-      }),
-      RSUnity.countDocuments(),
-      RSUnity.countDocuments({ "RefArr.name": "CapitalNow" }),
-      RSUnity.countDocuments({
-        "RefArr.name": "DigiCredit",
-        "apiResponse.DigiCredit.leadCreate.message": "success",
-      }),
-      RSUnity.countDocuments(),
-      RSUnity.countDocuments({ "RefArr.name": "DigiCredit" }),
+
+      // -------- CreditSea --------
       RSUnity.countDocuments({
         "RefArr.name": "creditsea",
         "apiResponse.CreditSea.message": "Lead generated successfully",
       }),
       RSUnity.countDocuments(),
       RSUnity.countDocuments({ "RefArr.name": "creditsea" }),
-      // BrightLoan Counts (Success, Total, Processed)
+
+      // -------- PayMe --------
+      PaymeCV.countDocuments({
+        "apiResponse.payme.register_user.message": "Signed-in Successfully",
+      }),
+      PaymeCV.countDocuments(),
+      PaymeCV.countDocuments({ "RefArr.name": "payme" }),
+
+      // -------- FiMoney / PI --------
+      LoanTapModel.countDocuments({
+        "apiResponse.PIResponse.status.message": "Lead created successfully",
+      }),
+      LoanTapModel.countDocuments(),
+      LoanTapModel.countDocuments({ "RefArr.name": "PI" }),
+
+      // -------- CreditFy --------
+      MvcollCV.countDocuments({
+        "apiResponse.CreditFy.leadCreate.message": "SUCCESS",
+      }),
+      MvcollCV.countDocuments(),
+      MvcollCV.countDocuments({ "RefArr.name": "CreditFy" }),
+
+      // -------- BrightLoan --------
       RSUnity.countDocuments({
         "RefArr.name": "BrightLoan",
         "apiResponse.BrightLoan.Status": 1,
@@ -537,79 +502,59 @@ exports.getLendersData = async (req, res) => {
       lender: {
         SmartCoin: {
           Success: scSuccess,
-          Processed: scProcessed,
           Total: scTotal,
+          Processed: scProcessed,
         },
         SmartCoin2: {
           Success: scSuccess2,
-          Processed: scProcessed2,
           Total: scTotal2,
+          Processed: scProcessed2,
         },
-
-        DCL: { Success: dclSuccess, Processed: dclProcessed, Total: dclTotal },
-        DPL: { Success: plSuccess, Processed: plProcessed, Total: plTotal },
-
-        Mpokket: { Success: mpSuccess, Processed: mpProcessed, Total: mpTotal },
+        DCL: { Success: dclSuccess, Total: dclTotal, Processed: dclProcessed },
+        DPL: { Success: plSuccess, Total: plTotal, Processed: plProcessed },
+        Mpokket: { Success: mpSuccess, Total: mpTotal, Processed: mpProcessed },
         Mpokket2: {
           Success: mpSuccess2,
-          Processed: mpProcessed2,
           Total: mpTotal2,
+          Processed: mpProcessed2,
         },
-
-        Zype: { Success: zSuccess, Processed: zProcessed, Total: zTotal },
-        Zype2: { Success: zSuccess2, Processed: zProcessed2, Total: zTotal2 },
-
+        Zype: { Success: zSuccess, Total: zTotal, Processed: zProcessed },
+        Zype2: {
+          Success: zSuccess2,
+          Total: zTotal2,
+          Processed: zProcessed2,
+        },
         RamFinance: {
           Success: rfSuccess,
-          Processed: rfProcessed,
           Total: rfTotal,
+          Processed: rfProcessed,
         },
-
-        MoneyView2: {
-          Success: mv2Success,
-          Processed: mv2Processed,
-          Total: mv2Total,
-        },
-
-        LoanTaps: {
-          Success: ltSuccess,
-          Processed: ltProcessed,
-          Total: ltTotal,
-        },
-
-        creditsea: {
+        LoanTap: { Success: ltSuccess, Total: ltTotal, Processed: ltProcessed },
+        CreditSea: {
           Success: csSuccess,
-          Processed: csProcessed,
           Total: csTotal,
+          Processed: csProcessed,
         },
-
-        CapitalNow: {
-          Success: cnSuccess,
-          Processed: cnProcessed,
-          Total: cnTotal,
-        },
-
-        Branch: { Success: brSuccess, Processed: brProcessed, Total: brTotal },
-
-        chintamani: {
-          Success: chSuccess,
-          Processed: chProcessed,
-          Total: chTotal,
-        },
-
         PayMe: {
           Success: paymeSuccess,
-          Processed: paymeProcessed,
           Total: paymeTotal,
+          Processed: paymeProcessed,
         },
-
-        PayMe2: {
-          Success: payme2Success,
-          Processed: payme2Processed,
-          Total: payme2Total,
+        FiMoney: {
+          Success: piSuccess,
+          Total: piTotal,
+          Processed: piProcessed,
         },
-
-        FiMoney: { Success: piSuccess, Processed: piProcessed, Total: piTotal },
+        CreditFy: {
+          Success: cfSuccess,
+          Total: cfTotal,
+          Processed: cfProcessed,
+        },
+        BrightLoan: {
+          Success: blSuccess,
+          Total: blTotal,
+          Processed: blProcessed,
+        },
       },
     });
   } catch (error) {
