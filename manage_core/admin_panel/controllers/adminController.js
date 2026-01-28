@@ -367,10 +367,10 @@ exports.getLendersData = async (req, res) => {
       csTotal,
       csProcessed,
 
-      // PayMe
-      paymeSuccess,
-      paymeTotal,
-      paymeProcessed,
+      // // PayMe
+      // paymeSuccess,
+      // paymeTotal,
+      // paymeProcessed,
 
       // FiMoney / PI
       piSuccess,
@@ -466,19 +466,19 @@ exports.getLendersData = async (req, res) => {
       RSUnity.countDocuments(),
       RSUnity.countDocuments({ "RefArr.name": "creditsea" }),
 
-      // -------- PayMe --------
-      PaymeCV.countDocuments({
-        "apiResponse.payme.register_user.message": "Signed-in Successfully",
-      }),
-      PaymeCV.countDocuments(),
-      PaymeCV.countDocuments({ "RefArr.name": "payme" }),
+      // // -------- PayMe --------
+      // PaymeCV.countDocuments({
+      //   "apiResponse.payme.register_user.message": "Signed-in Successfully",
+      // }),
+      // PaymeCV.countDocuments(),
+      // PaymeCV.countDocuments({ "RefArr.name": "payme" }),
 
       // -------- FiMoney / PI --------
-      LoanTapModel.countDocuments({
+      VishuDB.countDocuments({
         "apiResponse.PIResponse.status.message": "Lead created successfully",
       }),
-      LoanTapModel.countDocuments(),
-      LoanTapModel.countDocuments({ "RefArr.name": "PI" }),
+      VishuDB.countDocuments(),
+      VishuDB.countDocuments({ "RefArr.name": "PI" }),
 
       // -------- CreditFy --------
       MvcollCV.countDocuments({
@@ -535,11 +535,11 @@ exports.getLendersData = async (req, res) => {
           Total: csTotal,
           Processed: csProcessed,
         },
-        PayMe: {
-          Success: paymeSuccess,
-          Total: paymeTotal,
-          Processed: paymeProcessed,
-        },
+        // PayMe: {
+        //   Success: paymeSuccess,
+        //   Total: paymeTotal,
+        //   Processed: paymeProcessed,
+        // },
         FiMoney: {
           Success: piSuccess,
           Total: piTotal,
