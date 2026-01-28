@@ -14,20 +14,46 @@ const { CSCmodel } = require("../../CSC/CSCschema.js");
 const { Token, Notification } = require("./notigySchema.js");
 const serviceAccount = require("./serviceaccountkey.json");
 
+const db1 = require("../../ManagementPanel/MultiDataBase/GuniConDB");
 const CVDB = require("../../ManagementPanel/MultiDataBase/Cover_Vishu");
+const ASHIJA_Vishu3 = require("../../ManagementPanel/MultiDataBase/ASIJAVISHAL3");
+const MONGODB_CML = require("../../ManagementPanel/MultiDataBase/MONGODB_CML");
+const MONGODB_RSUnity = require("../../ManagementPanel/MultiDataBase/RSUnity");
+const BlackCover = require("../../ManagementPanel/MultiDataBase/BlackCover");
 
+// ---------------- MODELS & SCHEMAS ----------------
+const VishuDB =
+  require("../../ManagementPanel/MultiDataBase/MultiSchema/MultipalDBSchema")(
+    db1,
+  );
 const Dell =
   require("../../ManagementPanel/MultiDataBase/MultiSchema/Cover_VishuDB")(
     CVDB,
   );
+const { MvcollCV, PaymeCV } =
+  require("../../ManagementPanel/MultiDataBase/MultiSchema/ASIJAVISHAL3Sch")(
+    ASHIJA_Vishu3,
+  );
 
-const BlackCover = require("../../ManagementPanel/MultiDataBase/BlackCover");
+const CML_Models =
+  require("../../ManagementPanel/MultiDataBase/MultiSchema/CMLSch")(
+    MONGODB_CML,
+  );
+const PersonalPayMe = CML_Models.PersonalPayMe;
+
+const RS_Models =
+  require("../../ManagementPanel/MultiDataBase/MultiSchema/RSUnitySch")(
+    MONGODB_RSUnity,
+  );
+const RSUnity = RS_Models.RSUnity;
+
 const BlackCoverModels =
   require("../../ManagementPanel/MultiDataBase/MultiSchema/BlackCoverSch")(
     BlackCover,
   );
 const fatakPayModel = BlackCoverModels.fatakPayCOll;
 
+// --- FIX: Hum uniform name use karenge 'LoanTapModel' ---
 const LoanTapModel = BlackCoverModels.LoanTapCOll;
 const { partnerdb, customer } = require("../../../PartnersAPIs/PartnerSchema");
 exports.login = (req, res) => {
@@ -368,109 +394,141 @@ exports.getLendersData = async (req, res) => {
         "apiResponse.message": "Lead created successfully",
       }),
       Dell.countDocuments(),
-      Dell.countDocuments({ "RefArr.name": "Smartcoin" }), // Smartcoin2
-
-      // Dell.countDocuments({
-      //   "apiResponse.message": "Lead created successfully",
-      // }),
-      // Dell.countDocuments(),
-      // Dell.countDocuments({ "RefArr.name": "Smartcoin" }), // DCL
-
+      Dell.countDocuments({ "RefArr.name": "Smartcoin" }),
+      VishuDB.countDocuments({
+        "apiResponse.message": "Lead created successfully",
+        "RefArr.name": "Smartcoin",
+      }),
+      VishuDB.countDocuments({ "RefArr.name": "Smartcoin" }),
+      VishuDB.countDocuments({ "RefArr.name": "Smartcoin" }),
       fatakPayModel.countDocuments({
         "apiResponse.FatakPayDCL.data.product_type": "CARD",
       }),
       fatakPayModel.countDocuments(),
-      fatakPayModel.countDocuments({ "RefArr.name": "FatakPayDCL" }), // PL EMI
-
+      fatakPayModel.countDocuments({ "RefArr.name": "FatakPayDCL" }),
       fatakPayModel.countDocuments({
         "apiResponse.FatakPayPL.data.product_type": "EMI",
       }),
       fatakPayModel.countDocuments(),
-      fatakPayModel.countDocuments({ "RefArr.name": "FatakPay" }), // Mpokket
-
+      fatakPayModel.countDocuments({ "RefArr.name": "FatakPay" }),
       Dell.countDocuments({
         "apiResponse.MpokketResponse.preApproval.message":
           "Data Accepted Successfully",
       }),
       Dell.countDocuments(),
-      Dell.countDocuments({ "RefArr.name": "Mpokket" }), // Mpokket2
-
-      Dell.countDocuments({
+      Dell.countDocuments({ "RefArr.name": "Mpokket" }),
+      VishuDB.countDocuments({
+        "RefArr.name": "Mpokket",
         "apiResponse.MpokketResponse.preApproval.message":
           "Data Accepted Successfully",
       }),
-      Dell.countDocuments(),
-      Dell.countDocuments({ "RefArr.name": "Mpokket" }), // Zype
-
+      VishuDB.countDocuments({ "RefArr.name": "Mpokket" }),
+      VishuDB.countDocuments({ "RefArr.name": "Mpokket" }),
       Dell.countDocuments({ "apiResponse.ZypeResponse.status": "ACCEPT" }),
       Dell.countDocuments(),
-      Dell.countDocuments({ "RefArr.name": "Zype" }), // Zype2
-
-      Dell.countDocuments({ "apiResponse.ZypeResponse.status": "ACCEPT" }),
-      Dell.countDocuments(),
-      Dell.countDocuments({ "RefArr.name": "Zype" }), // RamFinance (Using correct Ramfin Model)
-
+      Dell.countDocuments({ "RefArr.name": "Zype" }),
+      VishuDB.countDocuments({
+        "RefArr.name": "Zype",
+        "apiResponse.ZypeResponse.status": "ACCEPT",
+      }),
+      VishuDB.countDocuments({ "RefArr.name": "Zype" }),
+      VishuDB.countDocuments({ "RefArr.name": "Zype" }),
       fatakPayModel.countDocuments({
         "apiResponse.Ramfin.leadCreate.message": "Attributed Successfully",
       }),
+      fatakPayModel.countDocuments(),
       fatakPayModel.countDocuments({ "RefArr.name": "RamFin" }),
-      fatakPayModel.countDocuments(), // MoneyView2
-
-      // MoneyView2.countDocuments({
-      //   "apiResponse.moneyViewLeadSubmission.message": "success",
-      // }),
-      // MoneyView2.countDocuments(),
-      // MoneyView2.countDocuments({ "RefArr.name": "MoneyView" }), // LoanTaps
-
+      MoneyView2.countDocuments({
+        "apiResponse.moneyViewLeadSubmission.message": "success",
+      }),
+      MoneyView2.countDocuments(),
+      MoneyView2.countDocuments({ "RefArr.name": "MoneyView" }),
       LoanTapModel.countDocuments({
         "apiResponse.LoanTap.fullResponse.message":
           "Application created successfully",
       }),
+      LoanTapModel.countDocuments(),
       LoanTapModel.countDocuments({ "RefArr.name": "LoanTap" }),
-      LoanTapModel.countDocuments(), // CreditSea
-
-      LoanTapModel.countDocuments({
+      Loantap.countDocuments({
         "apiResponse.CreditSea.message": "Lead generated successfully",
       }),
-      LoanTapModel.countDocuments(),
-      LoanTapModel.countDocuments({ "RefArr.name": "CreditSea" }), // CapitalNow
-
+      Loantap.countDocuments(),
+      Loantap.countDocuments({ "RefArr.name": "creditsea" }),
       Dell.countDocuments({
         "apiResponse.CapitalNow.message": "Fresh Lead Registered Successfully!",
       }),
       Dell.countDocuments(),
-      Dell.countDocuments({ "RefArr.name": "CapitalNow" }), // Branch
-
-      // smcoll.countDocuments({ "apiResponse.Branch.data.decision.code": 1 }),
-      // smcoll.countDocuments(),
-      // smcoll.countDocuments({ "RefArr.name": "Branch" }), // Chintamani
-
-      // Delhi.countDocuments({
-      //   "apiResponse.chintamani.message": "Profile created successfully",
-      // }),
-      // Delhi.countDocuments(),
-      // Delhi.countDocuments({ "RefArr.name": "Chintamani" }),
-
-      // PayMe
-      // PayMe.countDocuments({
-      //   "apiResponse.payme.register_user.message": "Signed-in Successfully",
-      // }),
-      // PayMe.countDocuments(),
-      // PayMe.countDocuments({ "RefArr.name": "payme" }),
-
-      // PayMe2
-      // PayMe2.countDocuments({
-      //   "apiResponse.payme.register_user.message": "Signed-in Successfully",
-      // }),
-      // PayMe2.countDocuments(),
-      // PayMe2.countDocuments({ "RefArr.name": "payme" }),
-
-      // PI / FiMoney
-      Dell.countDocuments({
+      Dell.countDocuments({ "RefArr.name": "CapitalNow" }),
+      smcoll.countDocuments({ "apiResponse.Branch.data.decision.code": 1 }),
+      smcoll.countDocuments(),
+      smcoll.countDocuments({ "RefArr.name": "Branch" }),
+      Delhi.countDocuments({
+        "apiResponse.chintamani.message": "Profile created successfully",
+      }),
+      Delhi.countDocuments(),
+      Delhi.countDocuments({ "RefArr.name": "Chintamani" }),
+      PaymeCV.countDocuments({
+        "apiResponse.payme.register_user.message": "Signed-in Successfully",
+      }),
+      PaymeCV.countDocuments(),
+      PaymeCV.countDocuments({ "RefArr.name": "payme" }),
+      PayMe2.countDocuments({
+        "apiResponse.payme.register_user.message": "Signed-in Successfully",
+      }),
+      PayMe2.countDocuments(),
+      PayMe2.countDocuments({ "RefArr.name": "payme" }),
+      Loantap.countDocuments({
         "apiResponse.PIResponse.status.message": "Lead created successfully",
       }),
-      Dell.countDocuments(),
-      Dell.countDocuments({ "RefArr.name": "PI" }),
+      Loantap.countDocuments(),
+      Loantap.countDocuments({ "RefArr.name": "PI" }),
+      VishuDB.countDocuments({
+        "RefArr.name": "PI",
+        "apiResponse.PIResponse.status.message": "Lead created successfully",
+      }),
+      VishuDB.countDocuments({ "RefArr.name": "PI" }),
+      VishuDB.countDocuments({ "RefArr.name": "PI" }),
+      MvcollCV.countDocuments({
+        "apiResponse.CreditFy.leadCreate.message": "SUCCESS",
+      }),
+      MvcollCV.countDocuments(),
+      MvcollCV.countDocuments({ "RefArr.name": "CreditFy" }),
+      PersonalPayMe.countDocuments({
+        "apiResponse.CreditFy.leadCreate.message": "SUCCESS",
+      }),
+      PersonalPayMe.countDocuments(),
+      PersonalPayMe.countDocuments({ "RefArr.name": "CreditFy" }),
+      RSUnity.countDocuments({
+        "RefArr.name": "SOT",
+        "apiResponse.SOT.Message": "Lead generated successfully.",
+      }),
+      RSUnity.countDocuments(),
+      RSUnity.countDocuments({ "RefArr.name": "SOT" }),
+      RSUnity.countDocuments({
+        "RefArr.name": "CapitalNow",
+        "apiResponse.CapitalNow.code": 2005,
+      }),
+      RSUnity.countDocuments(),
+      RSUnity.countDocuments({ "RefArr.name": "CapitalNow" }),
+      RSUnity.countDocuments({
+        "RefArr.name": "DigiCredit",
+        "apiResponse.DigiCredit.leadCreate.message": "success",
+      }),
+      RSUnity.countDocuments(),
+      RSUnity.countDocuments({ "RefArr.name": "DigiCredit" }),
+      RSUnity.countDocuments({
+        "RefArr.name": "creditsea",
+        "apiResponse.CreditSea.message": "Lead generated successfully",
+      }),
+      RSUnity.countDocuments(),
+      RSUnity.countDocuments({ "RefArr.name": "creditsea" }),
+      // BrightLoan Counts (Success, Total, Processed)
+      RSUnity.countDocuments({
+        "RefArr.name": "BrightLoan",
+        "apiResponse.BrightLoan.Status": 1,
+      }),
+      RSUnity.countDocuments(),
+      RSUnity.countDocuments({ "RefArr.name": "BrightLoan" }),
     ]);
 
     return res.status(200).json({
