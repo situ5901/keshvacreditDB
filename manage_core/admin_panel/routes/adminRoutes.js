@@ -17,7 +17,7 @@ router.get(
   adminAuth,
   filterDatabase.deleteDuplicatePhones,
 );
-router.get("/get/LenderData", adminController.getLendersData);
+router.get("/get/LenderData", adminAuth, adminController.getLendersData);
 router.post("/get/partnerData", adminAuth, adminController.getPartnerData);
 router.post("/get/membersData", adminController.getMembersData);
 router.post("/Leaderslogin", adminController.Adminlogin);
