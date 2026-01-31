@@ -2,9 +2,9 @@ const mongoose = require("mongoose");
 require("dotenv").config();
 const axios = require("axios");
 const path = require("path");
-const xlsx = require("xlsx");
+const xlsx = require("xlsx"); // npm install xlsx
 
-const BATCH_SIZE = 1;
+const BATCH_SIZE = 100;
 const MONGODB_URI = process.env.MONGODB_RSUnity;
 const PREPROD_URL = "https://api.blsfintech.com/marketing-push-lead-data";
 const PINCODE_FILE_PATH = path.join(__dirname, "..", "xlsx", "BrightLoan.csv");
@@ -20,12 +20,31 @@ const UserDB = mongoose.model(
   new mongoose.Schema({}, { collection: "smcoll", strict: false }),
 );
 
+/**
+ * Helper: User ki age calculate karne ke liye
+ */
+function calculateAge(dobString) {
+  if (!dobString) return 0;
+  const birthDate = new Date(dobString);
+  if (isNaN(birthDate.getTime())) return 0; // Invalid Date handle karne ke liye
+
+  const today = new Date();
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const m = today.getMonth() - birthDate.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+    age--;
+  }
+  return age;
+}
+
+/**
+ * Helper: Excel se pincodes load karne ke liye
+ */
 function loadValidPincodes() {
   try {
     const workbook = xlsx.readFile(PINCODE_FILE_PATH);
     const sheetName = workbook.SheetNames[0];
     const worksheet = workbook.Sheets[sheetName];
-    // header: 1 returns an array of arrays
     const data = xlsx.utils.sheet_to_json(worksheet, { header: 1 });
 
     const pincodes = new Set();
@@ -83,9 +102,9 @@ async function processBatch(users, validPincodes) {
   await Promise.allSettled(
     users.map(async (user) => {
       try {
-        const userPincode = String(user.pincode || "").trim();
+        console.log(`🚀 Checking User: ${user.phone}`);
 
-        // 1. Check Employment Type
+        // 1. FILTER: Employment Check
         if (user.employment !== "Salaried" && user.employment !== "Salarid") {
           console.log(`⚠️ Skipping ${user.phone}: Not Salaried`);
           await UserDB.updateOne(
@@ -103,7 +122,29 @@ async function processBatch(users, validPincodes) {
           return;
         }
 
-        // 2. Check Pincode Match
+        // 2. FILTER: Age Check (21 to 55)
+        const age = calculateAge(user.dob);
+        if (age < 21 || age > 55) {
+          console.log(
+            `⚠️ Skipping ${user.phone}: Age ${age} is out of range (21-55)`,
+          );
+          await UserDB.updateOne(
+            { _id: user._id },
+            {
+              $push: {
+                RefArr: {
+                  name: "BrightLoan",
+                  message: `Age Criteria Not Met: ${age}`,
+                  createdAt: new Date().toLocaleString(),
+                },
+              },
+            },
+          );
+          return;
+        }
+
+        // 3. FILTER: Pincode Check
+        const userPincode = String(user.pincode || "").trim();
         if (!validPincodes.has(userPincode)) {
           console.log(
             `⚠️ Skipping ${user.phone}: Pincode ${userPincode} not matched`,
@@ -123,14 +164,13 @@ async function processBatch(users, validPincodes) {
           return;
         }
 
-        // 3. API Call (If all checks pass)
-        console.log(`🚀 Hitting API for User: ${user.phone}`);
+        // --- SAB FILTERS PASS HONE PAR API HIT HOGA ---
         const apiRes = await sendToApi(user);
 
-        console.log(`--------------------------------------------------`);
-        console.log(`📩 API RESPONSE FOR ${user.phone}:`);
-        console.log(JSON.stringify(apiRes, null, 2));
-        console.log(`--------------------------------------------------`);
+        console.log(
+          `📩 API RESPONSE FOR ${user.phone}:`,
+          JSON.stringify(apiRes, null, 2),
+        );
 
         const updateDoc = {
           $push: {
@@ -155,11 +195,11 @@ async function processBatch(users, validPincodes) {
 }
 
 async function main() {
-  console.log("🚦 Loading Configuration...");
+  console.log("🚦 Loading Pincodes...");
   const validPincodes = loadValidPincodes();
 
   if (validPincodes.size === 0) {
-    console.error("❌ No pincodes loaded. Please check your Excel file path.");
+    console.error("❌ No pincodes found. Check your Excel file.");
     process.exit(1);
   }
 
