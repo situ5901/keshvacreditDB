@@ -2,14 +2,13 @@ const mongoose = require("mongoose");
 require("dotenv").config();
 const axios = require("axios");
 const path = require("path");
-const xlsx = require("xlsx"); // npm install xlsx
+const xlsx = require("xlsx");
 
 const BATCH_SIZE = 100;
 const MONGODB_URI = process.env.MONGODB_RSUnity;
 const PREPROD_URL = "https://api.blsfintech.com/marketing-push-lead-data";
 const PINCODE_FILE_PATH = path.join(__dirname, "..", "xlsx", "BrightLoan.csv");
 
-// Database Connection
 mongoose
   .connect(MONGODB_URI)
   .then(() => console.log("✅ MongoDB Connected Successfully"))
@@ -20,13 +19,10 @@ const UserDB = mongoose.model(
   new mongoose.Schema({}, { collection: "smcoll", strict: false }),
 );
 
-/**
- * Helper: User ki age calculate karne ke liye
- */
 function calculateAge(dobString) {
   if (!dobString) return 0;
   const birthDate = new Date(dobString);
-  if (isNaN(birthDate.getTime())) return 0; // Invalid Date handle karne ke liye
+  if (isNaN(birthDate.getTime())) return 0;
 
   const today = new Date();
   let age = today.getFullYear() - birthDate.getFullYear();
@@ -37,9 +33,6 @@ function calculateAge(dobString) {
   return age;
 }
 
-/**
- * Helper: Excel se pincodes load karne ke liye
- */
 function loadValidPincodes() {
   try {
     const workbook = xlsx.readFile(PINCODE_FILE_PATH);
@@ -122,7 +115,6 @@ async function processBatch(users, validPincodes) {
           return;
         }
 
-        // 2. FILTER: Age Check (21 to 55)
         const age = calculateAge(user.dob);
         if (age < 21 || age > 55) {
           console.log(
@@ -143,7 +135,6 @@ async function processBatch(users, validPincodes) {
           return;
         }
 
-        // 3. FILTER: Pincode Check
         const userPincode = String(user.pincode || "").trim();
         if (!validPincodes.has(userPincode)) {
           console.log(
@@ -164,7 +155,7 @@ async function processBatch(users, validPincodes) {
           return;
         }
 
-        // --- SAB FILTERS PASS HONE PAR API HIT HOGA ---
+        //FIX: --- SAB FILTERS PASS HONE PAR API HIT HOGA ---
         const apiRes = await sendToApi(user);
 
         console.log(

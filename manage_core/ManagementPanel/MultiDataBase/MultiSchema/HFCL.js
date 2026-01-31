@@ -3,7 +3,7 @@ const { Schema } = require("mongoose");
 module.exports = (connection) => {
   const leaderSchema = new Schema(
     {
-      appId: { type: Number, required: true, unique: true },
+      appId: { type: String, required: true, unique: true },
       currentStage: { type: String },
       previousStage: { type: String },
       nextStage: { type: String },
