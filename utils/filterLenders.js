@@ -2,8 +2,7 @@ const XLSX = require("xlsx");
 const path = require("path");
 
 const eligibleLenders = [
-  
-    {
+  {
     name: "HeroFincorp",
     minAge: 21,
     maxAge: 50,
@@ -11,8 +10,8 @@ const eligibleLenders = [
     minIncome: 15000,
     url: "https://www.herofincorp.com/img/logo_dc3ab7afd1.webp",
     utm: "https://hipl.onelink.me/1OrE?af_ios_url=https%3A%2F%2Floans.apps.herofincorp.com%2Fen%2Fpersonal-loan&af_android_url=https%3A%2F%2Floans.apps.herofincorp.com%2Fen%2Fpersonal-loan&af_web_dp=https%3A%2F%2Floans.apps.herofincorp.com%2Fen%2Fpersonal-loan&af_xp=custom&pid=kesvacredit&is_retargeting=true&af_reengagement_window=30d&c=Partnership&utm_source=partnership&utm_campaign=kesvacredit&utm_content=userid",
-    },
-    {
+  },
+  {
     name: "ArthFincare",
     minAge: 21,
     maxAge: 50,
@@ -20,8 +19,8 @@ const eligibleLenders = [
     minIncome: 15000,
     url: "https://arthfincare.com/_next/static/media/ArthFincareLogo.70333c88.svg",
     utm: "https://arthfincare.com/?utm_source=KeshavaCredit&utm_medium=KeshavaCreditReferral&utm_campaign=basic_referral",
-    },
-    {
+  },
+  {
     name: "Ramfin",
     minAge: 21,
     maxAge: 55,
@@ -273,11 +272,23 @@ const eligibleLenders = [
     url: "https://static.trustpaisa.com/logos/full.svg",
     utm: "https://trustpaisa.com/?utm_source=keshvacredit&utm_medium=cpa&click_id=1111111",
   },
+
+  {
+    name: "Loan112",
+    minAge: 21,
+    maxAge: 58,
+    lenderId: 21,
+    minIncome: 25000,
+    employment: "Salaried",
+    url: "https://www.loan112.com/public/front/img/logo_Loan112.svg",
+    utm: "https://www.loan112.com/apply-now?utm_source=KESHVACREDIT&utm_medium=KESHVACREDITWEB&utm_campaign=KESHVACREDITWEBCAMPAIGN",
+  },
 ];
 
 const lenderFiles = {
   Rupee: path.join(__dirname, "./pincode/rupee.xlsx"),
   MoneyView: path.join(__dirname, "./pincode/mv.xlsx"),
+  Loan112: path.join(__dirname, "./pincode/Loan112.csvp"),
 };
 
 // ✅ Attach pincodes from Excel
@@ -309,7 +320,7 @@ async function filterLenders(age, income, loan, employment, pincode) {
       const matchesEmployment =
         !lender.employment || lender.employment === employment;
 
-      if (["Rupee", "MoneyView"].includes(lender.name)) {
+      if (["Rupee", "MoneyView", "Loan112"].includes(lender.name)) {
         const matchesPincode =
           lender.pincodes.length > 0 && lender.pincodes.includes(pincode);
         return (
