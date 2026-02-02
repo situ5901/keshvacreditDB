@@ -1,9 +1,15 @@
 const mongoose = require("mongoose");
 const axios = require("axios");
+const xlsx = require("xlsx");
+const path = require("path"); // Added path module
 require("dotenv").config();
 
 const MONGODB_URI = process.env.MONGODB_RSUnity;
 const BATCH_SIZE = 10;
+const PINCODE_FILE_PATH = path.join(__dirname, "..", "xlsx", "BrightLoan.csv");
+
+// Variable to store pincodes globally once loaded
+let validPincodes = new Set();
 
 mongoose
   .connect(MONGODB_URI)
@@ -24,6 +30,27 @@ async function GetHeader() {
     "Content-Type": "application/json",
     Accept: "application/json",
   };
+}
+
+function loadValidPincodes() {
+  try {
+    const workbook = xlsx.readFile(PINCODE_FILE_PATH);
+    const sheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[sheetName];
+    const data = xlsx.utils.sheet_to_json(worksheet, { header: 1 });
+
+    const pincodes = new Set();
+    data.forEach((row) => {
+      if (row[0]) {
+        pincodes.add(String(row[0]).trim());
+      }
+    });
+    console.log(`✅ Loaded ${pincodes.size} valid pincodes from Excel.`);
+    return pincodes;
+  } catch (error) {
+    console.error(`❌ Error loading pincode file: ${error.message}`);
+    return new Set();
+  }
 }
 
 async function SendToApi(user) {
@@ -47,26 +74,19 @@ async function SendToApi(user) {
       income_type: 1,
       dob: user.dob || "",
       gender: genderCode,
-      next_salary_date: "2026-02-07", // Ensure this is within 40 days of today
+      next_salary_date: "2026-02-07",
       company_name: " ",
     };
 
     const headers = await GetHeader();
     const response = await axios.post(APIURL, Payload, { headers });
-
-    // ✅ Log Full Success Response
-    console.log(
-      `📡 API Success [${user.phone}]:`,
-      JSON.stringify(response.data, null, 2),
-    );
-
+    console.log(`📡 API Success [${user.phone}]:`, JSON.stringify(response.data, null, 2));
     return response.data;
   } catch (error) {
-    // ✅ Log Detailed Error Response from API
     if (error.response) {
       console.error(`❌ API Rejected [${user.phone}]:`, {
         status: error.response.status,
-        data: error.response.data, // This contains the "message" or "error" field from the server
+        data: error.response.data,
       });
       return { success: false, ...error.response.data };
     } else {
@@ -83,74 +103,48 @@ async function processBatch(users) {
     users.map(async (user) => {
       try {
         const userDoc = await UserDB.findOne({ phone: user.phone });
-        if (!userDoc) {
-          console.warn(`⚠️ User ${user.phone} not found in DB. Skipping.`);
-          return;
-        }
+        if (!userDoc) return;
 
         console.log(`🚀 Processing user: ${user.phone}`);
 
         const employment = userDoc.employment;
         const income = userDoc.income;
-        // ✅ Validation: Only Salaried allowed
+        const userPincode = String(userDoc.pincode || "").trim();
+
+        // 1. Validation: Salaried
         if (employment !== "Salaried") {
-          console.log(
-            `⏩ Skipping user ${user.phone}: Not Salaried (${employment})`,
-          );
-
-          await UserDB.updateOne(
-            { _id: userDoc._id },
-            {
-              $push: {
-                RefArr: {
-                  name: "Loan112",
-                  message: "Skipped: Not Salaried",
-                  createdAt: new Date().toISOString(),
-                },
-              },
-              $unset: { accounts: "" }, // Ensure field name matches your DB (account vs accounts)
-            },
-          );
+          await skipUser(userDoc._id, `Skipped: Not Salaried (${employment})`, user.phone);
           return;
         }
 
+        // 2. Validation: Income
         if (income < 25000) {
-          console.log(
-            `⏩ Skipping user ${user.phone}: income less then 25K (${employment})`,
-          );
-
-          await UserDB.updateOne(
-            { _id: userDoc._id },
-            {
-              $push: {
-                RefArr: {
-                  name: "Loan112",
-                  message: "Skipped: income less then 25K",
-                  createdAt: new Date().toISOString(),
-                },
-              },
-              $unset: { accounts: "" }, // Ensure field name matches your DB (account vs accounts)
-            },
-          );
+          await skipUser(userDoc._id, "Skipped: income less than 25K", user.phone);
           return;
         }
+
+        // 3. Validation: Pincode Check ✅
+        if (validPincodes.size > 0 && !validPincodes.has(userPincode)) {
+          console.log(`⏩ Skipping user ${user.phone}: Pincode ${userPincode} not in service list.`);
+          await skipUser(userDoc._id, `Skipped: Pincode ${userPincode} not serviceable`, user.phone);
+          return;
+        }
+
         // ✅ API Call
         const apiResponse = await SendToApi(userDoc);
 
-        // ✅ Database Update
+        // ✅ Database Update for API Result
         const updateDoc = {
           $push: {
             apiResponse: {
               Loan112: apiResponse,
-              createdAt: new Date().toISOString(),
+              createdAt: new Date().toLocaleString(),
             },
             RefArr: {
               name: "Loan112",
-              status:
-                apiResponse.status === "success" || apiResponse.success
-                  ? "Sent"
-                  : "Failed",
-              createdAt: new Date().toISOString(),
+              status: (apiResponse.status === "success" || apiResponse.success) ? "Sent" : "Failed",
+              message: apiResponse.error || apiResponse.message || "",
+              createdAt: new Date().toLocaleString(),
             },
           },
           $unset: { accounts: "" },
@@ -170,11 +164,32 @@ async function processBatch(users) {
   return successCount;
 }
 
+// Helper function to handle DB updates for skipped users
+async function skipUser(userId, message, phone) {
+  console.log(`⏩ ${message} for ${phone}`);
+  await UserDB.updateOne(
+    { _id: userId },
+    {
+      $push: {
+        RefArr: {
+          name: "Loan112",
+          message: message,
+          createdAt: new Date().toLocaleString(),
+        },
+      },
+      $unset: { accounts: "" },
+    }
+  );
+}
+
 function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 async function main() {
+  // ✅ Load pincodes before starting
+  validPincodes = loadValidPincodes();
+  
   let hasMoreUsers = true;
   let totalAttributed = 0;
 
@@ -182,7 +197,6 @@ async function main() {
 
   try {
     while (hasMoreUsers) {
-      // Find users who haven't been processed for Loan112 yet
       const users = await UserDB.find({
         $or: [
           { RefArr: { $exists: false } },
@@ -196,6 +210,24 @@ async function main() {
         hasMoreUsers = false;
         console.log("🏁 No more users found for processing.");
         break;
+      }
+
+      const batchSuccess = await processBatch(users);
+      totalAttributed += batchSuccess;
+
+      console.log(`📊 Batch Success: ${batchSuccess} | Total Success: ${totalAttributed}`);
+      await delay(2000);
+    }
+    console.log("✅ Process Finished.");
+  } catch (error) {
+    console.error("❌ Fatal error in Main:", error);
+  } finally {
+    mongoose.disconnect();
+    console.log("🔌 MongoDB connection closed.");
+  }
+}
+
+main();
       }
 
       console.log(`📦 Found ${users.length} users. Starting batch...`);
