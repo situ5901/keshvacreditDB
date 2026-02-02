@@ -80,7 +80,10 @@ async function SendToApi(user) {
 
     const headers = await GetHeader();
     const response = await axios.post(APIURL, Payload, { headers });
-    console.log(`📡 API Success [${user.phone}]:`, JSON.stringify(response.data, null, 2));
+    console.log(
+      `📡 API Success [${user.phone}]:`,
+      JSON.stringify(response.data, null, 2),
+    );
     return response.data;
   } catch (error) {
     if (error.response) {
@@ -113,20 +116,34 @@ async function processBatch(users) {
 
         // 1. Validation: Salaried
         if (employment !== "Salaried") {
-          await skipUser(userDoc._id, `Skipped: Not Salaried (${employment})`, user.phone);
+          await skipUser(
+            userDoc._id,
+            `Skipped: Not Salaried (${employment})`,
+            user.phone,
+          );
           return;
         }
 
         // 2. Validation: Income
         if (income < 25000) {
-          await skipUser(userDoc._id, "Skipped: income less than 25K", user.phone);
+          await skipUser(
+            userDoc._id,
+            "Skipped: income less than 25K",
+            user.phone,
+          );
           return;
         }
 
         // 3. Validation: Pincode Check ✅
         if (validPincodes.size > 0 && !validPincodes.has(userPincode)) {
-          console.log(`⏩ Skipping user ${user.phone}: Pincode ${userPincode} not in service list.`);
-          await skipUser(userDoc._id, `Skipped: Pincode ${userPincode} not serviceable`, user.phone);
+          console.log(
+            `⏩ Skipping user ${user.phone}: Pincode ${userPincode} not in service list.`,
+          );
+          await skipUser(
+            userDoc._id,
+            `Skipped: Pincode ${userPincode} not serviceable`,
+            user.phone,
+          );
           return;
         }
 
@@ -142,7 +159,10 @@ async function processBatch(users) {
             },
             RefArr: {
               name: "Loan112",
-              status: (apiResponse.status === "success" || apiResponse.success) ? "Sent" : "Failed",
+              status:
+                apiResponse.status === "success" || apiResponse.success
+                  ? "Sent"
+                  : "Failed",
               message: apiResponse.error || apiResponse.message || "",
               createdAt: new Date().toLocaleString(),
             },
@@ -178,7 +198,7 @@ async function skipUser(userId, message, phone) {
         },
       },
       $unset: { accounts: "" },
-    }
+    },
   );
 }
 
@@ -189,7 +209,7 @@ function delay(ms) {
 async function main() {
   // ✅ Load pincodes before starting
   validPincodes = loadValidPincodes();
-  
+
   let hasMoreUsers = true;
   let totalAttributed = 0;
 
@@ -215,7 +235,9 @@ async function main() {
       const batchSuccess = await processBatch(users);
       totalAttributed += batchSuccess;
 
-      console.log(`📊 Batch Success: ${batchSuccess} | Total Success: ${totalAttributed}`);
+      console.log(
+        `📊 Batch Success: ${batchSuccess} | Total Success: ${totalAttributed}`,
+      );
       await delay(2000);
     }
     console.log("✅ Process Finished.");
@@ -227,36 +249,4 @@ async function main() {
   }
 }
 
-main();
-      }
-
-      console.log(`📦 Found ${users.length} users. Starting batch...`);
-
-      // ✅ Yahan processing trigger ho rahi hai
-      const batchSuccess = await processBatch(users);
-      totalAttributed += batchSuccess;
-
-      console.log(
-        `📊 Batch Success: ${batchSuccess} | Total Success: ${totalAttributed}`,
-      );
-
-      // ✅ 2 seconds delay to prevent overwhelming the API
-      console.log("⏳ Waiting 2 seconds before next batch...");
-      await delay(2000);
-    }
-
-    console.log("--------------------------------------------------");
-    console.log(
-      `✅ Process Finished. Total Leads Successfully Sent: ${totalAttributed}`,
-    );
-    console.log("--------------------------------------------------");
-  } catch (error) {
-    console.error("❌ Fatal error in Main:", error);
-  } finally {
-    mongoose.disconnect();
-    console.log("🔌 MongoDB connection closed.");
-  }
-}
-
-// Start the script
 main();
