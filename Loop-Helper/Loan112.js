@@ -91,7 +91,7 @@ async function processBatch(users) {
         console.log(`🚀 Processing user: ${user.phone}`);
 
         const employment = userDoc.employment;
-
+        const income = userDoc.income;
         // ✅ Validation: Only Salaried allowed
         if (employment !== "Salaried") {
           console.log(
@@ -114,6 +114,26 @@ async function processBatch(users) {
           return;
         }
 
+        if (income < 25000) {
+          console.log(
+            `⏩ Skipping user ${user.phone}: income less then 25K (${employment})`,
+          );
+
+          await UserDB.updateOne(
+            { _id: userDoc._id },
+            {
+              $push: {
+                RefArr: {
+                  name: "Loan112",
+                  message: "Skipped: income less then 25K",
+                  createdAt: new Date().toISOString(),
+                },
+              },
+              $unset: { accounts: "" }, // Ensure field name matches your DB (account vs accounts)
+            },
+          );
+          return;
+        }
         // ✅ API Call
         const apiResponse = await SendToApi(userDoc);
 
