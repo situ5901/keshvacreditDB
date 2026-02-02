@@ -8,7 +8,6 @@ const MONGODB_URI = process.env.MONGODB_RSUnity;
 const BATCH_SIZE = 10;
 const PINCODE_FILE_PATH = path.join(__dirname, "..", "xlsx", "Loan112.csv");
 
-// Variable to store pincodes globally once loaded
 let validPincodes = new Set();
 
 mongoose
@@ -184,7 +183,6 @@ async function processBatch(users) {
   return successCount;
 }
 
-// Helper function to handle DB updates for skipped users
 async function skipUser(userId, message, phone) {
   console.log(`⏩ ${message} for ${phone}`);
   await UserDB.updateOne(
