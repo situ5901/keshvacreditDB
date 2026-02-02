@@ -28,6 +28,15 @@ async function GetHeader() {
 
 async function SendToApi(user) {
   try {
+    let genderCode = 1;
+    if (user.gender) {
+      const g = user.gender.toString().toLowerCase();
+      if (g === "female" || g === "f" || g === "2") {
+        genderCode = 2;
+      } else {
+        genderCode = 1;
+      }
+    }
     const Payload = {
       full_name: user.name || "",
       mobile: user.phone || "",
@@ -37,7 +46,7 @@ async function SendToApi(user) {
       monthly_salary: user.income || 0,
       income_type: 1,
       dob: user.dob || "",
-      gender: user.gender || "",
+      gender: genderCode,
       next_salary_date: "2026-02-07", // Ensure this is within 40 days of today
       company_name: " ",
     };
