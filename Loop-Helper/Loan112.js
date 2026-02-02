@@ -22,6 +22,8 @@ async function GetHeader() {
   return {
     Username: "KESHVACREDIT_LOAN112_20260130",
     Auth: "a2945757d8e7aa55dd2d7c6888ca65e77c6c4c6c",
+    "Content-Type": "application/json",
+    Accept: "application/json",
   };
 }
 
