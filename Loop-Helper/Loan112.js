@@ -39,17 +39,32 @@ async function SendToApi(user) {
       income_type: 1,
       dob: user.dob || "",
       gender: user.gender || "",
-      next_salary_date: "2026-02-07",
+      next_salary_date: "2026-02-07", // Ensure this is within 40 days of today
       company_name: " ",
     };
 
     const headers = await GetHeader();
     const response = await axios.post(APIURL, Payload, { headers });
-    console.log(`📡 API Response for ${user.phone}:`, response.data);
+
+    // ✅ Log Full Success Response
+    console.log(
+      `📡 API Success [${user.phone}]:`,
+      JSON.stringify(response.data, null, 2),
+    );
+
     return response.data;
   } catch (error) {
-    console.error(`❌ API Error for ${user.phone}:`, error.message);
-    return { success: false, status: 500, message: error.message };
+    // ✅ Log Detailed Error Response from API
+    if (error.response) {
+      console.error(`❌ API Rejected [${user.phone}]:`, {
+        status: error.response.status,
+        data: error.response.data, // This contains the "message" or "error" field from the server
+      });
+      return { success: false, ...error.response.data };
+    } else {
+      console.error(`❌ Network/Request Error [${user.phone}]:`, error.message);
+      return { success: false, status: 500, message: error.message };
+    }
   }
 }
 
