@@ -6,7 +6,7 @@ require("dotenv").config();
 
 const MONGODB_URI = process.env.MONGODB_RSUnity;
 const BATCH_SIZE = 10;
-const PINCODE_FILE_PATH = path.join(__dirname, "..", "xlsx", "BrightLoan.csv");
+const PINCODE_FILE_PATH = path.join(__dirname, "..", "xlsx", "Loan112.csv");
 
 // Variable to store pincodes globally once loaded
 let validPincodes = new Set();
