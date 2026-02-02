@@ -15,8 +15,7 @@ const UserDB = mongoose.model(
   new mongoose.Schema({}, { collection: "smcoll", strict: false }),
 );
 
-const APIURL =
-  "https://preprod-api.loan112fintech.com/marketing-push-lead-data";
+const APIURL = "https://api.loan112fintech.com/marketing-push-lead-data";
 
 async function GetHeader() {
   return {
