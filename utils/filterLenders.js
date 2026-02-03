@@ -283,12 +283,24 @@ const eligibleLenders = [
     url: "https://www.loan112.com/public/front/img/logo_Loan112.svg",
     utm: "https://www.loan112.com/apply-now?utm_source=KESHVACREDIT&utm_medium=KESHVACREDITWEB&utm_campaign=KESHVACREDITWEBCAMPAIGN",
   },
+
+  {
+    name: "BrightLoan",
+    minAge: 21,
+    maxAge: 58,
+    lenderId: 21,
+    minIncome: 25000,
+    employment: "Salaried",
+    url: "https://www.loan112.com/public/front/img/logo_Loan112.svg",
+    utm: "https://www.loan112.com/apply-now?utm_source=KESHVACREDIT&utm_medium=KESHVACREDITWEB&utm_campaign=KESHVACREDITWEBCAMPAIGN",
+  },
 ];
 
 const lenderFiles = {
   Rupee: path.join(__dirname, "./pincode/rupee.xlsx"),
   MoneyView: path.join(__dirname, "./pincode/mv.xlsx"),
   Loan112: path.join(__dirname, "./pincode/Loan112.csvp"),
+  BrightLoan: path.join(__dirname, "./pincode/BrightLoan.csv"),
 };
 
 // ✅ Attach pincodes from Excel
@@ -320,7 +332,9 @@ async function filterLenders(age, income, loan, employment, pincode) {
       const matchesEmployment =
         !lender.employment || lender.employment === employment;
 
-      if (["Rupee", "MoneyView", "Loan112"].includes(lender.name)) {
+      if (
+        ["Rupee", "MoneyView", "Loan112", "BrightLoan"].includes(lender.name)
+      ) {
         const matchesPincode =
           lender.pincodes.length > 0 && lender.pincodes.includes(pincode);
         return (
