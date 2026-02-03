@@ -5,7 +5,8 @@ const eligibleBusinessLenders = [
     logo: "https://i.postimg.cc/pXYb8kmC/imgi-1-logo-new.png",
     minAge: 21,
     maxAge: 60,
-    requiresGST: true, // Is lender ko GST chahiye
+    requiresGST: true,
+    minVintage: 0, // No specific limit
     approval: "98%",
     amount: "Up to ₹2 crore",
     interest: "12% p.a.",
@@ -19,6 +20,7 @@ const eligibleBusinessLenders = [
     minAge: 22,
     maxAge: 55,
     requiresGST: true,
+    minVintage: 1,
     approval: "97%",
     amount: "Up to ₹2 crore",
     interest: "Starting from 11% to 15% per annum",
@@ -31,7 +33,8 @@ const eligibleBusinessLenders = [
     name: "Protium",
     minAge: 21,
     maxAge: 65,
-    requiresGST: false, // Isko GST nahi chahiye toh bhi chalega
+    requiresGST: false,
+    minVintage: 0,
     approval: "98%",
     amount: "Up to ₹2 crore",
     interest: "12% p.a.",
@@ -46,6 +49,7 @@ const eligibleBusinessLenders = [
     minAge: 21,
     maxAge: 60,
     requiresGST: false,
+    minVintage: 0,
     approval: "98%",
     amount: "Up to ₹2 crore",
     interest: "Starting from 11% to 15% per annum",
@@ -60,6 +64,7 @@ const eligibleBusinessLenders = [
     minAge: 21,
     maxAge: 55,
     requiresGST: true,
+    minVintage: 0,
     approval: "97%",
     amount: "range from 50,000 - 50 lakh",
     interest: "Starting from 12% to 18% per annum",
@@ -70,22 +75,31 @@ const eligibleBusinessLenders = [
   },
 ];
 
-async function BLfilterLenders(age, Gst, loan, employment) {
+async function BLfilterLenders(age, Gst, loan, employment, userVintage) {
   if (!age || !Gst || !loan) return [];
 
   const userHasGst = Gst.toLowerCase() === "yes";
   const empStatus = employment ? employment.toLowerCase() : "";
 
+  // Convert vintage to number (e.g., "0.5" or "2")
+  const numericVintage = parseFloat(userVintage) || 0;
+
   return eligibleBusinessLenders
     .filter((lender) => {
+      // 1. Age Check
       const matchesAge = age >= lender.minAge && age <= lender.maxAge;
 
+      // 2. GST Check
       const matchesGst = lender.requiresGST ? userHasGst : true;
 
+      // 3. ✅ Vintage Check (Indifi logic)
+      const matchesVintage = numericVintage >= (lender.minVintage || 0);
+
+      // 4. Employment Check
       const matchesEmployment =
         !lender.employment || lender.employment.toLowerCase() === empStatus;
 
-      return matchesAge && matchesGst && matchesEmployment;
+      return matchesAge && matchesGst && matchesVintage && matchesEmployment;
     })
     .map((lender) => ({
       id: lender.id,

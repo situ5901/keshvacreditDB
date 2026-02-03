@@ -73,7 +73,7 @@ router.post("/BL/lenderlist", async (req, res) => {
       return res.status(404).json({ message: "User not found." });
     }
 
-    // calculate age
+    // --- Age Calculation ---
     const dobDate = new Date(user.dob);
     const today = new Date();
     let age = today.getFullYear() - dobDate.getFullYear();
@@ -85,21 +85,30 @@ router.post("/BL/lenderlist", async (req, res) => {
       age--;
     }
 
+    // --- User Data Extraction ---
     const Gst = user.gstRegistered;
     const loanAmount = user.loanAmount;
     const employment = user.employment || "";
-    const pincode = user.pincode?.toString().trim(); // ✅ include pincode
+    const pincode = user.pincode?.toString().trim();
 
-    if (!dobDate || !Gst || !loanAmount || !pincode) {
-      return res.status(400).json({ message: "User data incomplete." });
+    // ✅ Database se Vintage nikalo (Maano field ka naam 'businessVintage' hai)
+    // Agar DB mein field ka naam sirf 'vintage' hai toh usey change kar lena.
+    const userVintage = user.businessAge || 0;
+
+    // Check minimum required data
+    if (!user.dob || !Gst || !loanAmount || !pincode) {
+      return res.status(400).json({
+        message: "User data incomplete (DOB, GST, Loan, or Pincode missing).",
+      });
     }
 
+    // --- Filter Lenders Call ---
     const lenders = await BLfilterLenders(
       age,
       Gst,
       loanAmount,
       employment,
-      pincode,
+      userVintage, // 👈 Vintage pass kiya
     );
 
     return res.status(200).json({
