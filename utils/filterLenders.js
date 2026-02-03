@@ -55,28 +55,6 @@ const eligibleLenders = [
     url: "https://www.getzype.com/wp-content/uploads/2024/08/Group-852775729.webp",
     utm: "https://portal.getzype.com/?af_xp=custom&pid=CustomerSource&deep_link_value=myZype&af_click_lookback=30d&c=Sample",
   },
-  // {
-  //   name: "FDPL",
-  //   minAge: 18,
-  //   maxAge: 59,
-  //   lenderId: 4,
-  //   minIncome: 18000,
-  //   interestRate: "starting from 12% to 35.95% per Annum",
-  //   loanAmount: "upto 5 Lakh",
-  //   url: "https://i.postimg.cc/YSfBdxzZ/fdpl.jpg",
-  //   utm: "https://web.fatakpay.com/authentication/login?utm_source=575_DLZ56&utm_medium=",
-  // },
-  // {
-  //   name: "FatakPay Short term personal loan",
-  //   minAge: 18,
-  //   maxAge: 59,
-  //   lenderId: 5,
-  //   minIncome: 18000,
-  //   interestRate: "starting from 12% to 35.95% per Annum",
-  //   loanAmount: "starting from 5000 to 1 lakh ",
-  //   url: "https://i.postimg.cc/0jzs6xgb/Logo-1.jpg",
-  //   utm: "https://web.fatakpay.com/authentication/login?utm_source=576_PPEGA&utm_medium=",
-  // },
   {
     name: "Mpokket",
     minAge: 18,
@@ -129,17 +107,6 @@ const eligibleLenders = [
     url: "https://i.postimg.cc/sgkVCJpQ/download.png",
     utm: "https://loantap.in/",
   },
-  // {
-  //   name: "MoneyView",
-  //   minAge: 21,
-  //   maxAge: 60,
-  //   lenderId: 11,
-  //   minIncome: 15000,
-  //   interestRate: "starting from 1.16% per Month",
-  //   loanAmount: "upto 3 Lakh",
-  //   url: "https://cdn.prod.website-files.com/65b65b84c3edfa5897cdfb0b/66223fca2ba9f44ca226f304_Primary%20logo.png",
-  //   utm: "https://moneyview.in/personal-loan?utm_source=KeshvaCredit",
-  // },
   {
     name: "BharatLoan",
     minAge: 21,
@@ -152,17 +119,6 @@ const eligibleLenders = [
     url: "https://www.bharatloan.com/public/images/brand_logo.png",
     utm: "https://www.bharatloan.com/apply-now?utm_source=KESHVACREDIT&utm_medium=",
   },
-  // {
-  //   name: "chintamanifinlease",
-  //   minAge: 21,
-  //   maxAge: 60,
-  //   lenderId: 14,
-  //   minIncome: 15000,
-  //   interestRate: "starting from 25% per Annum",
-  //   loanAmount: "upto 3 Lakh",
-  //   url: "https://www.chintamanifinlease.com/public/frontend/images/logo/logo.png",
-  //   utm: "https://www.chintamanifinlease.com/keshvacredit?utm_source=quid945&utm_medium=get&utm_campaign=loan-au7!Sh2dff5",
-  // },
   {
     name: "instantmudra",
     minAge: 21,
@@ -251,7 +207,6 @@ const eligibleLenders = [
     url: "https://kredito24.in/img/site/logo-new-r.svg",
     utm: "https://kredito24.afflnx.com/c/4d5d956b7a614?ext_click_id=&subsource=",
   },
-
   {
     name: "InstaMoney",
     minAge: 21,
@@ -272,7 +227,6 @@ const eligibleLenders = [
     url: "https://static.trustpaisa.com/logos/full.svg",
     utm: "https://trustpaisa.com/?utm_source=keshvacredit&utm_medium=cpa&click_id=1111111",
   },
-
   {
     name: "Loan112",
     minAge: 21,
@@ -281,9 +235,8 @@ const eligibleLenders = [
     minIncome: 25000,
     employment: "Salaried",
     url: "https://www.loan112.com/public/front/img/logo_Loan112.svg",
-    utm: "https://www.loan112.com/apply-now?utm_source=KESHVACREDIT&utm_medium=KESHVACREDITWEB&utm_campaign=KESHVACREDITWEBCAMPAIGN",
+    utm: "https://www.loan112.com/apply-now?utm_source=KESHVACREDIT",
   },
-
   {
     name: "BrightLoan",
     minAge: 21,
@@ -292,7 +245,7 @@ const eligibleLenders = [
     minIncome: 25000,
     employment: "Salaried",
     url: "https://www.loan112.com/public/front/img/logo_Loan112.svg",
-    utm: "https://www.loan112.com/apply-now?utm_source=KESHVACREDIT&utm_medium=KESHVACREDITWEB&utm_campaign=KESHVACREDITWEBCAMPAIGN",
+    utm: "https://www.loan112.com/apply-now?utm_source=KESHVACREDIT",
   },
 ];
 
@@ -303,23 +256,30 @@ const lenderFiles = {
   BrightLoan: path.join(__dirname, "./pincode/BrightLoan.csv"),
 };
 
-// ✅ Attach pincodes from Excel
+// ✅ Attach pincodes and use Set for 10x faster lookups
 eligibleLenders.forEach((lender) => {
   const excelPath = lenderFiles[lender.name];
   if (excelPath) {
     try {
       const workbook = XLSX.readFile(excelPath);
-      const sheetName = workbook.SheetNames[0]; // always take first sheet
+      const sheetName = workbook.SheetNames[0];
       const data = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
-      lender.pincodes = data
-        .map((row) => row.Pincode && row.Pincode.toString().trim())
+
+      // Creating a Set of pincodes for faster searching
+      const pincodeList = data
+        .map((row) => {
+          const val = row.Pincode || row.pincode || row.PINCODE;
+          return val ? val.toString().trim() : null;
+        })
         .filter(Boolean);
+
+      lender.pincodes = new Set(pincodeList);
     } catch (err) {
-      console.error(`Error reading ${excelPath}:`, err.message);
-      lender.pincodes = [];
+      console.error(`Error reading ${lender.name} file:`, err.message);
+      lender.pincodes = new Set();
     }
   } else {
-    lender.pincodes = [];
+    lender.pincodes = new Set();
   }
 });
 
@@ -327,31 +287,27 @@ eligibleLenders.forEach((lender) => {
 async function filterLenders(age, income, loan, employment, pincode) {
   if (!age || !income || !loan) return [];
 
+  // Pincode input ko string mein convert karein taaki matching sahi ho
+  const searchPincode = pincode ? pincode.toString().trim() : "";
+
   return eligibleLenders
     .filter((lender) => {
+      // Basic Filters
+      const matchesAge = age >= lender.minAge && age <= lender.maxAge;
+      const matchesIncome = income >= lender.minIncome;
       const matchesEmployment =
         !lender.employment || lender.employment === employment;
 
+      // Special Pincode Check for specific lenders
       if (
         ["Rupee", "MoneyView", "Loan112", "BrightLoan"].includes(lender.name)
       ) {
-        const matchesPincode =
-          lender.pincodes.length > 0 && lender.pincodes.includes(pincode);
-        return (
-          lender.minAge <= age &&
-          lender.maxAge >= age &&
-          matchesEmployment &&
-          lender.minIncome <= income &&
-          matchesPincode
-        );
+        const hasPincode = lender.pincodes.has(searchPincode);
+        return matchesAge && matchesIncome && matchesEmployment && hasPincode;
       }
 
-      return (
-        lender.minAge <= age &&
-        lender.maxAge >= age &&
-        matchesEmployment &&
-        lender.minIncome <= income
-      );
+      // Default return for others
+      return matchesAge && matchesIncome && matchesEmployment;
     })
     .map((lender) => ({
       name: lender.name,
