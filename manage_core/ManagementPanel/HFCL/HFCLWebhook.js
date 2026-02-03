@@ -1,8 +1,15 @@
 const crypto = require("crypto");
 const BlackCover = require("../MultiDataBase/BlackCover.js");
+const MONGODB_RSUnity = require("../../ManagementPanel/MultiDataBase/RSUnity");
+
 const { HCFL1, HCFL2 } = require("../MultiDataBase/MultiSchema/HFCL.js")(
   BlackCover,
 );
+
+const { RSCreditFy } =
+  require("../../ManagementPanel/MultiDataBase/MultiSchema/RSUnitySch")(
+    MONGODB_RSUnity,
+  );
 
 const AUTH_TOKEN = "herofincop-64%situ$5901keshvaNeoVim";
 const SHARED_SECRET = "your_shared_secret_key_here";
@@ -151,9 +158,10 @@ exports.webhookhfcl = async (req, res) => {
 
 exports.WebhookGet = async (req, res) => {
   try {
-    const [allLeads, allStatusEntries] = await Promise.all([
+    const [allLeads, allStatusEntries, hfckCountLead] = await Promise.all([
       HCFL1.find({}),
       HCFL2.find({}),
+      RSCreditFy.countDocuments({ "RefArr.name": "HFCL" }), // Ye count fetch ho raha hai
     ]);
 
     const acceptData = allStatusEntries.filter(
@@ -168,6 +176,7 @@ exports.WebhookGet = async (req, res) => {
         countLeadStatus: allLeads.length,
         countAcceptData: acceptData.length,
         countRejectData: rejectCaseData.length,
+        hitApiFyCount: hfckCountLead, // <-- Bas ye line add ki hai
       },
       compData: {
         leadStatusData: allLeads,

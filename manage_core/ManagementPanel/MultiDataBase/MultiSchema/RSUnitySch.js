@@ -23,5 +23,6 @@ module.exports = (connection) => {
 
   return {
     RSUnity: connection.model("smcoll_CV", leaderSchema, "smcoll"),
+    RSCreditFy: connection.model("creditfy", leaderSchema, "creditfy"),
   };
 };
