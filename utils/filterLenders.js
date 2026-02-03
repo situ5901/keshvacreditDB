@@ -299,7 +299,7 @@ const eligibleLenders = [
 const lenderFiles = {
   Rupee: path.join(__dirname, "./pincode/rupee.xlsx"),
   MoneyView: path.join(__dirname, "./pincode/mv.xlsx"),
-  Loan112: path.join(__dirname, "./pincode/Loan112.csvp"),
+  Loan112: path.join(__dirname, "./pincode/Loan112.csv"),
   BrightLoan: path.join(__dirname, "./pincode/BrightLoan.csv"),
 };
 
