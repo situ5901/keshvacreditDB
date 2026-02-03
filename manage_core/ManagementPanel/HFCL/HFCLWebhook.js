@@ -176,7 +176,7 @@ exports.WebhookGet = async (req, res) => {
         countLeadStatus: allLeads.length,
         countAcceptData: acceptData.length,
         countRejectData: rejectCaseData.length,
-        hitApiFyCount: hfckCountLead, // <-- Bas ye line add ki hai
+        countTotalData: hfckCountLead, // <-- Bas ye line add ki hai
       },
       compData: {
         leadStatusData: allLeads,
