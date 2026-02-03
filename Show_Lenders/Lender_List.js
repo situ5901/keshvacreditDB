@@ -59,7 +59,7 @@ router.post("/lenderlist", async (req, res) => {
   }
 });
 
-router.post("BL/lenderlist", async (req, res) => {
+router.post("/BL/lenderlist", async (req, res) => {
   try {
     const { phone } = req.body;
 
