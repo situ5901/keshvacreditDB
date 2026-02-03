@@ -90,7 +90,7 @@ router.post("/BL/lenderlist", async (req, res) => {
     const employment = user.employment || "";
     const pincode = user.pincode?.toString().trim(); // ✅ include pincode
 
-    if (!dobDate || !income || !loanAmount || !pincode) {
+    if (!dobDate || !Gst || !loanAmount || !pincode) {
       return res.status(400).json({ message: "User data incomplete." });
     }
 
