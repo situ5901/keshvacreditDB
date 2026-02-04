@@ -1,3 +1,7 @@
+const XLSX = require("xlsx");
+const path = require("path");
+
+// 1. Array of Lenders
 const eligibleBusinessLenders = [
   {
     id: 1,
@@ -6,7 +10,7 @@ const eligibleBusinessLenders = [
     minAge: 21,
     maxAge: 60,
     requiresGST: true,
-    minVintage: 0, // No specific limit
+    minVintage: 0,
     approval: "98%",
     amount: "Up to ₹2 crore",
     interest: "12% p.a.",
@@ -75,31 +79,87 @@ const eligibleBusinessLenders = [
   },
 ];
 
-async function BLfilterLenders(age, Gst, loan, employment, userVintage) {
+// 2. Mapping Files to Lender Names
+const lenderFiles = {
+  Indifi: path.join(__dirname, "./pincode/Indify.xlsx"), // Fixed spelling
+};
+
+// 3. Pre-load Excel Data into Sets (Optimized for performance)
+eligibleBusinessLenders.forEach((lender) => {
+  const excelPath = lenderFiles[lender.name];
+  if (excelPath) {
+    try {
+      const workbook = XLSX.readFile(excelPath);
+      const sheetName = workbook.SheetNames[0];
+      const data = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+
+      const pincodeList = data
+        .map((row) => {
+          const val = row.Pincode || row.pincode || row.PINCODE;
+          return val ? val.toString().trim() : null;
+        })
+        .filter(Boolean);
+
+      lender.pincodes = new Set(pincodeList);
+    } catch (err) {
+      console.error(`Error reading ${lender.name} file:`, err.message);
+      lender.pincodes = new Set();
+    }
+  } else {
+    lender.pincodes = new Set();
+  }
+});
+
+/**
+ * 4. Logic for Filtering Lenders
+ * @param {number} age - User Age
+ * @param {string} Gst - "yes" or "no"
+ * @param {number} loan - Loan Amount
+ * @param {string} employment - Type of employment
+ * @param {number|string} userVintage - Business vintage in years
+ * @param {string|number} userPincode - User's current pincode
+ */
+async function BLfilterLenders(
+  age,
+  Gst,
+  loan,
+  employment,
+  userVintage,
+  userPincode,
+) {
   if (!age || !Gst || !loan) return [];
 
   const userHasGst = Gst.toLowerCase() === "yes";
   const empStatus = employment ? employment.toLowerCase() : "";
-
-  // Convert vintage to number (e.g., "0.5" or "2")
   const numericVintage = parseFloat(userVintage) || 0;
+  const searchPincode = userPincode ? userPincode.toString().trim() : "";
 
   return eligibleBusinessLenders
     .filter((lender) => {
-      // 1. Age Check
+      // Age Check
       const matchesAge = age >= lender.minAge && age <= lender.maxAge;
 
-      // 2. GST Check
+      // GST Check
       const matchesGst = lender.requiresGST ? userHasGst : true;
 
-      // 3. ✅ Vintage Check (Indifi logic)
+      // Vintage Check
       const matchesVintage = numericVintage >= (lender.minVintage || 0);
 
-      // 4. Employment Check
+      // Employment Check
       const matchesEmployment =
         !lender.employment || lender.employment.toLowerCase() === empStatus;
 
-      return matchesAge && matchesGst && matchesVintage && matchesEmployment;
+      // Pincode Check: If lender has a list, user must match. If no list, everyone passes.
+      const matchesPincode =
+        lender.pincodes.size > 0 ? lender.pincodes.has(searchPincode) : true;
+
+      return (
+        matchesAge &&
+        matchesGst &&
+        matchesVintage &&
+        matchesEmployment &&
+        matchesPincode
+      );
     })
     .map((lender) => ({
       id: lender.id,
