@@ -222,7 +222,7 @@ exports.campianData = async (req, res) => {
         { phone: 1, email: 1, pan: 1, name: 1, _id: 0 },
       ),
       // Loan112 Find
-      RSCreditFy.find(
+      RSUnity.find(
         { "apiResponse.Loan112.status": 1 },
         { phone: 1, email: 1, pan: 1, name: 1, _id: 0 },
       ),
@@ -461,8 +461,8 @@ exports.campianData = async (req, res) => {
       RSUnity.countDocuments(),
       RSUnity.countDocuments({ "RefArr.name": "BrightLoan" }),
       // Loan112 Counts
-      RSCreditFy.countDocuments({}),
-      RSCreditFy.countDocuments({ "apiResponse.Loan112.status": 1 }),
+      RSUnity.countDocuments({}),
+      RSUnity.countDocuments({ "apiResponse.Loan112.status": 1 }),
       RSUnity.countDocuments({ "RefArr.name": "Loan112" }),
     ]);
 
