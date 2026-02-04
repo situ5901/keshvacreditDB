@@ -27,11 +27,10 @@ const CML_Models =
   require("../ManagementPanel/MultiDataBase/MultiSchema/CMLSch")(MONGODB_CML);
 const PersonalPayMe = CML_Models.PersonalPayMe;
 
-const RS_Models =
+const { RSUnity, RSCreditFy } =
   require("../ManagementPanel/MultiDataBase/MultiSchema/RSUnitySch")(
     MONGODB_RSUnity,
   );
-const RSUnity = RS_Models.RSUnity;
 
 const BlackCoverModels =
   require("../ManagementPanel/MultiDataBase/MultiSchema/BlackCoverSch")(
@@ -52,13 +51,15 @@ const {
 
 exports.campianData = async (req, res) => {
   try {
+    // Basic Model Validations
     if (!RSUnity) throw new Error("RSUnity Model not found.");
     if (!fatakPayModel) throw new Error("FatakPay Model not found in schema.");
     if (!LoanTapModel)
       throw new Error("LoanTapModel not found in BlackCover Schema.");
+    if (!RSCreditFy) throw new Error("RSCreditFy Model not found.");
 
     // =================== 1. DATA FETCH (Find) ===================
-    // Order matters: Destructuring must match the Promise.all array order
+    // The order here MUST match the Promise.all array below
     const [
       scUsers,
       scUsers2,
@@ -83,7 +84,8 @@ exports.campianData = async (req, res) => {
       cnUnityUsers,
       dcUsers,
       csUnityUsers,
-      blUsers, // <--- Added BrightLoan Find
+      blUsers,
+      loan112Users,
     ] = await Promise.all([
       Dell.find(
         { "apiResponse.message": "Lead created successfully" },
@@ -215,9 +217,13 @@ exports.campianData = async (req, res) => {
         },
         { phone: 1, email: 1, pan: 1, name: 1, _id: 0 },
       ),
-      // BrightLoan Find Query
       RSUnity.find(
         { "RefArr.name": "BrightLoan", "apiResponse.BrightLoan.Status": 1 },
+        { phone: 1, email: 1, pan: 1, name: 1, _id: 0 },
+      ),
+      // Loan112 Find
+      RSCreditFy.find(
+        { "apiResponse.Loan112.status": 1 },
         { phone: 1, email: 1, pan: 1, name: 1, _id: 0 },
       ),
     ]);
@@ -302,7 +308,11 @@ exports.campianData = async (req, res) => {
       blS,
       blT,
       blP,
+      loan112Total,
+      loan112Success,
+      loan112Processed,
     ] = await Promise.all([
+      // Smartcoin 1 & 2
       Dell.countDocuments({
         "apiResponse.message": "Lead created successfully",
       }),
@@ -314,6 +324,7 @@ exports.campianData = async (req, res) => {
       }),
       VishuDB.countDocuments({ "RefArr.name": "Smartcoin" }),
       VishuDB.countDocuments({ "RefArr.name": "Smartcoin" }),
+      // FatakPay
       fatakPayModel.countDocuments({
         "apiResponse.FatakPayDCL.data.product_type": "CARD",
       }),
@@ -324,6 +335,7 @@ exports.campianData = async (req, res) => {
       }),
       fatakPayModel.countDocuments(),
       fatakPayModel.countDocuments({ "RefArr.name": "FatakPay" }),
+      // Mpokket 1 & 2
       Dell.countDocuments({
         "apiResponse.MpokketResponse.preApproval.message":
           "Data Accepted Successfully",
@@ -337,6 +349,7 @@ exports.campianData = async (req, res) => {
       }),
       VishuDB.countDocuments({ "RefArr.name": "Mpokket" }),
       VishuDB.countDocuments({ "RefArr.name": "Mpokket" }),
+      // Zype 1 & 2
       Dell.countDocuments({ "apiResponse.ZypeResponse.status": "ACCEPT" }),
       Dell.countDocuments(),
       Dell.countDocuments({ "RefArr.name": "Zype" }),
@@ -346,6 +359,7 @@ exports.campianData = async (req, res) => {
       }),
       VishuDB.countDocuments({ "RefArr.name": "Zype" }),
       VishuDB.countDocuments({ "RefArr.name": "Zype" }),
+      // Ramfin, MV, LT, CS
       fatakPayModel.countDocuments({
         "apiResponse.Ramfin.leadCreate.message": "Attributed Successfully",
       }),
@@ -367,6 +381,7 @@ exports.campianData = async (req, res) => {
       }),
       Loantap.countDocuments(),
       Loantap.countDocuments({ "RefArr.name": "creditsea" }),
+      // CN, Branch, Chintamani
       Dell.countDocuments({
         "apiResponse.CapitalNow.message": "Fresh Lead Registered Successfully!",
       }),
@@ -380,6 +395,7 @@ exports.campianData = async (req, res) => {
       }),
       Delhi.countDocuments(),
       Delhi.countDocuments({ "RefArr.name": "Chintamani" }),
+      // Payme 1 & 2
       PaymeCV.countDocuments({
         "apiResponse.payme.register_user.message": "Signed-in Successfully",
       }),
@@ -390,6 +406,7 @@ exports.campianData = async (req, res) => {
       }),
       PayMe2.countDocuments(),
       PayMe2.countDocuments({ "RefArr.name": "payme" }),
+      // FiMoney 1 & 2
       Loantap.countDocuments({
         "apiResponse.PIResponse.status.message": "Lead created successfully",
       }),
@@ -401,6 +418,7 @@ exports.campianData = async (req, res) => {
       }),
       VishuDB.countDocuments({ "RefArr.name": "PI" }),
       VishuDB.countDocuments({ "RefArr.name": "PI" }),
+      // CreditFy 1 & 2
       MvcollCV.countDocuments({
         "apiResponse.CreditFy.leadCreate.message": "SUCCESS",
       }),
@@ -411,6 +429,7 @@ exports.campianData = async (req, res) => {
       }),
       PersonalPayMe.countDocuments(),
       PersonalPayMe.countDocuments({ "RefArr.name": "CreditFy" }),
+      // RSUnity: SOT, CN, Digi, CS, BrightLoan
       RSUnity.countDocuments({
         "RefArr.name": "SOT",
         "apiResponse.SOT.Message": "Lead generated successfully.",
@@ -435,13 +454,16 @@ exports.campianData = async (req, res) => {
       }),
       RSUnity.countDocuments(),
       RSUnity.countDocuments({ "RefArr.name": "creditsea" }),
-      // BrightLoan Counts (Success, Total, Processed)
       RSUnity.countDocuments({
         "RefArr.name": "BrightLoan",
         "apiResponse.BrightLoan.Status": 1,
       }),
       RSUnity.countDocuments(),
       RSUnity.countDocuments({ "RefArr.name": "BrightLoan" }),
+      // Loan112 Counts
+      RSCreditFy.countDocuments({}),
+      RSCreditFy.countDocuments({ "apiResponse.Loan112.status": 1 }),
+      RSUnity.countDocuments({ "RefArr.name": "Loan112" }),
     ]);
 
     // =================== 3. JSON RESPONSE ===================
@@ -454,6 +476,12 @@ exports.campianData = async (req, res) => {
           Processed: scP2,
           Total: scT2,
           users: scUsers2,
+        },
+        Loan112: {
+          Success: loan112Success,
+          Processed: loan112Processed,
+          Total: loan112Total,
+          users: loan112Users,
         },
         BrightLoan: {
           Success: blS,
