@@ -89,10 +89,11 @@ router.post("/BL/lenderlist", async (req, res) => {
     const Gst = user.gstRegistered;
     const loanAmount = user.loanAmount;
     const employment = user.employment || "";
-    const pincode = user.pincode?.toString().trim();
 
-    // ✅ Database se Vintage nikalo (Maano field ka naam 'businessVintage' hai)
-    // Agar DB mein field ka naam sirf 'vintage' hai toh usey change kar lena.
+    // ✅ Pincode extraction with cleanup
+    const pincode = user.pincode ? user.pincode.toString().trim() : "";
+
+    // ✅ Vintage extraction
     const userVintage = user.businessAge || 0;
 
     // Check minimum required data
@@ -103,16 +104,19 @@ router.post("/BL/lenderlist", async (req, res) => {
     }
 
     // --- Filter Lenders Call ---
+    // ✅ Yahan humne 'pincode' ko 6th parameter ke taur par add kiya hai
     const lenders = await BLfilterLenders(
       age,
       Gst,
       loanAmount,
       employment,
-      userVintage, // 👈 Vintage pass kiya
+      userVintage,
+      pincode, // 👈 Yeh raha pincode logic integration
     );
 
     return res.status(200).json({
       message: "Fetch Eligible Lenders",
+      count: lenders.length, // Added for better tracking
       data: lenders,
     });
   } catch (error) {
