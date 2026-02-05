@@ -1,4 +1,3 @@
-
 const axios = require("axios");
 const mongoose = require("mongoose");
 require("dotenv").config();
@@ -41,14 +40,13 @@ async function CallApiForLead(user) {
           "Basic cmFtZmluX2U2NmIxNmE5ZjZiNzQ5YTAzOTBmZWRjM2U4ZjNkZjZmOmI3YjJlZDU1MjM5NjA5NzM5NmQwOWE2N2RkZTI4NjUyMDNjZDMxYjA=",
       },
     });
-    
-    return response.data; 
 
+    return response.data;
   } catch (err) {
     console.error(`❌ Error calling API for user ${user.phone}:`, err.message);
     if (err.response) {
-      console.error('API Response Data:', err.response.data);
-      return { error: 'API Call Failed', details: err.response.data };
+      console.error("API Response Data:", err.response.data);
+      return { error: "API Call Failed", details: err.response.data };
     }
     throw new Error(`API call failed: ${err.message}`);
   }
@@ -81,7 +79,7 @@ async function processBatch(users) {
           const updateDoc = {
             $push: {
               RefArr: {
-                name: "CreditFy", 
+                name: "CreditFy",
                 message: "Skipped due to employment or income",
                 createdAt: new Date().toISOString(),
               },
@@ -89,7 +87,7 @@ async function processBatch(users) {
             $unset: { accounts: "" },
           };
 
-          await UserDB.updateOne({ phone: user.phone }, updateDoc); 
+          await UserDB.updateOne({ phone: user.phone }, updateDoc);
           return;
         }
 
@@ -98,13 +96,13 @@ async function processBatch(users) {
         const updateDoc = {
           $push: {
             apiResponse: {
-              CreditFy: { 
-                leadCreate: leadCreateResponse, 
+              CreditFy: {
+                leadCreate: leadCreateResponse,
               },
               createdAt: new Date().toISOString(),
             },
             RefArr: {
-              name: "CreditFy", 
+              name: "CreditFy",
               message: "API Call completed",
               createdAt: new Date().toISOString(),
             },
@@ -112,10 +110,8 @@ async function processBatch(users) {
           $unset: { accounts: "" },
         };
 
-        await UserDB.updateOne({ phone: user.phone }, updateDoc); 
+        await UserDB.updateOne({ phone: user.phone }, updateDoc);
         console.log(`✅ Database updated for user: ${user.phone}`);
-
-
       } catch (error) {
         console.error(
           `❌ Failed to process user ${user.phone} in batch:`,
@@ -145,7 +141,7 @@ async function main() {
       const users = await UserDB.find({
         $or: [
           { RefArr: { $exists: false } },
-          { "RefArr.name": { $ne: "CreditFy" } }, 
+          { "RefArr.name": { $ne: "CreditFy" } },
         ],
       })
         .skip(skip)
